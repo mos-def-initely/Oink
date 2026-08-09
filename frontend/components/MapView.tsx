@@ -36,6 +36,11 @@ const TILE_ATTRIBUTION =
 // into one cluster, so faces stop stacking into an unreadable pile.
 const CLUSTER_RADIUS_PX = 52;
 
+// Pin width. Wide enough that the faces behind the leader stay legible instead
+// of being swallowed by it — they carry real information now that shamers can
+// appear among them.
+const PIN_W = 76;
+
 // Central London — a sensible opening view before any places load.
 const DEFAULT_CENTER: [number, number] = [51.5127, -0.1345];
 const DEFAULT_ZOOM = 13;
@@ -50,27 +55,69 @@ type Props = {
   className?: string;
 };
 
-function faceMarkup(place: PlaceSummary, index: number, size: number): string {
-  const u = place.recommenders[index];
+type Voter = { user: PlaceSummary["recommenders"][number]; shamed: boolean };
+
+function faceMarkup(voter: Voter | undefined, size: number): string {
   return renderToStaticMarkup(
-    <PigAvatar config={u?.pig_avatar_config} placesLogged={u?.places_logged ?? 0} size={size} bare />
+    <PigAvatar
+      config={voter?.user.pig_avatar_config}
+      placesLogged={voter?.user.places_logged ?? 0}
+      size={size}
+      bare
+    />
   );
 }
 
 function pinHtml(place: PlaceSummary): string {
-  const count = place.recommender_count;
+  // Endorsers first — the leader is whoever backed the place first — then
+  // anyone who shamed it, so a divided place shows both verdicts on one pin
+  // rather than reading as unanimous.
+  // Defaulted rather than assumed: the map is the first screen, and it should
+  // not blank out if an older API build omits either list.
+  const endorsers = place.recommenders ?? [];
+  const shamers = place.shamers ?? [];
+
+  // Shamers join the fan only where somebody also oinked, so a split verdict
+  // shows both sides. With nothing but shame the pin stays the greyed-out angry
+  // pig — the whole pin is desaturated there, which would drain the colour out
+  // of a shame badge and leave it less readable than the pig it replaced.
+  const voters: Voter[] = endorsers.length
+    ? [
+        ...endorsers.map((user) => ({ user, shamed: false })),
+        ...shamers.map((user) => ({ user, shamed: true })),
+      ]
+    : [];
+  const count = voters.length;
   const shamed = place.shamed_only;
   const ring = shamed ? "#9A93A3" : "#FFFDFB";
   const bg = shamed ? "#D8D4DC" : "#FFFDFB";
 
-  const disc = (inner: string, size: number, offset: string) => `
+  // A greyed face alone doesn't say "shamed" at pin size, so a shamer's face
+  // carries the angry pig as a badge — the same mark used on the reaction
+  // buttons and the feed, so the verdict reads without a legend.
+  const shameBadge = (size: number) => `
     <div style="
-      position:absolute; ${offset}
+      position:absolute; right:-3px; bottom:-3px;
       width:${size}px; height:${size}px; border-radius:50%;
-      background:${bg}; border:2.5px solid ${ring};
-      box-shadow:0 2px 8px rgba(43,27,61,.28);
+      background:#FF8A00; border:2px solid #FFFDFB;
+      box-shadow:0 1px 3px rgba(43,27,61,.35);
       display:flex; align-items:center; justify-content:center; overflow:hidden;
-    ">${inner}</div>`;
+    ">${renderToStaticMarkup(<ShamePig size={size - 3} active />)}</div>`;
+
+  const disc = (inner: string, size: number, offset: string, dissenter = false) => `
+    <div style="position:absolute; ${offset} width:${size}px; height:${size}px;">
+      <div style="
+        width:100%; height:100%; border-radius:50%;
+        background:${bg}; border:2.5px solid ${dissenter ? "#FF8A00" : ring};
+        box-shadow:0 2px 8px rgba(43,27,61,.28);
+        display:flex; align-items:center; justify-content:center; overflow:hidden;
+        ${dissenter ? "filter:grayscale(1);" : ""}
+      ">${inner}</div>
+      ${dissenter ? shameBadge(Math.max(14, Math.round(size * 0.44))) : ""}
+    </div>`;
+
+  const face = (i: number, size: number, discSize: number, offset: string) =>
+    disc(faceMarkup(voters[i], size), discSize, offset, voters[i]?.shamed ?? false);
 
   // Fan the extra faces out behind the leader, furthest first so the front one
   // ends up on top.
@@ -81,9 +128,9 @@ function pinHtml(place: PlaceSummary): string {
     // the app is a pig.
     layers = disc(renderToStaticMarkup(<ShamePig size={34} active />), 42, "left:9px; top:0;");
   } else {
-    if (fan >= 3) layers += disc(faceMarkup(place, 2, 24), 30, "left:0; top:12px;");
-    if (fan >= 2) layers += disc(faceMarkup(place, 1, 26), 32, "right:0; top:10px;");
-    layers += disc(faceMarkup(place, 0, 36), 42, "left:9px; top:0;");
+    if (fan >= 3) layers += face(2, 24, 30, "left:0; top:14px;");
+    if (fan >= 2) layers += face(1, 26, 32, "right:0; top:12px;");
+    layers += face(0, 36, 42, "left:17px; top:0;");
   }
 
   const chip =
@@ -99,7 +146,7 @@ function pinHtml(place: PlaceSummary): string {
       : "";
 
   return `
-    <div style="position:relative; width:60px; height:54px; ${shamed ? "filter:grayscale(1);opacity:.85;" : ""}">
+    <div style="position:relative; width:${PIN_W}px; height:54px; ${shamed ? "filter:grayscale(1);opacity:.85;" : ""}">
       ${layers}${chip}
       <div style="
         position:absolute; left:50%; bottom:-7px; transform:translateX(-50%);
@@ -283,8 +330,8 @@ export default function MapView({
           const icon = L.divIcon({
             className: "oink-pin",
             html: pinHtml(place),
-            iconSize: [60, 61],
-            iconAnchor: [30, 61],
+            iconSize: [PIN_W, 61],
+            iconAnchor: [PIN_W / 2, 61],
           });
           markersRef.current.push(
             L.marker([place.lat, place.lng], { icon })

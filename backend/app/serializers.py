@@ -158,6 +158,7 @@ class RestaurantContext:
 
 def restaurant_summary(restaurant: Restaurant, ctx: RestaurantContext) -> RestaurantSummary:
     recommenders = ctx.recommenders(restaurant.id)
+    shamers = ctx.shamers(restaurant.id)
     shame_count = len(ctx.shame_ids.get(restaurant.id, []))
     return RestaurantSummary(
         id=restaurant.id,
@@ -174,6 +175,7 @@ def restaurant_summary(restaurant: Restaurant, ctx: RestaurantContext) -> Restau
         google_maps_url=restaurant.google_maps_url,
         recommenders=recommenders,
         recommender_count=len(recommenders),
+        shamers=shamers,
         shame_count=shame_count,
         shamed_only=bool(shame_count) and not recommenders,
     )

@@ -105,6 +105,9 @@ class RestaurantSummary(BaseModel):
     google_maps_url: Optional[str]
     recommenders: List[UserPublic]
     recommender_count: int
+    # Who shamed it — the map pin and the pin sheet show these faces alongside
+    # the endorsers, so a divisive place reads as divisive rather than unanimous.
+    shamers: List[UserPublic] = []
     shame_count: int
     # True when the only signal on this place is shame — pin renders greyed out
     shamed_only: bool

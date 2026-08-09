@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { api } from "@/lib/api";
-import type { Kind, PlaceSummary } from "@/lib/types";
+import type { Kind, PlaceSummary, User } from "@/lib/types";
 import { BUDGETS, Budget } from "@/lib/pig";
 import { categoriesFor } from "@/lib/categories";
 import BottomTabBar from "@/components/BottomTabBar";
@@ -20,6 +20,26 @@ const MapView = dynamic(() => import("@/components/MapView"), {
   ssr: false,
   loading: () => <div className="h-full w-full animate-pulse bg-apricot-deep" />,
 });
+
+/** A row of pig faces with names — used for both sides of the pin sheet. */
+function FaceRow({ people, muted = false }: { people: User[]; muted?: boolean }) {
+  if (people.length === 0) return null;
+  return (
+    <div className={`mt-1.5 flex flex-wrap items-center gap-2 ${muted ? "opacity-70 grayscale" : ""}`}>
+      {people.map((u) => (
+        <span key={u.id} className="flex items-center gap-1">
+          <PigAvatar
+            config={u.pig_avatar_config}
+            placesLogged={u.places_logged}
+            size={28}
+            variant="face"
+          />
+          <span className="text-xs">{u.display_name}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
 
 export default function DiscoverPage() {
   const [places, setPlaces] = useState<PlaceSummary[] | null>(null);
@@ -199,26 +219,30 @@ export default function DiscoverPage() {
               <p className="text-sm">{[selected.area, selected.city].filter(Boolean).join(", ")}</p>
             )}
 
-            <div>
-              <p className="font-display text-sm font-bold">
-                {selected.recommender_count > 0 ? "Recommended by" : "Nobody's endorsed this yet"}
-              </p>
-              <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                {selected.recommenders.map((u) => (
-                  <span key={u.id} className="flex items-center gap-1">
-                    <PigAvatar
-                      config={u.pig_avatar_config}
-                      placesLogged={u.places_logged}
-                      size={28}
-                      variant="face"
-                    />
-                    <span className="text-xs">{u.display_name}</span>
-                  </span>
-                ))}
-                {selected.shame_count > 0 && (
-                  <span className="tag bg-tangerine text-white">{selected.shame_count} shame</span>
-                )}
-              </div>
+            {/* Both sides of the verdict, each with its own faces — a place can
+                be oinked by some and shamed by others. */}
+            <div className="space-y-2.5">
+              {selected.recommender_count === 0 && selected.shame_count === 0 && (
+                <p className="font-display text-sm font-bold">Nobody's weighed in yet</p>
+              )}
+
+              {selected.recommender_count > 0 && (
+                <div>
+                  <p className="font-display text-sm font-bold">
+                    Oinked by {selected.recommender_count}
+                  </p>
+                  <FaceRow people={selected.recommenders} />
+                </div>
+              )}
+
+              {selected.shame_count > 0 && (
+                <div>
+                  <p className="font-display text-sm font-bold text-tangerine">
+                    Shamed by {selected.shame_count}
+                  </p>
+                  <FaceRow people={selected.shamers} muted />
+                </div>
+              )}
             </div>
 
             <Link href={`/restaurant/${selected.id}`} className="btn-primary block text-center">

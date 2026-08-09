@@ -33,6 +33,7 @@ export type PlaceSummary = {
   google_maps_url: string | null;
   recommenders: User[];
   recommender_count: number;
+  shamers: User[];
   shame_count: number;
   shamed_only: boolean;
 };
