@@ -3,12 +3,13 @@
 /**
  * Add-place flow — spec §6.3, revised.
  *
- * A Google Maps link is **optional**. There are three ways to place a pin:
+ * A Google Maps link is **optional**. There are four ways to place a pin:
  *   1. search by name (keyless, via the backend's place search)
- *   2. use your current location
- *   3. drop a pin on the map
- * Pasting a Maps link is a fourth shortcut, and whenever a link or a search
- * result resolves, the pin drops automatically at that spot.
+ *   2. type an address — it geocodes and the pin drops from it
+ *   3. use your current location
+ *   4. drop a pin on the map
+ * Pasting a Maps link is a fifth shortcut. Whenever a link, a search result or
+ * a typed address resolves, the pin drops automatically at that spot.
  */
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -55,12 +56,26 @@ export default function AddPlaceSheet({
   const [note, setNote] = useState<string | null>(null);
   // Set once a location is pinned, which also suppresses further name search.
   const [located, setLocated] = useState(false);
+  // Only geocode an address the user actually typed. Autofill and search
+  // results write to this field too, and re-geocoding their output would be
+  // wasted calls at best and could shunt an already-correct pin at worst.
+  const [addressTouched, setAddressTouched] = useState(false);
+  const [addressMatch, setAddressMatch] = useState<PlaceCandidate | null>(null);
+  const [locating, setLocating] = useState(false);
 
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const addressDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Always-current pin position, so the debounced address lookup can read it
+  // without listing it as a dependency (which would re-fire the lookup the
+  // instant the pin lands).
+  const pinRef = useRef(pickedPoint);
+  pinRef.current = pickedPoint;
 
   useEffect(() => {
     if (!open) return;
     setError(null);
+    setAddressTouched(false);
+    setAddressMatch(null);
   }, [open]);
 
   // A pin dropped on the map counts as locating the place.
@@ -90,8 +105,73 @@ export default function AddPlaceSheet({
     };
   }, [name, open, located]);
 
+  /**
+   * Geocode a hand-typed address so the pin can drop from it.
+   *
+   * The pin is only placed automatically when there isn't one yet — if a pin
+   * already exists, moving it silently under the user would be worse than
+   * offering the move, so it surfaces as a button instead.
+   */
+  useEffect(() => {
+    if (!open || !addressTouched || address.trim().length < 6) {
+      setAddressMatch(null);
+      return;
+    }
+    if (addressDebounce.current) clearTimeout(addressDebounce.current);
+    addressDebounce.current = setTimeout(async () => {
+      // City sharpens the lookup — "12 High Street" alone is everywhere.
+      const query = [address.trim(), city.trim()].filter(Boolean).join(", ");
+      setLocating(true);
+      try {
+        const [best] = await api.searchPlaces(query);
+        if (!best) {
+          setAddressMatch(null);
+          return;
+        }
+        const pin = pinRef.current;
+        // ~10m. Editing the city after the address re-runs this lookup, and
+        // without the check it would offer to move the pin to where it already
+        // is — the note and the button contradicting each other.
+        const alreadyThere =
+          pin && Math.abs(pin.lat - best.lat) < 1e-4 && Math.abs(pin.lng - best.lng) < 1e-4;
+
+        if (!pin) {
+          setLocated(true);
+          onPointResolved(best.lat, best.lng);
+          if (!city && best.city) setCity(best.city);
+          if (!area && best.area) setArea(best.area);
+          setAddressMatch(null);
+          setNote("Pin dropped from the address — nudge it on the map if it's off.");
+        } else {
+          setAddressMatch(alreadyThere ? null : best);
+        }
+      } catch {
+        setAddressMatch(null);
+      } finally {
+        setLocating(false);
+      }
+    }, 700);
+    return () => {
+      if (addressDebounce.current) clearTimeout(addressDebounce.current);
+    };
+    // `pickedPoint` is deliberately read fresh rather than tracked: adding it
+    // would re-run this the moment the pin lands and immediately re-geocode.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [address, city, area, open, addressTouched]);
+
+  function movePinToAddress() {
+    if (!addressMatch) return;
+    onPointResolved(addressMatch.lat, addressMatch.lng);
+    setAddressMatch(null);
+    setNote("Pin moved to the address.");
+  }
+
   function choose(c: PlaceCandidate) {
     setName(c.name);
+    // These fill the address field programmatically, so clear the typed flag —
+    // otherwise the geocode effect fires on our own output.
+    setAddressTouched(false);
+    setAddressMatch(null);
     if (c.address) setAddress(c.address);
     if (c.city) setCity(c.city);
     if (c.area) setArea(c.area);
@@ -129,6 +209,8 @@ export default function AddPlaceSheet({
         setNote("Couldn't read that link — try searching the name instead.");
         return;
       }
+      setAddressTouched(false);
+      setAddressMatch(null);
       if (parsed.name) setName(parsed.name);
       if (parsed.address) setAddress(parsed.address);
       if (parsed.city) setCity(parsed.city);
@@ -236,7 +318,7 @@ export default function AddPlaceSheet({
             </p>
           ) : (
             <p className="text-xs text-ink-soft">
-              Pick a result above, use your location, or drop a pin.
+              Pick a result above, type an address below, use your location, or drop a pin.
             </p>
           )}
           {note && <p className="rounded-lg bg-apricot-deep px-3 py-2 text-xs">{note}</p>}
@@ -322,12 +404,28 @@ export default function AddPlaceSheet({
             </div>
           </div>
 
-          <input
-            className="field"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            placeholder="Address (optional)"
-          />
+          <div className="space-y-1.5">
+            <input
+              className="field"
+              value={address}
+              onChange={(e) => {
+                setAddress(e.target.value);
+                setAddressTouched(true);
+              }}
+              placeholder="Address — typing one drops the pin"
+            />
+            {locating && <p className="text-xs text-ink-soft">Looking up that address…</p>}
+            {addressMatch && (
+              <button
+                type="button"
+                onClick={movePinToAddress}
+                className="btn-plain w-full text-xs"
+              >
+                Move pin to this address
+              </button>
+            )}
+          </div>
+
           <div className="flex gap-2">
             <input
               className="field flex-1"
