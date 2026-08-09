@@ -2,25 +2,24 @@
 __pycache__/
 *.py[cod]
 *.pyo
-*.pyd
 .venv/
 venv/
 
-# Environment files
+# Environment files (keep .env.example tracked)
 .env
-.env.*
+.env.local
 
-# Local app data
+# Local app data — regenerate with seed.py
 backend/uploads/
 backend/oink.db
-backend/.venv/
-backend/__pycache__/
 
-# Node / frontend generated files
-frontend/node_modules/
-frontend/.next/
-frontend/out/
-frontend/npm-debug.log*
+# Node / Next
+node_modules/
+.next/
+out/
+npm-debug.log*
+*.tsbuildinfo
+next-env.d.ts
 
 # OS / editor noise
 .DS_Store
