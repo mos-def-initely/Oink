@@ -35,5 +35,8 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
+  // Vercel services can't host Edge Functions, and middleware defaults to the
+  // Edge runtime. This gate needs no Edge-specific behaviour, so run it on Node.
+  runtime: "nodejs",
   matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
