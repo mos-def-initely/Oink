@@ -18,6 +18,9 @@ load_dotenv(BASE_DIR / ".env")
 # Default is a local SQLite file so the API runs with zero external services,
 # per the v1 "API runs locally only" constraint.
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR / 'oink.db'}")
+# Supabase (and Heroku) hand out `postgres://` URLs, which SQLAlchemy 2 refuses.
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = "postgresql://" + DATABASE_URL[len("postgres://"):]
 
 # --- Auth -----------------------------------------------------------------
 JWT_SECRET = os.getenv("JWT_SECRET", "dev-only-insecure-secret-change-me")
@@ -43,6 +46,12 @@ CORS_ORIGINS = [
     if o.strip()
 ]
 PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "http://localhost:8000")
+
+# The session cookie has to be Secure once the app is on HTTPS, and must not be
+# over plain http://localhost — a Secure cookie is simply dropped there.
+COOKIE_SECURE = os.getenv("COOKIE_SECURE", "").strip().lower() in ("1", "true", "yes") or (
+    PUBLIC_BASE_URL.startswith("https://")
+)
 
 USING_SQLITE = DATABASE_URL.startswith("sqlite")
 USING_SUPABASE_STORAGE = bool(SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY)

@@ -23,8 +23,9 @@ def _set_session_cookie(response: Response, token: str) -> None:
         max_age=COOKIE_MAX_AGE,
         httponly=True,
         samesite="lax",
-        # secure=False so the cookie works over plain http://localhost in v1.
-        secure=False,
+        # Secure once PUBLIC_BASE_URL is https; off for plain http://localhost,
+        # where a Secure cookie would just be dropped.
+        secure=config.COOKIE_SECURE,
         path="/",
     )
 

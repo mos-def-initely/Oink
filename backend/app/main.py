@@ -38,10 +38,24 @@ for router in (
     app.include_router(router, prefix=API_PREFIX)
 
 
+def _ensure_upload_dir() -> bool:
+    """Create the local upload directory, reporting whether it's usable.
+
+    Serverless hosts (Vercel) mount a read-only filesystem, so this fails there.
+    That's fine — those deploys use Supabase Storage — but it must not take the
+    whole app down on import.
+    """
+    try:
+        config.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+        return True
+    except OSError:
+        return False
+
+
 @app.on_event("startup")
 def on_startup() -> None:
     init_db()
-    config.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    _ensure_upload_dir()
 
     if config.JWT_SECRET == "dev-only-insecure-secret-change-me":
         logger.warning("JWT_SECRET is the built-in dev default — set a real one before any deploy.")
@@ -57,9 +71,13 @@ def on_startup() -> None:
 
 
 # Locally-stored uploads are served straight off disk. With Supabase Storage
-# configured, image URLs point at Supabase instead and this mount goes unused.
-config.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=str(config.UPLOAD_DIR)), name="uploads")
+# configured, image URLs point at Supabase instead and this mount goes unused —
+# which is also the case on a read-only serverless filesystem, where the mount
+# can't be created at all.
+if _ensure_upload_dir():
+    app.mount("/uploads", StaticFiles(directory=str(config.UPLOAD_DIR)), name="uploads")
+else:
+    logger.warning("Upload directory isn't writable — /uploads not mounted (expected on serverless).")
 
 
 @app.get("/api/v1/health", tags=["health"])

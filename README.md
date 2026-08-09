@@ -55,14 +55,31 @@ Reseed any time with `./.venv/bin/python seed.py --reset`.
 
 ### Deploying to Vercel + Supabase
 
-This repo can be deployed as a monorepo with the frontend on Vercel and the backend as a Python function connected to Supabase Postgres.
+`vercel.json` declares two [Vercel services](https://vercel.com/docs/services) —
+the Next.js frontend and the FastAPI backend — in one project on one domain.
+`/api/*` is rewritten to the backend, everything else to the frontend, so the
+frontend calls a same-origin `/api/v1` and no CORS is involved.
+
+Two of the local defaults **cannot** carry over, because Vercel's filesystem is
+read-only and per-request:
+
+- `DATABASE_URL` **must** point at Postgres. The SQLite default can't be written
+  to, and wouldn't survive between requests if it could.
+- `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` are **required for photo
+  uploads**. Without them uploads fall back to local disk and will fail.
 
 1. Create a Supabase project in your `willmckenna15` account.
-2. Set the database connection string in Vercel as `DATABASE_URL`.
-3. Set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_STORAGE_BUCKET` if you want image uploads stored in Supabase Storage.
-4. Set `PUBLIC_BASE_URL` to your Vercel app URL.
-5. Set `NEXT_PUBLIC_API_URL=/api/v1` for the frontend.
-6. Deploy the repo with Vercel from the repository root.
+2. Set the Supabase connection string in Vercel as `DATABASE_URL`. Use the
+   **connection pooler** string, not the direct one — serverless opens a new
+   connection per cold start and will exhaust the direct limit.
+3. Set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_STORAGE_BUCKET`,
+   and create that bucket as **public** so uploaded images are readable.
+4. Set `JWT_SECRET` to a real secret — the built-in default is a known string.
+5. Set `PUBLIC_BASE_URL` to your Vercel app URL (this also flips the session
+   cookie to `Secure`).
+6. Deploy the repo with Vercel from the repository root. Tables are created on
+   first boot; to get the test accounts, run `seed.py` with `DATABASE_URL` set to
+   the same Postgres URL.
 Example with the Vercel CLI:
 
 ```bash
@@ -152,7 +169,6 @@ frontend/
 
 ## Not built yet
 
-- **Deployment** — local only for now.
 - **Follower graph** — every account is in one shared circle.
 - **Password reset** — no email in the system at all.
 - **Photo auto-sourcing** — places without a photo get a generated placeholder.
