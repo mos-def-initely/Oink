@@ -59,6 +59,10 @@ _BROWSER_UA = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
 )
+_MOBILE_UA = (
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 "
+    "(KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1"
+)
 _OSM_UA = "Oink/1.0 (local dev; friend-group recommendation app)"
 
 
@@ -80,15 +84,52 @@ def _is_google_maps_url(url: str) -> bool:
     return bool(_GOOGLE_HOST.match(host)) or host in _SHORT_HOSTS
 
 
+def _is_useful_expansion(original: str, candidate: str) -> bool:
+    """Reject a redirect that just echoes the short code back.
+
+    share.google answers a mobile UA with
+    `google.com/share.google?q=<the short code>` — technically a redirect, but
+    it carries nothing. Only the desktop path resolves those, so a degenerate
+    hop has to fall through rather than be taken as the answer.
+    """
+    slug = urlparse(original).path.rstrip("/").rsplit("/", 1)[-1].lower()
+    if not slug:
+        return True
+    name, address = _query_parts(candidate)
+    echoed = (name or "").lower() == slug and not address
+    return not echoed
+
+
 def _expand_short_link(url: str) -> str:
     """Follow a Google short link to whatever it really points at.
 
-    Two wrinkles, both confirmed against live links:
-      * Without a browser User-Agent, Google answers with a consent
-        interstitial instead of redirecting.
-      * Even with one, the response can land on consent.google.com, which
-        carries the real destination in its `continue` parameter.
+    The User-Agent decides what Google gives back, and counter-intuitively a
+    desktop browser one is the worst choice — confirmed against live links:
+
+      * maps.app.goo.gl (the phone app's Share link) answers a *mobile* UA with
+        a clean 302 whose Location carries the place name and full street
+        address. Handed a desktop browser UA it instead returns a JavaScript
+        shell with no metadata in it at all.
+      * share.google (the web browser's Share link) does the opposite: it needs
+        the desktop UA to reach the real destination.
+      * With no UA at all, some responses land on consent.google.com, which
+        carries the true destination in its `continue` parameter.
+
+    So try the mobile no-follow hop first, then fall back to following
+    redirects as a desktop browser.
     """
+    # 1. Mobile UA, capture the redirect ourselves.
+    try:
+        with httpx.Client(follow_redirects=False, timeout=_TIMEOUT) as client:
+            resp = client.get(url, headers={"User-Agent": _MOBILE_UA})
+        location = resp.headers.get("location")
+        if resp.status_code in (301, 302, 303, 307, 308) and location:
+            if _is_useful_expansion(url, location):
+                return location
+    except httpx.HTTPError:
+        pass
+
+    # 2. Desktop UA, follow all the way.
     try:
         with httpx.Client(follow_redirects=True, timeout=_TIMEOUT) as client:
             resp = client.get(url, headers={"User-Agent": _BROWSER_UA})
@@ -102,7 +143,6 @@ def _expand_short_link(url: str) -> str:
             if final != url:
                 return final
 
-            # Some responses keep the short URL but name the target in the body.
             match = re.search(r'https://www\.google\.[a-z.]+/maps/[^"\'<>\\ ]+', resp.text or "")
             if match:
                 return match.group(0).replace("\\u003d", "=").replace("\\u0026", "&")
@@ -119,6 +159,24 @@ def _coords_from_url(url: str) -> Tuple[Optional[float], Optional[float]]:
     return None, None
 
 
+def _query_parts(url: str) -> Tuple[Optional[str], Optional[str]]:
+    """Split a `?q=` value into (name, street address).
+
+    The phone app's short link expands to
+    `maps.google.com?q=<name>, <street>, <city> <postcode>`, so everything after
+    the first comma is a proper postal address — far better to geocode than the
+    name, which OSM often doesn't carry.
+    """
+    match = re.search(r"[?&](?:q|query|destination)=([^&#]+)", url)
+    if not match:
+        return None, None
+    value = unquote_plus(match.group(1)).strip()
+    if not value or re.fullmatch(r"[-\d.,+\s]+", value):
+        return None, None
+    name, _, rest = value.partition(",")
+    return name.strip() or None, rest.strip() or None
+
+
 def _name_from_url(url: str) -> Optional[str]:
     for pattern in _NAME_PATTERNS:
         match = pattern.search(url)
@@ -131,7 +189,8 @@ def _name_from_url(url: str) -> Optional[str]:
             continue
         if name.startswith("data=") or name.startswith("!"):
             continue
-        return name
+        # A `q=` value may be "name, street, city postcode"; keep just the name.
+        return name.partition(",")[0].strip() or None
     return None
 
 
@@ -262,7 +321,9 @@ def search_places(query: str, limit: int = 6) -> List[PlaceCandidate]:
         out.append(
             PlaceCandidate(
                 name=r.get("name") or display.split(",")[0].strip() or query,
-                address=display or None,
+                # display_name runs to "…, England, WC1A 1DB, United Kingdom";
+                # the assembled street address is what belongs in a form field.
+                address=_street_address(r) or display or None,
                 city=city,
                 area=area,
                 lat=lat,
@@ -284,6 +345,7 @@ def parse_google_maps_link(url: str) -> ParseLinkResponse:
 
     lat, lng = _coords_from_url(url)
     name = _name_from_url(url)
+    _, address_hint = _query_parts(url)
 
     # With a key, resolve properly through Places.
     if config.GOOGLE_MAPS_API_KEY and (name or (lat is not None and lng is not None)):
@@ -315,23 +377,25 @@ def parse_google_maps_link(url: str) -> ParseLinkResponse:
         # the name comes from the URL, or the user types it.
         address = _street_address(osm) or osm.get("display_name")
         city, area = _split_osm_address(osm)
-    elif name:
-        # Coordinates missing from the URL — this is the share.google case,
-        # where the link expands to a Search URL carrying only the place name.
+    else:
+        # No coordinates in the URL. Prefer the postal address the phone app's
+        # link carries — a street and postcode geocode precisely, where the
+        # business name often isn't in OSM at all.
         #
-        # Search on the *whole* name, including any branch or street qualifier,
-        # and take it only if that exact query resolves. Loosening the query
-        # until something matches is what silently picks the wrong branch:
-        # "Plaza Khao Gaeng Tottenham Court Road" finds nothing, while "Plaza
-        # Khao Gaeng" confidently returns the Covent Garden site a mile away.
-        # No pin beats a wrong pin — the UI asks the user to drop one.
-        candidates = search_places(name, 1)
-        if candidates:
-            best = candidates[0]
-            lat, lng = best.lat, best.lng
-            address = address or best.address
-            city = city or best.city
-            area = area or best.area
+        # Whichever we use, the query is taken whole. Loosening it until
+        # something matches is what silently picks the wrong branch: "Plaza
+        # Khao Gaeng Tottenham Court Road" finds nothing, while the shorter
+        # "Plaza Khao Gaeng" confidently returns the Covent Garden site a mile
+        # away. No pin beats a wrong pin — the UI then asks for one.
+        query = address_hint or name
+        if query:
+            candidates = search_places(query, 1)
+            if candidates:
+                best = candidates[0]
+                lat, lng = best.lat, best.lng
+                address = address or best.address
+                city = city or best.city
+                area = area or best.area
 
     resolved = bool(name or (lat is not None and lng is not None))
     return ParseLinkResponse(
