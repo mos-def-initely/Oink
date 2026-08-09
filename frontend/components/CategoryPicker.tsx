@@ -116,6 +116,11 @@ export default function CategoryPicker({
                   if (visible.length) add(visible[0]);
                   else if (canAddCustom) add(query.trim());
                 } else if (e.key === "Escape") {
+                  // Close just this dropdown, not the sheet around it. The
+                  // sheet's handler sits on `document`, which is also React's
+                  // root container here — same target, so plain
+                  // stopPropagation wouldn't reach it.
+                  e.nativeEvent.stopImmediatePropagation();
                   setOpen(false);
                 }
               }}
