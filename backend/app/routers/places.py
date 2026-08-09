@@ -1,6 +1,6 @@
 """Place lookup — spec §5 / §6.3. Keyless by default (see app/places.py)."""
 
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, Query
 
@@ -19,6 +19,10 @@ def parse_link(payload: ParseLinkRequest, viewer: User = Depends(get_current_use
 
 
 @router.get("/search", response_model=List[PlaceCandidate])
-def search(q: str = Query(min_length=3), viewer: User = Depends(get_current_user)):
-    """Search a place by name, so a Google Maps link is never required."""
-    return search_places(q)
+def search(
+    q: str = Query(min_length=3),
+    postcode: Optional[str] = Query(default=None, description="Re-ranks results onto this district"),
+    viewer: User = Depends(get_current_user),
+):
+    """Search a place by name or address, so a Google Maps link is never required."""
+    return search_places(q, postcode=postcode)

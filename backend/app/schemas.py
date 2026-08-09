@@ -65,6 +65,7 @@ class RestaurantCreate(BaseModel):
     address: Optional[str] = None
     city: Optional[str] = None
     area: Optional[str] = None
+    postcode: Optional[str] = None
 
 
 class RestaurantUpdate(BaseModel):
@@ -75,6 +76,7 @@ class RestaurantUpdate(BaseModel):
     address: Optional[str] = None
     city: Optional[str] = None
     area: Optional[str] = None
+    postcode: Optional[str] = None
 
 
 class ImageOut(BaseModel):
@@ -96,6 +98,7 @@ class RestaurantSummary(BaseModel):
     budget: Budget
     city: Optional[str]
     area: Optional[str]
+    postcode: Optional[str] = None
     lat: float
     lng: float
     cover_image_url: Optional[str]
@@ -175,6 +178,7 @@ class PlaceCandidate(BaseModel):
     address: Optional[str] = None
     city: Optional[str] = None
     area: Optional[str] = None
+    postcode: Optional[str] = None
     lat: float
     lng: float
 
@@ -184,6 +188,7 @@ class ParseLinkResponse(BaseModel):
     address: Optional[str] = None
     city: Optional[str] = None
     area: Optional[str] = None
+    postcode: Optional[str] = None
     lat: Optional[float] = None
     lng: Optional[float] = None
     # How much we managed to resolve, so the UI can say what's still needed

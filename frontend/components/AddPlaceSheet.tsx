@@ -45,6 +45,7 @@ export default function AddPlaceSheet({
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [area, setArea] = useState("");
+  const [postcode, setPostcode] = useState("");
   const [link, setLink] = useState("");
   const [showLink, setShowLink] = useState(false);
 
@@ -113,17 +114,22 @@ export default function AddPlaceSheet({
    * offering the move, so it surfaces as a button instead.
    */
   useEffect(() => {
-    if (!open || !addressTouched || address.trim().length < 6) {
+    const hasAddress = address.trim().length >= 6;
+    const hasPostcode = postcode.trim().length >= 5;
+    if (!open || !addressTouched || (!hasAddress && !hasPostcode)) {
       setAddressMatch(null);
       return;
     }
     if (addressDebounce.current) clearTimeout(addressDebounce.current);
     addressDebounce.current = setTimeout(async () => {
-      // City sharpens the lookup — "12 High Street" alone is everywhere.
-      const query = [address.trim(), city.trim()].filter(Boolean).join(", ");
+      // Postcode first: it narrows a street to one block, where a city alone
+      // leaves "12 High Street" ambiguous across the whole country.
+      const query = [address.trim(), postcode.trim(), city.trim()]
+        .filter(Boolean)
+        .join(", ");
       setLocating(true);
       try {
-        const [best] = await api.searchPlaces(query);
+        const [best] = await api.searchPlaces(query, postcode.trim());
         if (!best) {
           setAddressMatch(null);
           return;
@@ -140,6 +146,7 @@ export default function AddPlaceSheet({
           onPointResolved(best.lat, best.lng);
           if (!city && best.city) setCity(best.city);
           if (!area && best.area) setArea(best.area);
+          if (!postcode && best.postcode) setPostcode(best.postcode);
           setAddressMatch(null);
           setNote("Pin dropped from the address — nudge it on the map if it's off.");
         } else {
@@ -157,7 +164,7 @@ export default function AddPlaceSheet({
     // `pickedPoint` is deliberately read fresh rather than tracked: adding it
     // would re-run this the moment the pin lands and immediately re-geocode.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [address, city, area, open, addressTouched]);
+  }, [address, city, area, postcode, open, addressTouched]);
 
   function movePinToAddress() {
     if (!addressMatch) return;
@@ -175,6 +182,7 @@ export default function AddPlaceSheet({
     if (c.address) setAddress(c.address);
     if (c.city) setCity(c.city);
     if (c.area) setArea(c.area);
+    if (c.postcode) setPostcode(c.postcode);
     setResults([]);
     setLocated(true);
     onPointResolved(c.lat, c.lng);   // drops the pin automatically
@@ -215,6 +223,7 @@ export default function AddPlaceSheet({
       if (parsed.address) setAddress(parsed.address);
       if (parsed.city) setCity(parsed.city);
       if (parsed.area) setArea(parsed.area);
+      if (parsed.postcode) setPostcode(parsed.postcode);
       if (parsed.lat != null && parsed.lng != null) {
         setLocated(true);
         onPointResolved(parsed.lat, parsed.lng);  // drops the pin automatically
@@ -255,6 +264,7 @@ export default function AddPlaceSheet({
         address: address || null,
         city: city || null,
         area: area || null,
+        postcode: postcode.trim().toUpperCase() || null,
       });
       onCreated();
       router.push(`/restaurant/${place.id}`);
@@ -318,7 +328,7 @@ export default function AddPlaceSheet({
             </p>
           ) : (
             <p className="text-xs text-ink-soft">
-              Pick a result above, type an address below, use your location, or drop a pin.
+              Pick a result above, type an address or postcode below, use your location, or drop a pin.
             </p>
           )}
           {note && <p className="rounded-lg bg-apricot-deep px-3 py-2 text-xs">{note}</p>}
@@ -412,7 +422,7 @@ export default function AddPlaceSheet({
                 setAddress(e.target.value);
                 setAddressTouched(true);
               }}
-              placeholder="Address — typing one drops the pin"
+              placeholder="Street address"
             />
             {locating && <p className="text-xs text-ink-soft">Looking up that address…</p>}
             {addressMatch && (
@@ -429,17 +439,29 @@ export default function AddPlaceSheet({
           <div className="flex gap-2">
             <input
               className="field flex-1"
+              value={postcode}
+              onChange={(e) => {
+                setPostcode(e.target.value);
+                setAddressTouched(true);
+              }}
+              placeholder="Postcode"
+              autoCapitalize="characters"
+              autoCorrect="off"
+              spellCheck={false}
+            />
+            <input
+              className="field flex-1"
               value={city}
               onChange={(e) => setCity(e.target.value)}
               placeholder="City"
             />
-            <input
-              className="field flex-1"
-              value={area}
-              onChange={(e) => setArea(e.target.value)}
-              placeholder="Area"
-            />
           </div>
+          <input
+            className="field"
+            value={area}
+            onChange={(e) => setArea(e.target.value)}
+            placeholder="Area (optional)"
+          />
         </section>
 
         {error && <ErrorNote message={error} />}

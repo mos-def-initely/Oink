@@ -76,6 +76,7 @@ def create_restaurant(
         address=payload.address,
         city=payload.city,
         area=payload.area,
+        postcode=(payload.postcode or "").strip().upper() or None,
         lat=payload.lat,
         lng=payload.lng,
         google_maps_url=(payload.google_maps_url or "").strip() or None,

@@ -26,6 +26,7 @@ export type PlaceSummary = {
   budget: Budget;
   city: string | null;
   area: string | null;
+  postcode: string | null;
   lat: number;
   lng: number;
   cover_image_url: string | null;
@@ -74,6 +75,7 @@ export type ParsedLink = {
   address: string | null;
   city: string | null;
   area: string | null;
+  postcode: string | null;
   lat: number | null;
   lng: number | null;
   resolved: boolean;
@@ -85,6 +87,7 @@ export type PlaceCandidate = {
   address: string | null;
   city: string | null;
   area: string | null;
+  postcode: string | null;
   lat: number;
   lng: number;
 };

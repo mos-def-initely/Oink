@@ -107,6 +107,7 @@ export const api = {
     address?: string | null;
     city?: string | null;
     area?: string | null;
+    postcode?: string | null;
   }) => request<PlaceDetail>("/restaurants", { method: "POST", body: JSON.stringify(payload) }),
 
   parseMapsLink: (url: string) =>
@@ -115,8 +116,13 @@ export const api = {
       body: JSON.stringify({ url }),
     }),
 
-  searchPlaces: (q: string) =>
-    request<PlaceCandidate[]>(`/places/search?q=${encodeURIComponent(q)}`),
+  searchPlaces: (q: string, postcode?: string) => {
+    const params = new URLSearchParams({ q });
+    // Re-ranks results onto the right district — Nominatim returns the correct
+    // one but doesn't prefer it.
+    if (postcode?.trim()) params.set("postcode", postcode.trim());
+    return request<PlaceCandidate[]>(`/places/search?${params.toString()}`);
+  },
 
   uploadImage: (placeId: string, file: File) => {
     const form = new FormData();

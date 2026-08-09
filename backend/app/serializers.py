@@ -135,6 +135,7 @@ def restaurant_summary(restaurant: Restaurant, ctx: RestaurantContext) -> Restau
         budget=restaurant.budget,
         city=restaurant.city,
         area=restaurant.area,
+        postcode=restaurant.postcode,
         lat=restaurant.lat,
         lng=restaurant.lng,
         cover_image_url=restaurant.cover_image_url,

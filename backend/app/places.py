@@ -285,7 +285,40 @@ def _split_google_address(address: Optional[str]) -> Tuple[Optional[str], Option
     return city, area
 
 
-def search_places(query: str, limit: int = 6) -> List[PlaceCandidate]:
+def _postcode_score(supplied: Optional[str], found: Optional[str]) -> int:
+    """Rank a candidate by how well its postcode matches the one supplied.
+
+    Nominatim accepts a postcode but doesn't weight it when ranking: searching
+    "42 Kingsland Road, E2 8DP" returns the Plaistow street (E13) above the
+    Shoreditch one (E2) that was actually asked for. Both come back, so the
+    ordering is fixable here.
+
+    The outward code — the part before the space — is what pins the district,
+    and it's usually enough: a building's real postcode often differs from a
+    neighbour's in the inward half alone (E2 8DP vs E2 8DA).
+    """
+    if not supplied or not found:
+        return 0
+
+    def norm(pc: str) -> str:
+        return re.sub(r"\s+", "", pc).upper()
+
+    def outward(pc: str) -> str:
+        pc = pc.strip().upper()
+        if " " in pc:
+            return pc.split(" ", 1)[0]
+        return pc[:-3] if len(pc) > 3 else pc
+
+    if norm(supplied) == norm(found):
+        return 2
+    if outward(supplied) and outward(supplied) == outward(found):
+        return 1
+    return 0
+
+
+def search_places(
+    query: str, limit: int = 6, postcode: Optional[str] = None
+) -> List[PlaceCandidate]:
     """Free-text place search, so adding a place never *requires* a Maps link."""
     query = (query or "").strip()
     if len(query) < 3:
@@ -310,8 +343,23 @@ def search_places(query: str, limit: int = 6) -> List[PlaceCandidate]:
             )
         return out
 
+    # The postcode has to be in the query text for Nominatim to surface the
+    # right district at all — searching "42 Kingsland Road" alone never returns
+    # the Shoreditch one. It then has to be re-ranked below, because Nominatim
+    # returns that candidate without preferring it.
+    if postcode and re.sub(r"\s+", "", postcode).upper() not in re.sub(r"\s+", "", query).upper():
+        query = f"{query}, {postcode.strip()}"
+
+    # Over-fetch so the re-rank has something to work with.
+    rows = _search_osm(query, limit * 3 if postcode else limit)
+    if postcode:
+        rows.sort(
+            key=lambda r: _postcode_score(postcode, (r.get("address") or {}).get("postcode")),
+            reverse=True,
+        )
+
     out = []
-    for r in _search_osm(query, limit):
+    for r in rows[: limit * 3]:
         try:
             lat, lng = float(r["lat"]), float(r["lon"])
         except (KeyError, TypeError, ValueError):
@@ -326,11 +374,12 @@ def search_places(query: str, limit: int = 6) -> List[PlaceCandidate]:
                 address=_street_address(r) or display or None,
                 city=city,
                 area=area,
+                postcode=(r.get("address") or {}).get("postcode"),
                 lat=lat,
                 lng=lng,
             )
         )
-    return out
+    return out[:limit]
 
 
 def parse_google_maps_link(url: str) -> ParseLinkResponse:
@@ -366,7 +415,7 @@ def parse_google_maps_link(url: str) -> ParseLinkResponse:
                 source="google_places",
             )
 
-    address = city = area = None
+    address = city = area = postcode = None
     if lat is not None and lng is not None:
         osm = _reverse_geocode_osm(lat, lng)
         # Only the *geographic* fields are trustworthy here. Reverse geocoding
@@ -377,6 +426,7 @@ def parse_google_maps_link(url: str) -> ParseLinkResponse:
         # the name comes from the URL, or the user types it.
         address = _street_address(osm) or osm.get("display_name")
         city, area = _split_osm_address(osm)
+        postcode = (osm.get("address") or {}).get("postcode")
     else:
         # No coordinates in the URL. Prefer the postal address the phone app's
         # link carries — a street and postcode geocode precisely, where the
@@ -396,6 +446,7 @@ def parse_google_maps_link(url: str) -> ParseLinkResponse:
                 address = address or best.address
                 city = city or best.city
                 area = area or best.area
+                postcode = postcode or best.postcode
 
     resolved = bool(name or (lat is not None and lng is not None))
     return ParseLinkResponse(
@@ -403,6 +454,7 @@ def parse_google_maps_link(url: str) -> ParseLinkResponse:
         address=address,
         city=city,
         area=area,
+        postcode=postcode,
         lat=lat,
         lng=lng,
         resolved=resolved,

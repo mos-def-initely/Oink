@@ -72,6 +72,7 @@ class Restaurant(Base):
     address: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     city: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
     area: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+    postcode: Mapped[Optional[str]] = mapped_column(String(24), nullable=True)
     lat: Mapped[float] = mapped_column(Float, nullable=False)
     lng: Mapped[float] = mapped_column(Float, nullable=False)
     # Optional: a place can be added by dropping a pin or searching by name.
