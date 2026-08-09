@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+
+# Environment files
+.env
+.env.*
+
+# Local app data
+backend/uploads/
+backend/oink.db
+backend/.venv/
+backend/__pycache__/
+
+# Node / frontend generated files
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/npm-debug.log*
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+~$*
