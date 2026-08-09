@@ -11,8 +11,8 @@
  * Uses Leaflet directly rather than a React wrapper because the pins are custom
  * HTML — a divIcon holding the same pig SVG the rest of the app uses.
  *
- * Basemap is CARTO Positron: near-grey, hairline roads, dimmed labels, so the
- * coral pins are the only loud thing on screen. Needs no API key.
+ * Nearby pins cluster into a single counted marker so faces never stack into
+ * an unreadable pile; clusters break apart as you zoom in. No API key needed.
  */
 import { useEffect, useRef, useState } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -24,9 +24,17 @@ import { ShamePig } from "@/components/pigs/ReactionPigs";
 // with ssr:false.
 import "leaflet/dist/leaflet.css";
 
-const TILE_URL = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+// Voyager rather than Positron: Positron is so pale that roads read as
+// white-on-white against the app's warm ground, which looks like a map that
+// failed to load. Voyager keeps the clean, low-clutter styling but with enough
+// contrast to actually navigate by.
+const TILE_URL = "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
 const TILE_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
+
+// Pins closer together than this (screen pixels at the current zoom) collapse
+// into one cluster, so faces stop stacking into an unreadable pile.
+const CLUSTER_RADIUS_PX = 52;
 
 // Central London — a sensible opening view before any places load.
 const DEFAULT_CENTER: [number, number] = [51.5127, -0.1345];
@@ -103,6 +111,37 @@ function pinHtml(place: PlaceSummary): string {
     </div>`;
 }
 
+function clusterHtml(group: PlaceSummary[]): string {
+  // Show a couple of faces so a cluster still reads as "your friends' places",
+  // with the count doing the real work.
+  const faces = group
+    .flatMap((p) => p.recommenders)
+    .slice(0, 2)
+    .map(
+      (u, i) => `<div style="position:absolute; ${i === 0 ? "left:4px" : "right:4px"}; top:6px;
+          width:26px; height:26px; border-radius:50%; overflow:hidden; background:#FFFDFB;">
+          ${renderToStaticMarkup(
+            <PigAvatar config={u.pig_avatar_config} placesLogged={u.places_logged} size={26} bare />
+          )}</div>`
+    )
+    .join("");
+
+  return `
+    <div style="position:relative; width:56px; height:56px;">
+      <div style="
+        position:absolute; inset:0; border-radius:50%;
+        background:#FFFDFB; border:3px solid #FF4D6D;
+        box-shadow:0 3px 10px rgba(43,27,61,.30);
+      "></div>
+      ${faces}
+      <div style="
+        position:absolute; left:0; right:0; bottom:5px;
+        text-align:center; font-family:var(--font-display),system-ui;
+        font-size:15px; font-weight:800; color:#FF4D6D; line-height:1;
+      ">${group.length}</div>
+    </div>`;
+}
+
 export default function MapView({
   places,
   onSelect,
@@ -122,6 +161,9 @@ export default function MapView({
   const [ready, setReady] = useState(false);
   // Bumped to force a rebuild — see the hot-reload guard below.
   const [generation, setGeneration] = useState(0);
+  // Clusters depend on the current zoom, so re-run the marker effect when it
+  // changes; without this, groups stay welded together as you zoom in.
+  const [zoomTick, setZoomTick] = useState(0);
   // Kept in a ref so the click handler, bound once, always sees current values.
   const pickHandlers = useRef({ pickMode, onPick });
   pickHandlers.current = { pickMode, onPick };
@@ -146,6 +188,8 @@ export default function MapView({
         const { pickMode: active, onPick: pick } = pickHandlers.current;
         if (active && pick) pick(e.latlng.lat, e.latlng.lng);
       });
+
+      map.on("zoomend", () => setZoomTick((t) => t + 1));
 
       mapRef.current = map;
       setReady(true);
@@ -211,17 +255,57 @@ export default function MapView({
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
 
-      places.forEach((place) => {
+      // Group anything that would overlap at this zoom. Recomputed on every
+      // zoom change, so clusters break apart as you zoom in.
+      const zoom = map.getZoom();
+      const projected = places.map((p) => ({ place: p, pt: map.project([p.lat, p.lng], zoom) }));
+      const taken = new Set<number>();
+      const groups: PlaceSummary[][] = [];
+
+      projected.forEach((a, i) => {
+        if (taken.has(i)) return;
+        taken.add(i);
+        const group = [a.place];
+        projected.forEach((b, j) => {
+          if (taken.has(j) || i === j) return;
+          if (a.pt.distanceTo(b.pt) < CLUSTER_RADIUS_PX) {
+            taken.add(j);
+            group.push(b.place);
+          }
+        });
+        groups.push(group);
+      });
+
+      groups.forEach((group) => {
+        if (group.length === 1) {
+          const place = group[0];
+          const icon = L.divIcon({
+            className: "oink-pin",
+            html: pinHtml(place),
+            iconSize: [60, 61],
+            iconAnchor: [30, 61],
+          });
+          markersRef.current.push(
+            L.marker([place.lat, place.lng], { icon })
+              .addTo(map)
+              .on("click", () => onSelect(place))
+          );
+          return;
+        }
+
+        const bounds = L.latLngBounds(group.map((p) => [p.lat, p.lng] as [number, number]));
         const icon = L.divIcon({
           className: "oink-pin",
-          html: pinHtml(place),
-          iconSize: [60, 61],
-          iconAnchor: [30, 61],
+          html: clusterHtml(group),
+          iconSize: [56, 56],
+          iconAnchor: [28, 28],
         });
-        const marker = L.marker([place.lat, place.lng], { icon })
-          .addTo(map)
-          .on("click", () => onSelect(place));
-        markersRef.current.push(marker);
+        markersRef.current.push(
+          L.marker(bounds.getCenter(), { icon })
+            .addTo(map)
+            // Zoom into the cluster rather than opening one arbitrary member.
+            .on("click", () => map.fitBounds(bounds, { padding: [70, 70], maxZoom: 18 }))
+        );
       });
 
       // Frame the pins once on first load. Re-framing on every filter change
@@ -229,10 +313,10 @@ export default function MapView({
       if (places.length && !framedRef.current && !pickHandlers.current.pickMode) {
         framedRef.current = true;
         const bounds = L.latLngBounds(places.map((p) => [p.lat, p.lng] as [number, number]));
-        map.fitBounds(bounds, { padding: [60, 60], maxZoom: 15, animate: false });
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16, animate: false });
       }
     })();
-  }, [places, onSelect, ready]);
+  }, [places, onSelect, ready, zoomTick]);
 
   // The dropped pin while adding a place
   useEffect(() => {
