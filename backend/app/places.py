@@ -116,6 +116,34 @@ def _split_osm_address(data: dict) -> Tuple[Optional[str], Optional[str]]:
     return city, area
 
 
+def _street_address(data: dict) -> Optional[str]:
+    """Build a street address from components rather than Nominatim's
+    `display_name`.
+
+    `display_name` is prefixed with the matched POI's own name, and reverse
+    geocoding matches whatever sits nearest the coordinate — so linking Kiln
+    yields "The Watch House, 104-105, Berwick Street, …". The street part is
+    right and the prefix is wrong, so assemble only the parts we trust.
+    """
+    addr = data.get("address") or {}
+    road = addr.get("road") or addr.get("pedestrian") or addr.get("footway")
+    if not road:
+        return None
+
+    house = addr.get("house_number")
+    street = f"{house} {road}" if house else road
+
+    city, area = _split_osm_address(data)
+    parts = [street]
+    if area and area != city:
+        parts.append(area)
+    if city:
+        parts.append(city)
+    if addr.get("postcode"):
+        parts.append(addr["postcode"])
+    return ", ".join(parts)
+
+
 def _reverse_geocode_osm(lat: float, lng: float) -> dict:
     """Best-effort address lookup with no API key. Never raises."""
     try:
@@ -247,10 +275,14 @@ def parse_google_maps_link(url: str) -> ParseLinkResponse:
     address = city = area = None
     if lat is not None and lng is not None:
         osm = _reverse_geocode_osm(lat, lng)
-        address = osm.get("display_name")
+        # Only the *geographic* fields are trustworthy here. Reverse geocoding
+        # returns whichever POI is nearest the coordinate, which is routinely a
+        # different business or the building itself — linking Kiln resolves to
+        # "The Watch House", The Harp to "London Coliseum". Taking a name from
+        # this would confidently fill in the wrong restaurant, so we never do;
+        # the name comes from the URL, or the user types it.
+        address = _street_address(osm) or osm.get("display_name")
         city, area = _split_osm_address(osm)
-        if not name:
-            name = osm.get("name") or None
     elif name:
         # Coordinates missing from the URL — try to find the place by name.
         # OSM's coverage of business names is patchy, so this can legitimately
