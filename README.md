@@ -53,6 +53,26 @@ Four friends, all with password **`oink123`**: `defne`, `mert`, `zeynep`, `ali`.
 
 Reseed any time with `./.venv/bin/python seed.py --reset`.
 
+### Deploying to Vercel + Supabase
+
+This repo can be deployed as a monorepo with the frontend on Vercel and the backend as a Python function connected to Supabase Postgres.
+
+1. Create a Supabase project in your `willmckenna15` account.
+2. Set the database connection string in Vercel as `DATABASE_URL`.
+3. Set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_STORAGE_BUCKET` if you want image uploads stored in Supabase Storage.
+4. Set `PUBLIC_BASE_URL` to your Vercel app URL.
+5. Set `NEXT_PUBLIC_API_URL=/api/v1` for the frontend.
+6. Deploy the repo with Vercel from the repository root.
+Example with the Vercel CLI:
+
+```bash
+cd /Users/will/Desktop/Oink
+vercel --prod
+```
+
+Or connect the repository in the Vercel dashboard and set the same environment variables there.
+See `vercel.json` for the monorepo app configuration, `backend/api.py` for the Python backend entrypoint, and `backend/.env.example` / `frontend/.env.example` for the required environment variables.
+
 ---
 
 ## What runs locally vs. the upgrade path

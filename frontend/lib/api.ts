@@ -17,7 +17,9 @@ import type {
 } from "./types";
 import type { Budget } from "./pig";
 
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+const BASE =
+  process.env.NEXT_PUBLIC_API_URL ??
+  (process.env.NODE_ENV === "production" ? "/api/v1" : "http://localhost:8000/api/v1");
 
 export class ApiError extends Error {
   status: number;
