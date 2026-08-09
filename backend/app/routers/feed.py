@@ -14,7 +14,13 @@ from ..db import get_db
 from ..deps import get_current_user
 from ..models import Reaction, Recommendation, Restaurant, RestaurantImage, User
 from ..schemas import FeedItem, ImageOut
-from ..serializers import RestaurantContext, places_logged_counts, restaurant_summary, user_public
+from ..serializers import (
+    RestaurantContext,
+    naive_dt,
+    places_logged_counts,
+    restaurant_summary,
+    user_public,
+)
 
 router = APIRouter(tags=["feed"])
 
@@ -41,7 +47,32 @@ def get_feed(
 
     entries = [(r.updated_at, "recommendation", r) for r in recs]
     entries += [(a.created_at, a.type, a) for a in reactions]
-    entries.sort(key=lambda e: e[0], reverse=True)
+
+    # One card per person per place. Adding a place auto-oinks it, so writing a
+    # review would otherwise post twice about the same visit. The review wins —
+    # it says everything the oink does and more — but it carries the newer of
+    # the two timestamps so it sits where the person's latest activity belongs.
+    best: dict = {}
+    for timestamp, activity, row in entries:
+        key = (row.user_id, row.restaurant_id)
+        current = best.get(key)
+        if current is None:
+            best[key] = (timestamp, activity, row)
+            continue
+        current_ts, current_activity, _ = current
+        newest = max(naive_dt(timestamp), naive_dt(current_ts))
+        if current_activity == "recommendation":
+            best[key] = (newest, current_activity, current[2])
+        elif activity == "recommendation":
+            best[key] = (newest, activity, row)
+        else:
+            # Two reactions on one place can't both exist — one per user per
+            # place — but keep the newer if the data ever says otherwise.
+            best[key] = (
+                current if naive_dt(current_ts) >= naive_dt(timestamp) else (timestamp, activity, row)
+            )
+
+    entries = sorted(best.values(), key=lambda e: naive_dt(e[0]), reverse=True)
     page = entries[offset : offset + limit]
     if not page:
         return []

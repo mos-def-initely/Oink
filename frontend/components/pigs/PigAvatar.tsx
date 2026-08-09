@@ -46,6 +46,8 @@ export default function PigAvatar({
   const bg = PIG_BACKGROUNDS[cfg.background];
   const shape = TIER_SHAPE[fatnessTier(placesLogged)];
   const grad = `pig-${uid}`;
+  const fold = `fold-${uid}`;
+  const clip = `torso-${uid}`;
 
   const gradient = (
     <defs>
@@ -81,6 +83,7 @@ export default function PigAvatar({
   const armW = 11;
   const q = (bottom - top) / 2.4;
   const q2 = (bottom - top) / 2.2;
+  const torsoPath = `M 50 ${top} q ${-w} 2 ${-w} ${q} q 0 ${q2} ${w} ${q} q ${w} ${-q} ${w} ${-q2} q 0 ${-q} ${-w} ${-q} Z`;
 
   return (
     <svg
@@ -112,27 +115,79 @@ export default function PigAvatar({
       <rect x={50 - w - armW + 4} y="78" width={armW} height="34" rx={armW / 2} fill={p.limb} />
       <rect x={50 + w - 4} y="78" width={armW} height="34" rx={armW / 2} fill={p.limb} />
 
-      <path
-        d={`M 50 ${top} q ${-w} 2 ${-w} ${q} q 0 ${q2} ${w} ${q} q ${w} ${-q} ${w} ${-q2} q 0 ${-q} ${-w} ${-q} Z`}
-        fill={`url(#${grad})`}
-      />
+      <path d={torsoPath} fill={`url(#${grad})`} />
 
-      {/* belly rolls — the fatness signal (spec §9.1) */}
-      {Array.from({ length: shape.rolls }).map((_, i) => {
-        const y = 96 + i * 14;
-        const spread = w - 4 - i * 1.5;
-        return (
-          <path
-            key={i}
-            d={`M ${50 - spread} ${y} q ${spread} ${7 + i} ${spread * 2} 0`}
-            fill="none"
-            stroke={p.dark}
-            strokeWidth="2.4"
-            strokeLinecap="round"
-            opacity="0.62"
-          />
-        );
-      })}
+      {/* Belly rolls — the fatness signal (spec §9.1).
+          A fold isn't a line, it's flesh overhanging flesh, so each one is built
+          from three pieces: the hollow the upper roll casts on the one below,
+          the crease itself, and the light catching the bulge underneath. Drawn
+          with soft fills rather than outlines, to match the vinyl-toy finish. */}
+      {shape.rolls > 0 && (
+        <g clipPath={`url(#${clip})`}>
+          <defs>
+            <clipPath id={clip}>
+              <path d={torsoPath} />
+            </clipPath>
+            {Array.from({ length: shape.rolls }).map((_, i) => {
+              const crease = 96 + i * 14 + (7 + i) * 0.5;
+              return (
+                <linearGradient
+                  key={i}
+                  id={`${fold}-${i}`}
+                  gradientUnits="userSpaceOnUse"
+                  x1="0"
+                  y1={crease}
+                  x2="0"
+                  y2={crease + 9}
+                >
+                  <stop offset="0%" stopColor={p.dark} stopOpacity="0.55" />
+                  <stop offset="100%" stopColor={p.dark} stopOpacity="0" />
+                </linearGradient>
+              );
+            })}
+          </defs>
+
+          {Array.from({ length: shape.rolls }).map((_, i) => {
+            const y = 96 + i * 14;
+            // Overshoot the waist deliberately — the clip trims it to the
+            // silhouette, so the fold runs edge to edge instead of stopping short.
+            const spread = w + 3;
+            const sag = 7 + i; // lower rolls hang deeper
+            const bulge = 15; // how far the roll below swells past the crease
+            return (
+              <g key={i}>
+                {/* The hollow under the overhang. Both curves share their end
+                    points, so the shadow is thickest mid-belly and tapers to
+                    nothing at the sides — a crease, not a painted band. */}
+                <path
+                  d={`M ${50 - spread} ${y}
+                      q ${spread} ${sag} ${spread * 2} 0
+                      q ${-spread} ${sag + bulge} ${-spread * 2} 0 Z`}
+                  fill={`url(#${fold}-${i})`}
+                />
+                <path
+                  d={`M ${50 - spread} ${y} q ${spread} ${sag} ${spread * 2} 0`}
+                  fill="none"
+                  stroke={p.dark}
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  opacity="0.45"
+                />
+                {/* Light on the crown of the roll below the crease. */}
+                <path
+                  d={`M ${50 - spread + 7} ${y + bulge * 0.62}
+                      q ${spread - 7} ${sag} ${(spread - 7) * 2} 0`}
+                  fill="none"
+                  stroke="#fff"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  opacity="0.18"
+                />
+              </g>
+            );
+          })}
+        </g>
+      )}
 
       {cfg.accessory === "tote" && (
         <g>

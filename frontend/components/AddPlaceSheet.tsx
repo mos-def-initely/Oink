@@ -49,6 +49,16 @@ export default function AddPlaceSheet({
   const [link, setLink] = useState("");
   const [showLink, setShowLink] = useState(false);
 
+  // Your write-up, optional — the same fields as the review sheet, so a place
+  // can be logged and reviewed in one go rather than two round trips.
+  const [review, setReview] = useState("");
+  const [dishes, setDishes] = useState<string[]>([]);
+  const [dishDraft, setDishDraft] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
+  const fileInput = useRef<HTMLInputElement>(null);
+  // Survives a failed review step so retrying doesn't add the place twice.
+  const createdIdRef = useRef<string | null>(null);
+
   const [results, setResults] = useState<PlaceCandidate[]>([]);
   const [searching, setSearching] = useState(false);
   const [parsing, setParsing] = useState(false);
@@ -238,6 +248,12 @@ export default function AddPlaceSheet({
     }
   }
 
+  function addDish() {
+    const value = dishDraft.trim();
+    if (value && !dishes.includes(value)) setDishes((d) => [...d, value]);
+    setDishDraft("");
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -253,23 +269,45 @@ export default function AddPlaceSheet({
 
     setSaving(true);
     try {
-      const place = await api.createPlace({
-        name: name.trim(),
-        kind,
-        category,
-        budget,
-        lat: pickedPoint.lat,
-        lng: pickedPoint.lng,
-        google_maps_url: link.trim() || null,
-        address: address || null,
-        city: city || null,
-        area: area || null,
-        postcode: postcode.trim().toUpperCase() || null,
-      });
+      // A retry after the review step failed must not create the place twice,
+      // so reuse the id from the first attempt if there was one.
+      let placeId = createdIdRef.current;
+      if (!placeId) {
+        const place = await api.createPlace({
+          name: name.trim(),
+          kind,
+          category,
+          budget,
+          lat: pickedPoint.lat,
+          lng: pickedPoint.lng,
+          google_maps_url: link.trim() || null,
+          address: address || null,
+          city: city || null,
+          area: area || null,
+          postcode: postcode.trim().toUpperCase() || null,
+        });
+        placeId = place.id;
+        createdIdRef.current = place.id;
+      }
+
+      for (const file of files) {
+        await api.uploadImage(placeId, file);
+      }
+      // The review is optional — adding a place already counts as an oink.
+      if (review.trim()) {
+        await api.recommend(placeId, review.trim(), dishes);
+      }
+
+      createdIdRef.current = null;
       onCreated();
-      router.push(`/restaurant/${place.id}`);
+      router.push(`/restaurant/${placeId}`);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Couldn't save that");
+      const message = e instanceof ApiError ? e.message : "Couldn't save that";
+      setError(
+        createdIdRef.current
+          ? `The place was added, but your write-up wasn't saved: ${message}`
+          : message
+      );
       setSaving(false);
     }
   }
@@ -464,10 +502,80 @@ export default function AddPlaceSheet({
           />
         </section>
 
+        {/* Your take — optional. Adding a place already counts as an oink, so
+            nobody is forced to write something to log somewhere. */}
+        <section className="space-y-3 border-t border-apricot-deep pt-4">
+          <div>
+            <p className="font-display text-sm font-bold">
+              Your take <span className="font-normal text-ink-soft">— optional</span>
+            </p>
+            <p className="text-xs text-ink-soft">Say it now, or add it later from the place page.</p>
+          </div>
+
+          <textarea
+            className="field min-h-[90px]"
+            value={review}
+            onChange={(e) => setReview(e.target.value)}
+            placeholder="What's it like? Who should go?"
+          />
+
+          <div className="space-y-2">
+            <p className="font-display text-sm font-bold">Dishes worth ordering</p>
+            <div className="flex gap-2">
+              <input
+                className="field flex-1"
+                value={dishDraft}
+                onChange={(e) => setDishDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addDish();
+                  }
+                }}
+                placeholder="e.g. monkfish curry"
+              />
+              <button type="button" onClick={addDish} className="btn-plain px-4">+</button>
+            </div>
+            {dishes.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {dishes.map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setDishes((prev) => prev.filter((x) => x !== d))}
+                    className="dish-tag"
+                  >
+                    {d} ✕
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <p className="font-display text-sm font-bold">Photos</p>
+            <input
+              ref={fileInput}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
+            />
+            <button
+              type="button"
+              onClick={() => fileInput.current?.click()}
+              className="btn-plain w-full text-sm"
+            >
+              {files.length ? `${files.length} photo${files.length > 1 ? "s" : ""} ready` : "Add photos"}
+            </button>
+          </div>
+        </section>
+
         {error && <ErrorNote message={error} />}
 
         <button type="submit" className="btn-primary w-full text-lg" disabled={saving}>
-          {saving ? "Saving…" : "Add it"}
+          {saving ? "Saving…" : review.trim() ? "Add it & post your take" : "Add it"}
         </button>
       </form>
     </Sheet>

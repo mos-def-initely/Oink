@@ -181,8 +181,9 @@ export default function MapView({
         zoom: DEFAULT_ZOOM,
         zoomControl: false,
       });
+      // No zoom control — pinch and double-tap are the gestures people actually
+      // use on a phone, and the buttons only crowd the corner.
       L.tileLayer(TILE_URL, { attribution: TILE_ATTRIBUTION, maxZoom: 20 }).addTo(map);
-      L.control.zoom({ position: "bottomleft" }).addTo(map);
 
       map.on("click", (e: { latlng: { lat: number; lng: number } }) => {
         const { pickMode: active, onPick: pick } = pickHandlers.current;

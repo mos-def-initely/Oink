@@ -12,7 +12,7 @@ import type { PlaceDetail, User } from "@/lib/types";
 import PigAvatar from "@/components/pigs/PigAvatar";
 import { BudgetTag } from "@/components/pigs/PricePig";
 import { OinkPig, ShamePig } from "@/components/pigs/ReactionPigs";
-import PlacePhoto from "@/components/PlacePhoto";
+import PhotoCarousel from "@/components/PhotoCarousel";
 import BottomTabBar, { TabBarSpacer } from "@/components/BottomTabBar";
 import { EmptyState, ErrorNote, KIND_LABELS, PageHeader, Sheet, Spinner, timeAgo } from "@/components/ui";
 
@@ -51,7 +51,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
       <PageHeader title={place.name} back="/discover" />
 
       <main className="space-y-4 px-3 pb-4">
-        <PlacePhoto src={place.cover_image_url} alt={place.name} className="h-52 w-full rounded-card" />
+        <PhotoCarousel images={place.images} alt={place.name} className="h-52 w-full" />
 
         <section className="card space-y-2.5 p-3.5">
           <div className="flex items-start justify-between gap-2">
@@ -132,17 +132,8 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
 
         {error && <ErrorNote message={error} />}
 
-        {place.images.length > 0 && (
-          <section className="space-y-2">
-            <h3 className="px-1 text-base">Photos</h3>
-            <div className="grid grid-cols-3 gap-2">
-              {place.images.map((img) => (
-                // eslint-disable-next-line @next/next/no-img-element -- local uploads
-                <img key={img.id} src={img.url} alt="" className="h-24 w-full rounded-xl object-cover shadow-soft" />
-              ))}
-            </div>
-          </section>
-        )}
+        {/* The photo grid that used to sit here is gone — the header carousel
+            already shows every photo, and per-review shots stay on their card. */}
 
         {/* Reviews — each person's take is its own card (spec §6.4) */}
         <section className="space-y-3">

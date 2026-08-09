@@ -7,7 +7,7 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import type { Kind, PlaceSummary } from "@/lib/types";
 import { BUDGETS, Budget } from "@/lib/pig";
-import { BAR_CATEGORIES } from "@/lib/categories";
+import { categoriesFor } from "@/lib/categories";
 import BottomTabBar from "@/components/BottomTabBar";
 import PlaceListCard from "@/components/PlaceListCard";
 import PigAvatar from "@/components/pigs/PigAvatar";
@@ -55,16 +55,56 @@ export default function DiscoverPage() {
     });
   }, [places, kinds, budgets, categories]);
 
-  const allCategories = useMemo(() => {
-    const set = new Set<string>(BAR_CATEGORIES);
-    places?.forEach((p) => p.category.forEach((c) => set.add(c)));
-    return [...set].sort();
-  }, [places]);
+  const ALL_KINDS: Kind[] = useMemo(() => ["restaurant", "bar", "cafe"], []);
+
+  // Subtypes belong to a type: cuisines under restaurants, drinking-institution
+  // types under bars. The curated vocabulary comes first so its capitalisation
+  // wins over whatever casing a place happens to be tagged with.
+  const categoriesByKind = useMemo(() => {
+    const map = new Map<Kind, Map<string, string>>();
+    ALL_KINDS.forEach((k) => {
+      const entries = new Map<string, string>();
+      categoriesFor(k).options.forEach((o) => entries.set(o.toLowerCase(), o));
+      map.set(k, entries);
+    });
+    places?.forEach((p) => {
+      const entries = map.get(p.kind);
+      if (!entries) return;
+      p.category.forEach((c) => {
+        if (!entries.has(c.toLowerCase())) entries.set(c.toLowerCase(), c);
+      });
+    });
+    return map;
+  }, [places, ALL_KINDS]);
+
+  // With no type chosen, every subtype is on the table.
+  const categoryOptions = useMemo(() => {
+    const active = kinds.length ? kinds : ALL_KINDS;
+    const merged = new Map<string, string>();
+    active.forEach((k) =>
+      categoriesByKind.get(k)?.forEach((label, key) => {
+        if (!merged.has(key)) merged.set(key, label);
+      })
+    );
+    return [...merged.values()].sort((a, b) => a.localeCompare(b));
+  }, [categoriesByKind, kinds, ALL_KINDS]);
 
   const activeFilters = kinds.length + budgets.length + categories.length;
 
   function toggle<T>(list: T[], setList: (v: T[]) => void, value: T) {
     setList(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
+  }
+
+  /** Changing the type prunes subtypes that no longer belong to it — otherwise a
+   *  leftover cuisine silently filters every bar away. */
+  function toggleKind(k: Kind) {
+    const next = kinds.includes(k) ? kinds.filter((v) => v !== k) : [...kinds, k];
+    setKinds(next);
+    const allowed = new Set<string>();
+    (next.length ? next : ALL_KINDS).forEach((kk) =>
+      categoriesByKind.get(kk)?.forEach((_, key) => allowed.add(key))
+    );
+    setCategories((prev) => prev.filter((c) => allowed.has(c.toLowerCase())));
   }
 
   return (
@@ -197,7 +237,7 @@ export default function DiscoverPage() {
               {(["restaurant", "bar", "cafe"] as Kind[]).map((k) => (
                 <button
                   key={k}
-                  onClick={() => toggle(kinds, setKinds, k)}
+                  onClick={() => toggleKind(k)}
                   className={`btn flex-1 text-xs ${
                     kinds.includes(k) ? "bg-coral text-white shadow-pop" : "bg-cream shadow-soft"
                   }`}
@@ -226,18 +266,45 @@ export default function DiscoverPage() {
           </section>
 
           <section>
-            <p className="mb-1.5 font-display text-sm font-bold">Category</p>
-            <div className="flex flex-wrap gap-1.5">
-              {allCategories.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => toggle(categories, setCategories, c)}
-                  className={`tag ${categories.includes(c) ? "bg-coral text-white shadow-pop" : ""}`}
-                >
-                  {c}
-                </button>
-              ))}
-            </div>
+            <p className="mb-1.5 font-display text-sm font-bold">
+              {kinds.length === 1 && kinds[0] === "bar" ? "What kind of bar?" : "Cuisine"}
+            </p>
+            <select
+              className="field"
+              // Stays on the placeholder: picking is an "add one" action, and
+              // what's chosen is shown as chips below rather than in the box.
+              value=""
+              onChange={(e) => {
+                if (e.target.value) toggle(categories, setCategories, e.target.value);
+              }}
+            >
+              <option value="">
+                {kinds.length === 1
+                  ? `Any ${KIND_LABELS[kinds[0]].toLowerCase()} subtype`
+                  : "Any subtype"}
+              </option>
+              {categoryOptions
+                .filter((c) => !categories.includes(c))
+                .map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+            </select>
+
+            {categories.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {categories.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => toggle(categories, setCategories, c)}
+                    className="tag bg-coral text-white shadow-pop"
+                  >
+                    {c} ✕
+                  </button>
+                ))}
+              </div>
+            )}
           </section>
 
           <div className="flex gap-2">

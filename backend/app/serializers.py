@@ -5,6 +5,7 @@ with a recommendation OR an `oink` reaction. `shame` never counts toward it.
 These helpers batch their lookups so the map endpoint doesn't N+1 across pins.
 """
 
+from datetime import datetime
 from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 from sqlalchemy import select
@@ -12,6 +13,15 @@ from sqlalchemy.orm import Session
 
 from .models import Reaction, Recommendation, Restaurant, RestaurantImage, User, WishlistItem
 from .schemas import ImageOut, RecommendationOut, RestaurantDetail, RestaurantSummary, UserPublic
+
+
+def naive_dt(value: datetime) -> datetime:
+    """Drop tzinfo so timestamps stay comparable.
+
+    Values are written timezone-aware but stored in a naive DateTime column, so
+    what comes back depends on the driver. Sorting a mix of the two raises.
+    """
+    return value.replace(tzinfo=None) if value.tzinfo else value
 
 
 def places_logged_counts(db: Session, user_ids: Sequence[str]) -> Dict[str, int]:
@@ -74,30 +84,52 @@ class RestaurantContext:
             return
 
         rec_rows = db.execute(
-            select(Recommendation.restaurant_id, Recommendation.user_id).where(
-                Recommendation.restaurant_id.in_(self.ids)
-            )
+            select(
+                Recommendation.restaurant_id, Recommendation.user_id, Recommendation.created_at
+            ).where(Recommendation.restaurant_id.in_(self.ids))
         ).all()
         reaction_rows = db.execute(
-            select(Reaction.restaurant_id, Reaction.user_id, Reaction.type).where(
-                Reaction.restaurant_id.in_(self.ids)
-            )
+            select(
+                Reaction.restaurant_id, Reaction.user_id, Reaction.type, Reaction.created_at
+            ).where(Reaction.restaurant_id.in_(self.ids))
         ).all()
+        creators = dict(
+            db.execute(
+                select(Restaurant.id, Restaurant.created_by).where(Restaurant.id.in_(self.ids))
+            ).all()
+        )
 
-        seen: Set[Tuple[str, str]] = set()
-        for rid, uid in rec_rows:
-            if (rid, uid) not in seen:
-                seen.add((rid, uid))
-                self.recommender_ids.setdefault(rid, []).append(uid)
+        # When each person first endorsed each place, so the order below is
+        # "who backed this first" rather than whatever order the rows came back in.
+        first_endorsed: Dict[Tuple[str, str], datetime] = {}
 
-        for rid, uid, rtype in reaction_rows:
+        def note(rid: str, uid: str, at: datetime) -> None:
+            key = (rid, uid)
+            existing = first_endorsed.get(key)
+            if existing is None or naive_dt(at) < naive_dt(existing):
+                first_endorsed[key] = at
+
+        for rid, uid, created_at in rec_rows:
+            note(rid, uid, created_at)
+
+        for rid, uid, rtype, created_at in reaction_rows:
             if rtype == "oink":
                 self.oink_ids.setdefault(rid, []).append(uid)
-                if (rid, uid) not in seen:
-                    seen.add((rid, uid))
-                    self.recommender_ids.setdefault(rid, []).append(uid)
+                note(rid, uid, created_at)
             else:
                 self.shame_ids.setdefault(rid, []).append(uid)
+
+        # Whoever added the place leads, then everyone else oldest-first. Adding a
+        # place auto-oinks it, so the creator is normally the earliest anyway —
+        # but pinning them explicitly keeps them in front even if they later
+        # cleared and re-added their oink, which would reset that timestamp.
+        by_place: Dict[str, List[Tuple[str, datetime]]] = {}
+        for (rid, uid), at in first_endorsed.items():
+            by_place.setdefault(rid, []).append((uid, at))
+
+        for rid, entries in by_place.items():
+            entries.sort(key=lambda e: (e[0] != creators.get(rid), naive_dt(e[1]), e[0]))
+            self.recommender_ids[rid] = [uid for uid, _ in entries]
 
         needed = {uid for uids in self.recommender_ids.values() for uid in uids}
         needed |= {uid for uids in self.shame_ids.values() for uid in uids}
