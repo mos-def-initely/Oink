@@ -30,6 +30,7 @@ export default function PlaceListCard({ place }: { place: PlaceSummary }) {
               key={u.id}
               config={u.pig_avatar_config}
               placesLogged={u.places_logged}
+              lastLoggedAt={u.last_logged_at}
               size={22}
               variant="face"
             />

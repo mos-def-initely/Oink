@@ -16,6 +16,7 @@ from ..models import Reaction, Recommendation, Restaurant, RestaurantImage, User
 from ..schemas import FeedItem, ImageOut
 from ..serializers import (
     RestaurantContext,
+    last_logged_map,
     naive_dt,
     places_logged_counts,
     restaurant_summary,
@@ -86,6 +87,7 @@ def get_feed(
     users = {u.id: u for u in db.execute(select(User).where(User.id.in_(user_ids))).scalars().all()}
     ctx = RestaurantContext(db, list(place_ids))
     logged_counts = places_logged_counts(db, list(user_ids))
+    last_logged = last_logged_map(db, list(user_ids))
 
     images = (
         db.execute(select(RestaurantImage).where(RestaurantImage.restaurant_id.in_(place_ids)))
@@ -117,7 +119,7 @@ def get_feed(
             FeedItem(
                 id=row.id,
                 activity=activity,
-                user=user_public(actor, logged_counts.get(actor.id, 0)),
+                user=user_public(actor, logged_counts.get(actor.id, 0), last_logged.get(actor.id)),
                 restaurant=restaurant_summary(place, ctx),
                 review_text=review_text,
                 recommended_dishes=dishes,

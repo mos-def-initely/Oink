@@ -62,6 +62,7 @@ function faceMarkup(voter: Voter | undefined, size: number): string {
     <PigAvatar
       config={voter?.user.pig_avatar_config}
       placesLogged={voter?.user.places_logged ?? 0}
+      lastLoggedAt={voter?.user.last_logged_at}
       size={size}
       bare
     />
@@ -168,7 +169,13 @@ function clusterHtml(group: PlaceSummary[]): string {
       (u, i) => `<div style="position:absolute; ${i === 0 ? "left:4px" : "right:4px"}; top:6px;
           width:26px; height:26px; border-radius:50%; overflow:hidden; background:#FFFDFB;">
           ${renderToStaticMarkup(
-            <PigAvatar config={u.pig_avatar_config} placesLogged={u.places_logged} size={26} bare />
+            <PigAvatar
+              config={u.pig_avatar_config}
+              placesLogged={u.places_logged}
+              lastLoggedAt={u.last_logged_at}
+              size={26}
+              bare
+            />
           )}</div>`
     )
     .join("");

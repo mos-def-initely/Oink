@@ -23,6 +23,7 @@ export default function ActivityCard({ item }: { item: FeedItem }) {
           <PigAvatar
             config={item.user.pig_avatar_config}
             placesLogged={item.user.places_logged}
+            lastLoggedAt={item.user.last_logged_at}
             size={34}
             variant="full"
           />

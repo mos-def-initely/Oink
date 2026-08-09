@@ -9,6 +9,8 @@ export type User = {
   display_name: string;
   pig_avatar_config: PigConfig;
   places_logged: number;
+  /** ISO timestamp of their last logged place; null if they never have. */
+  last_logged_at: string | null;
 };
 
 export type Image = {

@@ -152,6 +152,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
                   <PigAvatar
                     config={rec.user.pig_avatar_config}
                     placesLogged={rec.user.places_logged}
+                    lastLoggedAt={rec.user.last_logged_at}
                     size={34}
                     variant="face"
                   />
@@ -238,6 +239,7 @@ function PeopleGroup({
               <PigAvatar
                 config={u.pig_avatar_config}
                 placesLogged={u.places_logged}
+                lastLoggedAt={u.last_logged_at}
                 size={28}
                 variant="face"
               />

@@ -20,11 +20,14 @@ import {
   TIER_SHAPE,
   fatnessTier,
   normalisePig,
+  palePalette,
 } from "@/lib/pig";
 
 type Props = {
   config?: PigConfig | null;
   placesLogged?: number;
+  /** Last logged place; the pig loses a tier per idle week from here. */
+  lastLoggedAt?: string | null;
   size?: number;
   variant?: "face" | "full";
   /** Drops the circular background — used inside map pins. */
@@ -35,6 +38,7 @@ type Props = {
 export default function PigAvatar({
   config,
   placesLogged = 0,
+  lastLoggedAt = null,
   size = 44,
   variant = "face",
   bare = false,
@@ -42,16 +46,25 @@ export default function PigAvatar({
 }: Props) {
   const uid = useId().replace(/:/g, "");
   const cfg = normalisePig(config);
-  const p = PIG_COLORS[cfg.color];
+  const livePalette = PIG_COLORS[cfg.color];
   const bg = PIG_BACKGROUNDS[cfg.background];
-  const shape = TIER_SHAPE[fatnessTier(placesLogged)];
+  const tier = fatnessTier(placesLogged, lastLoggedAt);
+  // A dead pig is drawn from the same parts, drained of colour with its eyes
+  // X'd out — unmistakable at any size, and it still shows whose pig it is.
+  const dead = tier === "dead";
+  const shape = TIER_SHAPE[tier];
+  // Drained rather than greyscaled — still recognisably the colour they chose.
+  const p = dead ? palePalette(livePalette) : livePalette;
   const grad = `pig-${uid}`;
   const fold = `fold-${uid}`;
   const clip = `torso-${uid}`;
 
-  const gradient = (
+  const gradient = (cx: number, cy: number, r: number) => (
     <defs>
-      <radialGradient id={grad} cx="34%" cy="26%" r="82%">
+      {/* userSpaceOnUse, not objectBoundingBox: the belly lobes are separate
+          shapes, and a per-shape gradient would light each one on its own and
+          destroy the illusion that they're all the same lump of pig. */}
+      <radialGradient id={grad} gradientUnits="userSpaceOnUse" cx={cx} cy={cy} r={r}>
         <stop offset="0%" stopColor={p.light} />
         <stop offset="58%" stopColor={p.mid} />
         <stop offset="100%" stopColor={p.dark} />
@@ -61,12 +74,19 @@ export default function PigAvatar({
 
   if (variant === "face") {
     return (
-      <svg width={size} height={size} viewBox="0 0 100 100" className={className} role="img" aria-label="Pig">
-        {gradient}
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 100 100"
+        className={className}
+        role="img"
+        aria-label={dead ? "Dead pig" : "Pig"}
+      >
+        {gradient(33, 34, 54)}
         {!bare && <circle cx="50" cy="50" r="50" fill={bg} />}
         <Ears p={p} cx={50} cy={40} rx={33} />
         <ellipse cx="50" cy="53" rx="33" ry="30" fill={`url(#${grad})`} />
-        <Face p={p} cx={50} cy={53} s={1} accessory={cfg.accessory} />
+        <Face p={p} cx={50} cy={53} s={1} accessory={cfg.accessory} dead={dead} />
         <ellipse cx="33" cy="34" rx="9" ry="6" fill="#fff" opacity="0.34" transform="rotate(-24 33 34)" />
         <Hat hat={cfg.hat} cx={50} topY={24} w={33} />
       </svg>
@@ -76,14 +96,23 @@ export default function PigAvatar({
   // --- full body ---------------------------------------------------------
   const w = shape.waist;
   const top = 66;
-  const bottom = 134;
+  const bottom = 128;
   const headCy = 46;
   const headRx = shape.head;
   const headRy = shape.head * 0.92;
   const armW = 11;
-  const q = (bottom - top) / 2.4;
-  const q2 = (bottom - top) / 2.2;
-  const torsoPath = `M 50 ${top} q ${-w} 2 ${-w} ${q} q 0 ${q2} ${w} ${q} q ${w} ${-q} ${w} ${-q2} q 0 ${-q} ${-w} ${-q} Z`;
+  // Symmetric pear: narrow at the shoulders, widest low, closed cleanly all the
+  // way round. Built from mirrored cubics so neither side can corner.
+  const shoulder = w * 0.66;
+  const widest = top + (bottom - top) * 0.62;
+  const torsoPath = [
+    `M 50 ${top}`,
+    `C ${50 + shoulder} ${top}, ${50 + w} ${widest - (widest - top) * 0.45}, ${50 + w} ${widest}`,
+    `C ${50 + w} ${bottom - (bottom - widest) * 0.3}, ${50 + w * 0.62} ${bottom}, 50 ${bottom}`,
+    `C ${50 - w * 0.62} ${bottom}, ${50 - w} ${bottom - (bottom - widest) * 0.3}, ${50 - w} ${widest}`,
+    `C ${50 - w} ${widest - (widest - top) * 0.45}, ${50 - shoulder} ${top}, 50 ${top}`,
+    "Z",
+  ].join(" ");
 
   return (
     <svg
@@ -92,24 +121,15 @@ export default function PigAvatar({
       viewBox="0 0 100 165"
       className={className}
       role="img"
-      aria-label="Pig"
+      aria-label={dead ? "Dead pig" : "Pig"}
     >
-      {gradient}
-
-      {/* tail — lower back, behind the torso, nowhere near the arms */}
-      <path
-        d={`M ${50 + w - 2} 118 q 12 -2 11 -11 q -1 -7 -7 -6`}
-        fill="none"
-        stroke={p.limb}
-        strokeWidth="4"
-        strokeLinecap="round"
-      />
+      {gradient(50 - w * 0.45, top + 6, (bottom - top) * 1.15)}
 
       <ellipse cx="50" cy="157" rx={w + 4} ry="4.5" fill="#2B1B3D" opacity="0.13" />
 
       {/* legs, then arms — the torso is drawn after, covering both joints */}
-      <rect x="36" y="120" width="13" height="30" rx="6.5" fill={p.limb} />
-      <rect x="51" y="120" width="13" height="30" rx="6.5" fill={p.limb} />
+      <rect x="36" y="114" width="13" height="36" rx="6.5" fill={p.limb} />
+      <rect x="51" y="114" width="13" height="36" rx="6.5" fill={p.limb} />
       <ellipse cx="42.5" cy="150" rx="8.6" ry="4.8" fill={p.dark} />
       <ellipse cx="57.5" cy="150" rx="8.6" ry="4.8" fill={p.dark} />
       <rect x={50 - w - armW + 4} y="78" width={armW} height="34" rx={armW / 2} fill={p.limb} />
@@ -118,76 +138,72 @@ export default function PigAvatar({
       <path d={torsoPath} fill={`url(#${grad})`} />
 
       {/* Belly rolls — the fatness signal (spec §9.1).
-          A fold isn't a line, it's flesh overhanging flesh, so each one is built
-          from three pieces: the hollow the upper roll casts on the one below,
-          the crease itself, and the light catching the bulge underneath. Drawn
-          with soft fills rather than outlines, to match the vinyl-toy finish. */}
-      {shape.rolls > 0 && (
-        <g clipPath={`url(#${clip})`}>
-          <defs>
-            <clipPath id={clip}>
-              <path d={torsoPath} />
-            </clipPath>
-            {Array.from({ length: shape.rolls }).map((_, i) => {
-              const crease = 96 + i * 14 + (7 + i) * 0.5;
-              return (
-                <linearGradient
-                  key={i}
-                  id={`${fold}-${i}`}
-                  gradientUnits="userSpaceOnUse"
-                  x1="0"
-                  y1={crease}
-                  x2="0"
-                  y2={crease + 9}
-                >
-                  <stop offset="0%" stopColor={p.dark} stopOpacity="0.55" />
-                  <stop offset="100%" stopColor={p.dark} stopOpacity="0" />
-                </linearGradient>
-              );
-            })}
-          </defs>
+          A roll hangs *over* the one beneath it, so the lobes are drawn from
+          the bottom up: each one covers the top of the one below, leaving only
+          its overhanging lower arc visible. Shadows go on afterwards, cast down
+          onto the crown of whatever is underneath. Drawn wider than the waist
+          on purpose, so the outline scallops instead of the folds being painted
+          flat onto a smooth oval. */}
+      {shape.rolls > 0 &&
+        (() => {
+          const n = shape.rolls;
+          const bellyTop = top + (bottom - top) * 0.3;
+          const bellyBottom = bottom - 6;
+          const step = (bellyBottom - bellyTop) / n;
+          const lobes = Array.from({ length: n }).map((_, i) => ({
+            i,
+            cy: bellyTop + step * (i + 0.5),
+            // Widest through the middle of the belly, easing into the hips.
+            rx: w + 1.6 - Math.abs(i - (n - 1) / 2) * 1.0 - (i === n - 1 ? 2.6 : 0),
+            // Overlap heavily — an exposed top edge is what made these read as
+            // a stack of separate discs rather than one continuous belly.
+            ry: step * 0.98,
+          }));
+          return (
+            <>
+              <defs>
+                {lobes.map(({ i, cy, ry }) => (
+                  <linearGradient
+                    key={i}
+                    id={`${fold}-${i}`}
+                    gradientUnits="userSpaceOnUse"
+                    x1="0"
+                    y1={cy + ry * 0.52}
+                    x2="0"
+                    y2={cy + ry * 0.52 + step * 0.85}
+                  >
+                    <stop offset="0%" stopColor={p.dark} stopOpacity="0.52" />
+                    <stop offset="100%" stopColor={p.dark} stopOpacity="0" />
+                  </linearGradient>
+                ))}
+              </defs>
 
-          {Array.from({ length: shape.rolls }).map((_, i) => {
-            const y = 96 + i * 14;
-            // Overshoot the waist deliberately — the clip trims it to the
-            // silhouette, so the fold runs edge to edge instead of stopping short.
-            const spread = w + 3;
-            const sag = 7 + i; // lower rolls hang deeper
-            const bulge = 15; // how far the roll below swells past the crease
-            return (
-              <g key={i}>
-                {/* The hollow under the overhang. Both curves share their end
-                    points, so the shadow is thickest mid-belly and tapers to
-                    nothing at the sides — a crease, not a painted band. */}
-                <path
-                  d={`M ${50 - spread} ${y}
-                      q ${spread} ${sag} ${spread * 2} 0
-                      q ${-spread} ${sag + bulge} ${-spread * 2} 0 Z`}
-                  fill={`url(#${fold}-${i})`}
-                />
-                <path
-                  d={`M ${50 - spread} ${y} q ${spread} ${sag} ${spread * 2} 0`}
-                  fill="none"
-                  stroke={p.dark}
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  opacity="0.45"
-                />
-                {/* Light on the crown of the roll below the crease. */}
-                <path
-                  d={`M ${50 - spread + 7} ${y + bulge * 0.62}
-                      q ${spread - 7} ${sag} ${(spread - 7) * 2} 0`}
-                  fill="none"
-                  stroke="#fff"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  opacity="0.18"
-                />
-              </g>
-            );
-          })}
-        </g>
-      )}
+              {[...lobes].reverse().map(({ i, cy, rx, ry }) => (
+                <ellipse key={i} cx="50" cy={cy} rx={rx} ry={ry} fill={`url(#${grad})`} />
+              ))}
+
+              {lobes.slice(0, -1).map(({ i, cy, rx, ry }) => (
+                <g key={i}>
+                  <ellipse
+                    cx="50"
+                    cy={cy + ry * 0.9}
+                    rx={rx * 0.99}
+                    ry={step * 0.6}
+                    fill={`url(#${fold}-${i})`}
+                  />
+                  <ellipse
+                    cx={50 - rx * 0.1}
+                    cy={cy + ry * 0.34}
+                    rx={rx * 0.55}
+                    ry={step * 0.2}
+                    fill="#fff"
+                    opacity="0.11"
+                  />
+                </g>
+              ))}
+            </>
+          );
+        })()}
 
       {cfg.accessory === "tote" && (
         <g>
@@ -209,7 +225,7 @@ export default function PigAvatar({
           opacity="0.5"
         />
       )}
-      <Face p={p} cx={50} cy={headCy} s={headRx / 33} accessory={cfg.accessory} />
+      <Face p={p} cx={50} cy={headCy} s={headRx / 33} accessory={cfg.accessory} dead={dead} />
       <ellipse
         cx={50 - headRx * 0.5}
         cy={headCy - headRy * 0.55}
@@ -244,7 +260,66 @@ function Ears({ p, cx, cy, rx }: { p: Pal; cx: number; cy: number; rx: number })
   );
 }
 
-function Face({ p, cx, cy, s, accessory }: { p: Pal; cx: number; cy: number; s: number; accessory: string }) {
+function Face({
+  p,
+  cx,
+  cy,
+  s,
+  accessory,
+  dead = false,
+}: {
+  p: Pal;
+  cx: number;
+  cy: number;
+  s: number;
+  accessory: string;
+  dead?: boolean;
+}) {
+  if (dead) {
+    // Sunglasses and blush are beside the point on a corpse — X'd eyes and a
+    // lolling tongue are the whole read, and clutter would only soften it.
+    const cross = (ex: number) => (
+      <g stroke="#3D2230" strokeWidth={2.6 * s} strokeLinecap="round">
+        <line x1={ex - 4 * s} y1={cy - 11 * s} x2={ex + 4 * s} y2={cy - 3 * s} />
+        <line x1={ex + 4 * s} y1={cy - 11 * s} x2={ex - 4 * s} y2={cy - 3 * s} />
+      </g>
+    );
+    return (
+      <g>
+        {/* Hollows under the cheekbones — starvation reads in the face before
+            it reads in the waist. Soft-edged and angled inward so they follow
+            the bone rather than sitting on the cheek like blusher. */}
+        <ellipse
+          cx={cx - 19 * s}
+          cy={cy + 4 * s}
+          rx={8.5 * s}
+          ry={5 * s}
+          fill={p.nostril}
+          opacity="0.26"
+          transform={`rotate(-24 ${cx - 19 * s} ${cy + 4 * s})`}
+        />
+        <ellipse
+          cx={cx + 19 * s}
+          cy={cy + 4 * s}
+          rx={8.5 * s}
+          ry={5 * s}
+          fill={p.nostril}
+          opacity="0.26"
+          transform={`rotate(24 ${cx + 19 * s} ${cy + 4 * s})`}
+        />
+        {cross(cx - 12 * s)}
+        {cross(cx + 12 * s)}
+        <ellipse cx={cx} cy={cy + 8 * s} rx={14 * s} ry={10.4 * s} fill={p.snout} />
+        <ellipse cx={cx - 4.6 * s} cy={cy + 8 * s} rx={2.3 * s} ry={3.4 * s} fill={p.nostril} />
+        <ellipse cx={cx + 4.6 * s} cy={cy + 8 * s} rx={2.3 * s} ry={3.4 * s} fill={p.nostril} />
+        <path
+          d={`M ${cx - 4 * s} ${cy + 17 * s} q ${4 * s} ${9 * s} ${8 * s} 0 Z`}
+          fill="#E4738A"
+        />
+      </g>
+    );
+  }
+
   return (
     <g>
       {accessory === "blush" && (

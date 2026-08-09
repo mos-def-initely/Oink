@@ -31,6 +31,7 @@ function FaceRow({ people, muted = false }: { people: User[]; muted?: boolean })
           <PigAvatar
             config={u.pig_avatar_config}
             placesLogged={u.places_logged}
+            lastLoggedAt={u.last_logged_at}
             size={28}
             variant="face"
           />

@@ -18,6 +18,9 @@ class UserPublic(BaseModel):
     display_name: str
     pig_avatar_config: dict
     places_logged: int = 0
+    # Last time they logged a place. The pig loses a tier per idle week, so the
+    # client needs the timestamp rather than just the count (spec §9.1).
+    last_logged_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
 

@@ -9,11 +9,12 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import type { PlaceSummary, User } from "@/lib/types";
 import {
-  FATNESS_TIERS,
+  TIER_LABELS,
   PIG_ACCESSORIES,
   PIG_BACKGROUNDS,
   PIG_COLORS,
   PIG_HATS,
+  daysUntilDecay,
   fatnessTier,
   nextTier,
   normalisePig,
@@ -43,9 +44,11 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
   if (!user) return <Spinner />;
 
   const isMe = me?.id === user.id;
-  const tier = fatnessTier(user.places_logged);
-  const tierLabel = FATNESS_TIERS.find((t) => t.tier === tier)?.label ?? "";
+  const tier = fatnessTier(user.places_logged, user.last_logged_at);
+  const tierLabel = TIER_LABELS[tier];
   const next = nextTier(user.places_logged);
+  const dead = tier === "dead";
+  const decayDays = daysUntilDecay(user.places_logged, user.last_logged_at);
 
   return (
     <>
@@ -71,6 +74,7 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
           <PigAvatar
             config={user.pig_avatar_config}
             placesLogged={user.places_logged}
+            lastLoggedAt={user.last_logged_at}
             size={120}
             variant="full"
           />
@@ -81,14 +85,33 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
             <span className="tag bg-teal-pale text-teal-ink">
               {user.places_logged} {user.places_logged === 1 ? "place" : "places"}
             </span>
-            <span className="tag bg-coral text-white shadow-pop">{tierLabel} pig</span>
+            <span className={`tag shadow-pop ${dead ? "bg-ink text-white" : "bg-coral text-white"}`}>
+              {dead ? "Dead Pig" : `${tierLabel} pig`}
+            </span>
           </div>
 
-          {next && (
-            <p className="text-center text-xs text-ink-soft">
-              {next.needed} more {next.needed === 1 ? "place" : "places"} until you're a{" "}
-              {next.label.toLowerCase()} pig.
+          {/* A dead pig needs the way out spelled out; a live one needs to know
+              what it's about to lose, which the place count alone never says. */}
+          {dead ? (
+            <p className="text-center text-xs font-bold text-ink-soft">
+              Starved out. Log anywhere to revive {isMe ? "your" : "their"} pig.
             </p>
+          ) : (
+            <>
+              {next && (
+                <p className="text-center text-xs text-ink-soft">
+                  {next.needed} more {next.needed === 1 ? "place" : "places"} until you're a{" "}
+                  {next.label.toLowerCase()} pig.
+                </p>
+              )}
+              {decayDays !== null && decayDays <= 3 && (
+                <p className="text-center text-xs font-bold text-tangerine">
+                  {decayDays === 0
+                    ? "Losing a tier today — log somewhere."
+                    : `Drops a tier in ${decayDays} ${decayDays === 1 ? "day" : "days"}.`}
+                </p>
+              )}
+            </>
           )}
 
           {isMe && (
@@ -178,7 +201,13 @@ function PigCustomiser({
     <Sheet open={open} onClose={onClose} title="Your pig">
       <div className="space-y-4 pb-4">
         <div className="flex justify-center">
-          <PigAvatar config={cfg} placesLogged={user.places_logged} size={130} variant="full" />
+          <PigAvatar
+            config={cfg}
+            placesLogged={user.places_logged}
+            lastLoggedAt={user.last_logged_at}
+            size={130}
+            variant="full"
+          />
         </div>
 
         <label className="block">

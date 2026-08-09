@@ -9,7 +9,7 @@ from ..db import get_db
 from ..deps import get_current_user
 from ..models import User
 from ..schemas import AuthResponse, LoginRequest, SignupRequest, UserPublic
-from ..serializers import places_logged_counts, user_public
+from ..serializers import last_logged_map, places_logged_counts, user_public
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -62,13 +62,17 @@ def login(payload: LoginRequest, response: Response, db: Session = Depends(get_d
     token = security.create_token(user.id)
     _set_session_cookie(response, token)
     counts = places_logged_counts(db, [user.id])
-    return AuthResponse(token=token, user=user_public(user, counts.get(user.id, 0)))
+    last = last_logged_map(db, [user.id])
+    return AuthResponse(
+        token=token, user=user_public(user, counts.get(user.id, 0), last.get(user.id))
+    )
 
 
 @router.get("/me", response_model=UserPublic)
 def me(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     counts = places_logged_counts(db, [user.id])
-    return user_public(user, counts.get(user.id, 0))
+    last = last_logged_map(db, [user.id])
+    return user_public(user, counts.get(user.id, 0), last.get(user.id))
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)

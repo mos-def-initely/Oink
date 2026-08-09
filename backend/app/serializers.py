@@ -55,13 +55,43 @@ def places_logged_counts(db: Session, user_ids: Sequence[str]) -> Dict[str, int]
     return counts
 
 
-def user_public(user: User, places_logged: int = 0) -> UserPublic:
+def last_logged_map(db: Session, user_ids: Sequence[str]) -> Dict[str, datetime]:
+    """When each user last logged a place — drives pig decay (spec §9.1).
+
+    Same definition of "logged" as places_logged_counts: a recommendation or an
+    oink. Shame doesn't count; being rude about somewhere isn't a meal.
+    """
+    if not user_ids:
+        return {}
+    ids = list(set(user_ids))
+
+    out: Dict[str, datetime] = {}
+    statements = (
+        select(Recommendation.user_id, Recommendation.created_at).where(
+            Recommendation.user_id.in_(ids)
+        ),
+        select(Reaction.user_id, Reaction.created_at).where(
+            Reaction.user_id.in_(ids), Reaction.type == "oink"
+        ),
+    )
+    for stmt in statements:
+        for uid, at in db.execute(stmt).all():
+            current = out.get(uid)
+            if current is None or naive_dt(at) > naive_dt(current):
+                out[uid] = at
+    return out
+
+
+def user_public(
+    user: User, places_logged: int = 0, last_logged_at: Optional[datetime] = None
+) -> UserPublic:
     return UserPublic(
         id=user.id,
         username=user.username,
         display_name=user.display_name,
         pig_avatar_config=user.pig_avatar_config or {},
         places_logged=places_logged,
+        last_logged_at=last_logged_at,
     )
 
 
@@ -79,6 +109,7 @@ class RestaurantContext:
         self.oink_ids: Dict[str, List[str]] = {rid: [] for rid in self.ids}
         self.users: Dict[str, User] = {}
         self.logged_counts: Dict[str, int] = {}
+        self.last_logged: Dict[str, datetime] = {}
 
         if not self.ids:
             return
@@ -137,13 +168,16 @@ class RestaurantContext:
             users = db.execute(select(User).where(User.id.in_(list(needed)))).scalars().all()
             self.users = {u.id: u for u in users}
             self.logged_counts = places_logged_counts(db, list(needed))
+            self.last_logged = last_logged_map(db, list(needed))
 
     def _people(self, ids: Sequence[str]) -> List[UserPublic]:
         out = []
         for uid in ids:
             user = self.users.get(uid)
             if user:
-                out.append(user_public(user, self.logged_counts.get(uid, 0)))
+                out.append(
+                    user_public(user, self.logged_counts.get(uid, 0), self.last_logged.get(uid))
+                )
         return out
 
     def recommenders(self, restaurant_id: str) -> List[UserPublic]:
@@ -220,6 +254,7 @@ def restaurant_detail(db: Session, restaurant: Restaurant, viewer: Optional[User
         found = db.execute(select(User).where(User.id.in_(rec_user_ids))).scalars().all()
         rec_users = {u.id: u for u in found}
     rec_counts = places_logged_counts(db, rec_user_ids)
+    rec_last = last_logged_map(db, rec_user_ids)
 
     recommendations: List[RecommendationOut] = []
     my_recommendation = None
@@ -229,7 +264,7 @@ def restaurant_detail(db: Session, restaurant: Restaurant, viewer: Optional[User
             continue
         item = RecommendationOut(
             id=r.id,
-            user=user_public(author, rec_counts.get(r.user_id, 0)),
+            user=user_public(author, rec_counts.get(r.user_id, 0), rec_last.get(r.user_id)),
             review_text=r.review_text,
             recommended_dishes=r.recommended_dishes or [],
             images=images_by_user.get(r.user_id, []),
