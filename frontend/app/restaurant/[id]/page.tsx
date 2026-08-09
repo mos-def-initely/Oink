@@ -1,0 +1,385 @@
+"use client";
+
+/**
+ * Place detail — spec §6.4.
+ * Reactions are the pig pair (oink / shame), and who did which is shown as two
+ * labelled groups. Each person's recommendation is its own card. No rating.
+ */
+import { use, useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { ApiError, api } from "@/lib/api";
+import type { PlaceDetail, User } from "@/lib/types";
+import PigAvatar from "@/components/pigs/PigAvatar";
+import { BudgetTag } from "@/components/pigs/PricePig";
+import { OinkPig, ShamePig } from "@/components/pigs/ReactionPigs";
+import PlacePhoto from "@/components/PlacePhoto";
+import BottomTabBar, { TabBarSpacer } from "@/components/BottomTabBar";
+import { EmptyState, ErrorNote, KIND_LABELS, PageHeader, Sheet, Spinner, timeAgo } from "@/components/ui";
+
+export default function PlacePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const [place, setPlace] = useState<PlaceDetail | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
+
+  const load = useCallback(() => {
+    api.place(id).then(setPlace).catch((e) => setError(e.message));
+  }, [id]);
+
+  useEffect(load, [load]);
+
+  async function act(fn: () => Promise<PlaceDetail>) {
+    setBusy(true);
+    setError(null);
+    try {
+      setPlace(await fn());
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "That didn't work");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (error && !place) return <EmptyState title="Couldn't load this place" body={error} />;
+  if (!place) return <Spinner />;
+
+  const canWishlist = !place.my_recommendation && place.my_reaction !== "oink";
+
+  return (
+    <>
+      <PageHeader title={place.name} back="/discover" />
+
+      <main className="space-y-4 px-3 pb-4">
+        <PlacePhoto src={place.cover_image_url} alt={place.name} className="h-52 w-full rounded-card" />
+
+        <section className="card space-y-2.5 p-3.5">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <h2 className="text-2xl leading-tight">{place.name}</h2>
+              <p className="text-sm text-ink-soft">
+                {[KIND_LABELS[place.kind], ...place.category].filter(Boolean).join(" · ")}
+              </p>
+            </div>
+            <BudgetTag budget={place.budget} size={34} />
+          </div>
+
+          {(place.address || place.city) && (
+            <p className="text-sm text-ink-soft">
+              {place.address ?? [place.area, place.city].filter(Boolean).join(", ")}
+            </p>
+          )}
+
+          {place.google_maps_url && (
+            <a
+              href={place.google_maps_url}
+              target="_blank"
+              rel="noreferrer"
+              className="btn-plain block text-center text-sm"
+            >
+              Open in Google Maps ↗
+            </a>
+          )}
+        </section>
+
+        {/* Reactions */}
+        <section className="grid grid-cols-2 gap-2.5">
+          <button
+            onClick={() => act(() => api.react(place.id, "oink"))}
+            disabled={busy}
+            className={`btn flex flex-col items-center gap-1 py-3.5 ${
+              place.my_reaction === "oink" ? "bg-coral text-white shadow-pop" : "bg-cream shadow-soft"
+            }`}
+          >
+            <OinkPig size={40} active={place.my_reaction === "oink"} />
+            <span className="text-sm">{place.my_reaction === "oink" ? "Oinked!" : "Oink"}</span>
+          </button>
+          <button
+            onClick={() => act(() => api.react(place.id, "shame"))}
+            disabled={busy}
+            className={`btn flex flex-col items-center gap-1 py-3.5 ${
+              place.my_reaction === "shame" ? "bg-tangerine text-white shadow-soft" : "bg-cream shadow-soft"
+            }`}
+          >
+            <ShamePig size={40} active={place.my_reaction === "shame"} />
+            <span className="text-sm">{place.my_reaction === "shame" ? "Shamed" : "Shame"}</span>
+          </button>
+        </section>
+
+        {/* Who oinked, who shamed — two labelled groups (spec §6.4) */}
+        <section className="grid gap-2.5">
+          <PeopleGroup title="Oinked" people={place.oinked_by} tone="coral" />
+          <PeopleGroup title="Shamed" people={place.shamed_by} tone="tangerine" />
+        </section>
+
+        {canWishlist && (
+          <button
+            onClick={() =>
+              act(() => (place.in_my_wishlist ? api.removeWishlist(place.id) : api.addWishlist(place.id)))
+            }
+            disabled={busy}
+            className={`btn w-full ${
+              place.in_my_wishlist ? "bg-grape text-white" : "bg-cream shadow-soft"
+            }`}
+          >
+            {place.in_my_wishlist ? "★ On your wishlist" : "☆ Add to wishlist"}
+          </button>
+        )}
+
+        <button onClick={() => setReviewOpen(true)} className="btn-primary w-full text-lg">
+          {place.my_recommendation ? "Edit your recommendation" : "Write a recommendation"}
+        </button>
+
+        {error && <ErrorNote message={error} />}
+
+        {place.images.length > 0 && (
+          <section className="space-y-2">
+            <h3 className="px-1 text-base">Photos</h3>
+            <div className="grid grid-cols-3 gap-2">
+              {place.images.map((img) => (
+                // eslint-disable-next-line @next/next/no-img-element -- local uploads
+                <img key={img.id} src={img.url} alt="" className="h-24 w-full rounded-xl object-cover shadow-soft" />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Reviews — each person's take is its own card (spec §6.4) */}
+        <section className="space-y-3">
+          <h3 className="px-1 text-lg">
+            {place.recommendations.length} {place.recommendations.length === 1 ? "review" : "reviews"}
+          </h3>
+
+          {place.recommendations.length === 0 && (
+            <EmptyState title="No write-ups yet" body="Be the first to say something." />
+          )}
+
+          {place.recommendations.map((rec) => (
+            <article key={rec.id} className="card space-y-2.5 p-3.5">
+              <div className="flex items-center gap-2.5">
+                <Link href={`/profile/${rec.user.username}`}>
+                  <PigAvatar
+                    config={rec.user.pig_avatar_config}
+                    placesLogged={rec.user.places_logged}
+                    size={34}
+                    variant="face"
+                  />
+                </Link>
+                <div className="min-w-0 flex-1">
+                  <Link
+                    href={`/profile/${rec.user.username}`}
+                    className="block truncate font-display text-sm font-extrabold"
+                  >
+                    {rec.user.display_name}
+                  </Link>
+                  <p className="text-xs text-ink-soft">{timeAgo(rec.updated_at)}</p>
+                </div>
+              </div>
+
+              <p className="text-sm leading-snug">{rec.review_text}</p>
+
+              {rec.recommended_dishes.length > 0 && (
+                <div>
+                  <p className="mb-1.5 font-display text-xs font-bold text-ink-soft">Get the:</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {rec.recommended_dishes.map((d) => (
+                      <span key={d} className="dish-tag">{d}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {rec.images.length > 0 && (
+                <div className="flex gap-2 overflow-x-auto">
+                  {rec.images.map((img) => (
+                    // eslint-disable-next-line @next/next/no-img-element -- local uploads
+                    <img key={img.id} src={img.url} alt="" className="h-20 w-20 shrink-0 rounded-xl object-cover" />
+                  ))}
+                </div>
+              )}
+            </article>
+          ))}
+        </section>
+      </main>
+
+      <TabBarSpacer />
+      <BottomTabBar />
+
+      <ReviewSheet
+        open={reviewOpen}
+        onClose={() => setReviewOpen(false)}
+        place={place}
+        onSaved={(updated) => {
+          setPlace(updated);
+          setReviewOpen(false);
+        }}
+      />
+    </>
+  );
+}
+
+/** One labelled group of people — "Oinked" or "Shamed" (spec §6.4). */
+function PeopleGroup({
+  title,
+  people,
+  tone,
+}: {
+  title: string;
+  people: User[];
+  tone: "coral" | "tangerine";
+}) {
+  const chip = tone === "coral" ? "bg-coral" : "bg-tangerine";
+  return (
+    <div className="card p-3.5">
+      <div className="mb-2 flex items-center gap-2">
+        <span className={`rounded-full ${chip} px-2.5 py-1 font-display text-xs font-bold text-white`}>
+          {title}
+        </span>
+        <span className="font-display text-xs text-ink-soft">{people.length}</span>
+      </div>
+
+      {people.length === 0 ? (
+        <p className="text-sm text-ink-soft">Nobody yet</p>
+      ) : (
+        <div className="flex flex-wrap gap-x-3 gap-y-2">
+          {people.map((u) => (
+            <Link key={u.id} href={`/profile/${u.username}`} className="flex items-center gap-1.5">
+              <PigAvatar
+                config={u.pig_avatar_config}
+                placesLogged={u.places_logged}
+                size={28}
+                variant="face"
+              />
+              <span className="text-xs font-bold">{u.display_name}</span>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Review composer — text + recommended dishes + photos. No rating (spec §8). */
+function ReviewSheet({
+  open,
+  onClose,
+  place,
+  onSaved,
+}: {
+  open: boolean;
+  onClose: () => void;
+  place: PlaceDetail;
+  onSaved: (p: PlaceDetail) => void;
+}) {
+  const existing = place.my_recommendation;
+  const [text, setText] = useState(existing?.review_text ?? "");
+  const [dishes, setDishes] = useState<string[]>(existing?.recommended_dishes ?? []);
+  const [draft, setDraft] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (open) {
+      setText(existing?.review_text ?? "");
+      setDishes(existing?.recommended_dishes ?? []);
+      setError(null);
+      setFiles([]);
+    }
+  }, [open, existing]);
+
+  function addDish() {
+    const value = draft.trim();
+    if (value && !dishes.includes(value)) setDishes((d) => [...d, value]);
+    setDraft("");
+  }
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!text.trim()) {
+      setError("Say something about it — that's the whole point.");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      for (const file of files) {
+        await api.uploadImage(place.id, file);
+      }
+      onSaved(await api.recommend(place.id, text.trim(), dishes));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't save that");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Sheet open={open} onClose={onClose} title={existing ? "Edit your take" : "Your take"}>
+      <form onSubmit={submit} className="space-y-3 pb-4">
+        <textarea
+          className="field min-h-[120px]"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="What's it like? Who should go?"
+          required
+        />
+
+        <div className="space-y-2">
+          <p className="font-display text-sm font-bold">Dishes worth ordering</p>
+          <div className="flex gap-2">
+            <input
+              className="field flex-1"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addDish();
+                }
+              }}
+              placeholder="e.g. monkfish curry"
+            />
+            <button type="button" onClick={addDish} className="btn-plain px-4">+</button>
+          </div>
+          {dishes.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {dishes.map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => setDishes((prev) => prev.filter((x) => x !== d))}
+                  className="dish-tag"
+                >
+                  {d} ✕
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <p className="font-display text-sm font-bold">Photos</p>
+          <input
+            ref={fileInput}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
+          />
+          <button type="button" onClick={() => fileInput.current?.click()} className="btn-plain w-full text-sm">
+            {files.length ? `${files.length} photo${files.length > 1 ? "s" : ""} ready` : "Add photos"}
+          </button>
+        </div>
+
+        {error && <ErrorNote message={error} />}
+
+        <button type="submit" className="btn-primary w-full text-lg" disabled={saving}>
+          {saving ? "Posting…" : existing ? "Update" : "Post it"}
+        </button>
+      </form>
+    </Sheet>
+  );
+}

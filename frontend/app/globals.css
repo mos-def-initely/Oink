@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* "Punch" — loud colour on clean structure. No black outlines, no hard offset
+   shadows; separation comes from colour and soft elevation. Touch targets stay
+   thumb-sized (spec §6, mobile-first). */
+
+@layer base {
+  html,
+  body {
+    @apply bg-apricot text-ink font-body;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display font-extrabold;
+    letter-spacing: -0.015em;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-card bg-cream shadow-soft;
+  }
+
+  .btn {
+    @apply font-display font-extrabold rounded-xl px-4 py-3 min-h-[46px]
+           transition-all duration-100 active:scale-[0.975]
+           disabled:opacity-45 disabled:pointer-events-none;
+  }
+
+  .btn-primary { @apply btn bg-coral text-white shadow-pop; }
+  .btn-secondary { @apply btn bg-teal text-white; }
+  .btn-plain { @apply btn bg-cream text-ink shadow-soft; }
+
+  .field {
+    @apply w-full rounded-xl bg-cream px-3.5 py-3 text-ink min-h-[48px]
+           shadow-soft placeholder:text-ink-soft/60
+           focus:outline-none focus:ring-2 focus:ring-coral;
+  }
+
+  .tag {
+    @apply inline-flex items-center gap-1 rounded-full bg-cream px-3 py-1.5
+           text-xs font-display font-bold leading-none text-ink shadow-soft;
+  }
+
+  .dish-tag {
+    @apply inline-flex items-center rounded-full bg-teal-pale px-3 py-1.5
+           text-xs font-display font-bold leading-none text-teal-ink;
+  }
+}
+
+/* Leaflet — a muted basemap so the coral pins are the only loud thing. */
+.leaflet-container {
+  font-family: inherit;
+  background: #EDEBE7;
+}
+
+.leaflet-control-attribution {
+  background: rgba(255, 253, 251, 0.82) !important;
+  font-size: 9px !important;
+  color: #6A5A7A !important;
+}
+
+.leaflet-control-zoom a {
+  border: none !important;
+  color: #2B1B3D !important;
+  background: #FFFDFB !important;
+  box-shadow: 0 2px 8px rgba(43, 27, 61, 0.14);
+}
+
+.oink-pin { background: transparent; border: none; }
+
+/* While dropping a pin, existing pins must not swallow the tap — otherwise
+   tapping near one opens that place instead of placing yours. */
+.oink-picking .oink-pin { pointer-events: none !important; }
+
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  border-radius: 14px;
+  box-shadow: 0 4px 18px rgba(43, 27, 61, 0.16);
+}

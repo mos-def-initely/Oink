@@ -1,0 +1,39 @@
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+
+/**
+ * Route protection — spec §6: everything except /sign-in needs a session.
+ *
+ * The backend sets its session cookie on `localhost`, and cookies ignore port,
+ * so the cookie set by :8000 is visible here on :3000. This only checks the
+ * cookie is present; the API still validates the JWT on every request, so a
+ * forged or expired cookie gets a 401 from the backend regardless.
+ */
+const COOKIE_NAME = "oink_session";
+const PUBLIC_PATHS = ["/sign-in"];
+
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const hasSession = request.cookies.has(COOKIE_NAME);
+  const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+
+  if (!hasSession && !isPublic) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/sign-in";
+    url.searchParams.set("next", pathname);
+    return NextResponse.redirect(url);
+  }
+
+  if (hasSession && isPublic) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+};
