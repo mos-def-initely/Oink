@@ -16,7 +16,7 @@ result is still useful and a total miss just means the user drops a pin.
 
 import re
 from typing import List, Optional, Tuple
-from urllib.parse import unquote_plus, urlparse
+from urllib.parse import parse_qs, unquote, unquote_plus, urlparse
 
 import httpx
 
@@ -41,7 +41,12 @@ _NAME_PATTERNS = (
 # maps.google.de — and the link a user copies carries whichever one they were
 # on. Matching only google.com rejected most non-US links.
 _GOOGLE_HOST = re.compile(r"^(?:www\.|maps\.)?google(?:\.[a-z]{2,3}){1,2}$", re.I)
-_SHORT_HOSTS = {"goo.gl", "maps.app.goo.gl", "g.co", "maps.app.google.com"}
+_SHORT_HOSTS = {
+    "goo.gl", "maps.app.goo.gl", "g.co", "maps.app.google.com",
+    # The Maps/Search app's newer share format. These expand to a Google
+    # *Search* URL rather than a Maps one, carrying the place name in `q`.
+    "share.google", "www.share.google",
+}
 
 # Pasting from a phone share sheet usually brings along the place name and
 # some trailing blurb, so pull the first URL out of whatever was pasted.
@@ -76,15 +81,29 @@ def _is_google_maps_url(url: str) -> bool:
 
 
 def _expand_short_link(url: str) -> str:
-    """Follow maps.app.goo.gl / goo.gl redirects to the canonical maps URL."""
+    """Follow a Google short link to whatever it really points at.
+
+    Two wrinkles, both confirmed against live links:
+      * Without a browser User-Agent, Google answers with a consent
+        interstitial instead of redirecting.
+      * Even with one, the response can land on consent.google.com, which
+        carries the real destination in its `continue` parameter.
+    """
     try:
         with httpx.Client(follow_redirects=True, timeout=_TIMEOUT) as client:
             resp = client.get(url, headers={"User-Agent": _BROWSER_UA})
             final = str(resp.url)
+
+            if _host_of(final).endswith("consent.google.com"):
+                target = parse_qs(urlparse(final).query).get("continue", [None])[0]
+                if target:
+                    return unquote(target)
+
             if final != url:
                 return final
+
             # Some responses keep the short URL but name the target in the body.
-            match = re.search(r'https://www\.google\.com/maps/[^"\'<>\\ ]+', resp.text or "")
+            match = re.search(r'https://www\.google\.[a-z.]+/maps/[^"\'<>\\ ]+', resp.text or "")
             if match:
                 return match.group(0).replace("\\u003d", "=").replace("\\u0026", "&")
             return final
@@ -297,9 +316,15 @@ def parse_google_maps_link(url: str) -> ParseLinkResponse:
         address = _street_address(osm) or osm.get("display_name")
         city, area = _split_osm_address(osm)
     elif name:
-        # Coordinates missing from the URL — try to find the place by name.
-        # OSM's coverage of business names is patchy, so this can legitimately
-        # come back empty; the UI then asks the user to drop a pin.
+        # Coordinates missing from the URL — this is the share.google case,
+        # where the link expands to a Search URL carrying only the place name.
+        #
+        # Search on the *whole* name, including any branch or street qualifier,
+        # and take it only if that exact query resolves. Loosening the query
+        # until something matches is what silently picks the wrong branch:
+        # "Plaza Khao Gaeng Tottenham Court Road" finds nothing, while "Plaza
+        # Khao Gaeng" confidently returns the Covent Garden site a mile away.
+        # No pin beats a wrong pin — the UI asks the user to drop one.
         candidates = search_places(name, 1)
         if candidates:
             best = candidates[0]
