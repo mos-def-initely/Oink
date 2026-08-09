@@ -37,11 +37,15 @@ _NAME_PATTERNS = (
     re.compile(r"[?&](?:q|query|destination)=([^&#]+)"),
 )
 
-_GOOGLE_HOSTS = {
-    "google.com", "www.google.com", "maps.google.com",
-    "goo.gl", "maps.app.goo.gl", "g.co",
-}
-_SHORT_HOSTS = {"goo.gl", "maps.app.goo.gl", "g.co"}
+# Google serves Maps from every country domain — google.co.uk, google.com.tr,
+# maps.google.de — and the link a user copies carries whichever one they were
+# on. Matching only google.com rejected most non-US links.
+_GOOGLE_HOST = re.compile(r"^(?:www\.|maps\.)?google(?:\.[a-z]{2,3}){1,2}$", re.I)
+_SHORT_HOSTS = {"goo.gl", "maps.app.goo.gl", "g.co", "maps.app.google.com"}
+
+# Pasting from a phone share sheet usually brings along the place name and
+# some trailing blurb, so pull the first URL out of whatever was pasted.
+_URL_IN_TEXT = re.compile(r"https?://[^\s<>\"']+")
 _TIMEOUT = 8.0
 
 # Google serves a JavaScript consent page to non-browser clients instead of a
@@ -53,12 +57,22 @@ _BROWSER_UA = (
 _OSM_UA = "Oink/1.0 (local dev; friend-group recommendation app)"
 
 
-def _is_google_maps_url(url: str) -> bool:
+def _extract_url(text: str) -> str:
+    """Pull the first URL out of pasted text, which often includes a place name."""
+    match = _URL_IN_TEXT.search(text or "")
+    return match.group(0).rstrip(".,)") if match else (text or "").strip()
+
+
+def _host_of(url: str) -> str:
     try:
-        host = (urlparse(url).hostname or "").lower()
+        return (urlparse(url).hostname or "").lower()
     except ValueError:
-        return False
-    return host in _GOOGLE_HOSTS or host.endswith(".google.com")
+        return ""
+
+
+def _is_google_maps_url(url: str) -> bool:
+    host = _host_of(url)
+    return bool(_GOOGLE_HOST.match(host)) or host in _SHORT_HOSTS
 
 
 def _expand_short_link(url: str) -> str:
@@ -240,14 +254,13 @@ def search_places(query: str, limit: int = 6) -> List[PlaceCandidate]:
 
 
 def parse_google_maps_link(url: str) -> ParseLinkResponse:
-    url = (url or "").strip()
+    url = _extract_url(url)
     if not url:
         return ParseLinkResponse(resolved=False, source="none")
     if not _is_google_maps_url(url):
         return ParseLinkResponse(resolved=False, source="none")
 
-    host = (urlparse(url).hostname or "").lower()
-    if host in _SHORT_HOSTS:
+    if _host_of(url) in _SHORT_HOSTS:
         url = _expand_short_link(url)
 
     lat, lng = _coords_from_url(url)
