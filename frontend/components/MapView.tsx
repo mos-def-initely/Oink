@@ -19,6 +19,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import type { Map as LeafletMap, Marker } from "leaflet";
 import type { PlaceSummary } from "@/lib/types";
 import PigAvatar from "@/components/pigs/PigAvatar";
+import { ShamePig } from "@/components/pigs/ReactionPigs";
 // Safe as a static import — this component is only loaded via next/dynamic
 // with ssr:false.
 import "leaflet/dist/leaflet.css";
@@ -68,11 +69,9 @@ function pinHtml(place: PlaceSummary): string {
   const fan = Math.min(count, 3);
   let layers = "";
   if (count === 0) {
-    layers = disc(
-      `<div style="font-size:15px;line-height:1;filter:grayscale(1)">🚫</div>`,
-      42,
-      "left:9px; top:0;"
-    );
+    // Logged but unendorsed — the angry pig, not a generic emoji. Every icon in
+    // the app is a pig.
+    layers = disc(renderToStaticMarkup(<ShamePig size={34} active />), 42, "left:9px; top:0;");
   } else {
     if (fan >= 3) layers += disc(faceMarkup(place, 2, 24), 30, "left:0; top:12px;");
     if (fan >= 2) layers += disc(faceMarkup(place, 1, 26), 32, "right:0; top:10px;");
@@ -234,11 +233,17 @@ export default function MapView({
     })();
   }, [pickedPoint, ready]);
 
+  // The pick-mode classes go on a wrapper, never on the map element itself.
+  // Leaflet adds `leaflet-container` (and `leaflet-touch`, `leaflet-fade-anim`
+  // …) to that element imperatively after mount; React rewriting its className
+  // on a later render strips them all off, which silently destroys the map's
+  // styling — it blanks the moment you switch into pin-dropping.
   return (
     <div
-      ref={containerRef}
-      className={`z-0 ${className} ${pickMode ? "oink-picking cursor-crosshair" : ""}`}
+      className={`${className} ${pickMode ? "oink-picking cursor-crosshair" : ""}`}
       aria-label="Map of recommended places"
-    />
+    >
+      <div ref={containerRef} className="h-full w-full" />
+    </div>
   );
 }
