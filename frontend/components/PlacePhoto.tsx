@@ -5,12 +5,14 @@
  * The placeholder is deterministic per place name, so a given place always gets
  * the same colourway rather than flickering between renders.
  */
+// Drawn from the app palette so a place without a photo still belongs to the
+// page. Bright arbitrary gradients here fight everything around them.
 const PLACEHOLDERS = [
-  ["#FF4D6D", "#FF8A00"],
-  ["#00B39F", "#FFC53D"],
-  ["#7B3FE4", "#FF4D6D"],
-  ["#FF8A00", "#FFC53D"],
-  ["#00B39F", "#7B3FE4"],
+  ["#914E56", "#CFA51F"],
+  ["#CFA51F", "#E6D389"],
+  ["#4D303F", "#914E56"],
+  ["#A9503C", "#CFA51F"],
+  ["#914E56", "#D8B5F7"],
 ];
 
 function hashName(name: string): number {
@@ -43,7 +45,7 @@ export default function PlacePhoto({
       aria-label={`${alt} (no photo yet)`}
       role="img"
     >
-      <span className="font-display text-5xl font-extrabold text-white/90">{initial}</span>
+      <span className="font-display text-5xl font-extrabold text-oat/90">{initial}</span>
     </div>
   );
 }

@@ -18,7 +18,7 @@ import { EmptyState, KIND_LABELS, Sheet, Spinner } from "@/components/ui";
 // Leaflet touches `window` at import time, so it can't be server-rendered.
 const MapView = dynamic(() => import("@/components/MapView"), {
   ssr: false,
-  loading: () => <div className="h-full w-full animate-pulse bg-apricot-deep" />,
+  loading: () => <div className="h-full w-full animate-pulse bg-oat-deep" />,
 });
 
 export default function DiscoverPage() {
@@ -69,24 +69,24 @@ export default function DiscoverPage() {
 
   return (
     <div className="relative flex h-[100dvh] flex-col">
-      <header className="z-[900] bg-apricot px-3 py-2.5">
+      <header className="z-[900] bg-oat px-3 py-2.5">
         <div className="flex items-center gap-2">
           <h1 className="flex-1 text-2xl">Discover</h1>
           <button
             onClick={() => setFiltersOpen(true)}
             className={`btn px-3 py-2 text-sm ${
-              activeFilters ? "bg-coral text-white shadow-pop" : "bg-cream shadow-soft"
+              activeFilters ? "bg-plum text-oat" : "bg-cream"
             }`}
           >
             Filters{activeFilters ? ` (${activeFilters})` : ""}
           </button>
-          <div className="flex overflow-hidden rounded-xl bg-cream shadow-soft">
+          <div className="flex overflow-hidden rounded-xl border-2 border-ink bg-cream">
             {(["map", "list"] as const).map((v) => (
               <button
                 key={v}
                 onClick={() => setView(v)}
                 className={`px-3 py-2 font-display text-sm font-bold ${
-                  view === v ? "bg-coral text-white" : "text-ink"
+                  view === v ? "bg-plum text-oat" : "text-ink"
                 }`}
               >
                 {v === "map" ? "Map" : "List"}
@@ -95,7 +95,7 @@ export default function DiscoverPage() {
           </div>
         </div>
         {pickMode && (
-          <p className="mt-2 rounded-lg bg-teal px-3 py-2 text-center font-display text-xs font-bold text-white">
+          <p className="mt-2 rounded-lg border-2 border-ink bg-gold px-3 py-2 text-center font-display text-xs font-bold text-ink-deep">
             Tap the map to drop your pin
           </p>
         )}
@@ -135,7 +135,7 @@ export default function DiscoverPage() {
         {/* Add-place FAB — bottom right, in the thumb zone (spec §6.3) */}
         <button
           onClick={() => setAddOpen(true)}
-          className="absolute bottom-24 right-4 z-[1000] flex h-16 w-16 items-center justify-center rounded-full bg-coral font-display text-4xl font-extrabold text-white shadow-pop transition-transform active:scale-95"
+          className="absolute bottom-24 right-4 z-[1000] flex h-16 w-16 items-center justify-center rounded-full bg-plum font-display text-4xl font-extrabold text-white transition-transform active:scale-95"
           aria-label="Add a place"
         >
           +
@@ -176,7 +176,7 @@ export default function DiscoverPage() {
                   </span>
                 ))}
                 {selected.shame_count > 0 && (
-                  <span className="tag bg-tangerine text-white">{selected.shame_count} shame</span>
+                  <span className="tag bg-rust text-oat">{selected.shame_count} shame</span>
                 )}
               </div>
             </div>
@@ -199,7 +199,7 @@ export default function DiscoverPage() {
                   key={k}
                   onClick={() => toggle(kinds, setKinds, k)}
                   className={`btn flex-1 text-xs ${
-                    kinds.includes(k) ? "bg-coral text-white shadow-pop" : "bg-cream shadow-soft"
+                    kinds.includes(k) ? "bg-plum text-oat" : "bg-cream"
                   }`}
                 >
                   {KIND_LABELS[k]}
@@ -216,7 +216,7 @@ export default function DiscoverPage() {
                   key={b}
                   onClick={() => toggle(budgets, setBudgets, b)}
                   className={`btn flex items-center justify-center px-1 py-2 ${
-                    budgets.includes(b) ? "bg-butter" : "bg-cream shadow-soft"
+                    budgets.includes(b) ? "bg-lemon" : "bg-cream"
                   }`}
                 >
                   <BudgetTag budget={b} size={30} />
@@ -232,7 +232,7 @@ export default function DiscoverPage() {
                 <button
                   key={c}
                   onClick={() => toggle(categories, setCategories, c)}
-                  className={`tag ${categories.includes(c) ? "bg-coral text-white shadow-pop" : ""}`}
+                  className={`tag ${categories.includes(c) ? "bg-plum text-oat" : ""}`}
                 >
                   {c}
                 </button>

@@ -14,11 +14,11 @@ export function PageHeader({
   back?: string;
 }) {
   return (
-    <header className="sticky top-0 z-[900] flex items-center gap-2 bg-apricot/95 px-3 py-3 backdrop-blur">
+    <header className="sticky top-0 z-[900] flex items-center gap-2 bg-oat/95 px-3 py-3 backdrop-blur">
       {back && (
         <Link
           href={back}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-cream text-lg shadow-soft"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-cream text-lg"
           aria-label="Back"
         >
           ←
@@ -61,12 +61,12 @@ export function Sheet({
   return (
     <div className="fixed inset-0 z-[2000] flex items-end justify-center">
       <button className="absolute inset-0 bg-ink/40" onClick={onClose} aria-label="Close" tabIndex={-1} />
-      <div className="relative max-h-[88vh] w-full max-w-[480px] overflow-y-auto rounded-t-3xl bg-apricot pb-6">
-        <div className="sticky top-0 z-10 flex items-center gap-2 bg-apricot px-4 pb-2 pt-4">
+      <div className="relative max-h-[88vh] w-full max-w-[480px] overflow-y-auto rounded-t-3xl border-t-2 border-x-2 border-ink bg-oat pb-6 shadow-lift">
+        <div className="sticky top-0 z-10 flex items-center gap-2 bg-oat px-4 pb-2 pt-4">
           <h2 className="min-w-0 flex-1 truncate text-xl">{title}</h2>
           <button
             onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-cream shadow-soft"
+            className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-ink bg-cream"
             aria-label="Close"
           >
             ✕
@@ -81,7 +81,7 @@ export function Sheet({
 export function Spinner({ label = "Loading…" }: { label?: string }) {
   return (
     <div className="flex flex-col items-center gap-3 py-16">
-      <div className="h-9 w-9 animate-spin rounded-full border-4 border-apricot-deep border-t-coral" />
+      <div className="h-9 w-9 animate-spin rounded-full border-4 border-oat-deep border-t-plum" />
       <p className="font-display text-sm text-ink-soft">{label}</p>
     </div>
   );
@@ -98,7 +98,7 @@ export function EmptyState({ title, body }: { title: string; body?: string }) {
 
 export function ErrorNote({ message }: { message: string }) {
   return (
-    <p className="rounded-xl bg-tangerine px-3 py-2.5 font-display text-sm font-bold text-white">
+    <p className="rounded-xl border-2 border-ink bg-rust px-3 py-2.5 font-display text-sm font-bold text-oat">
       {message}
     </p>
   );

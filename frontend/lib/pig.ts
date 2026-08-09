@@ -55,33 +55,34 @@ export type PigPalette = {
   light: string;
   mid: string;
   dark: string;
-  limb: string;
+  ear: string;
   snout: string;
   nostril: string;
+  blush: string;
 };
 
 export const PIG_COLORS: Record<string, PigPalette> = {
-  pink:    { light: "#FFC9D6", mid: "#FC9FB8", dark: "#DE7595", limb: "#EE8CA8", snout: "#F291AF", nostril: "#B05377" },
-  rose:    { light: "#FFB8B8", mid: "#F98E90", dark: "#D9686D", limb: "#EC7C80", snout: "#EE8084", nostril: "#A9484F" },
-  peach:   { light: "#FFD6B8", mid: "#FBB183", dark: "#DE8B5C", limb: "#F09E70", snout: "#F0A276", nostril: "#A96341" },
-  clay:    { light: "#EAC0A6", mid: "#D69C7C", dark: "#B67A59", limb: "#C78C6B", snout: "#CE9070", nostril: "#8A583C" },
-  lilac:   { light: "#E2CCFF", mid: "#C4A3F0", dark: "#A07FD1", limb: "#B392E2", snout: "#B995E4", nostril: "#7A57A3" },
-  mintpig: { light: "#BFF0D6", mid: "#93DBB4", dark: "#6BB891", limb: "#82CBA2", snout: "#8AD0A8", nostril: "#4E8B69" },
-  butter:  { light: "#FFE9AE", mid: "#F7CE72", dark: "#D9AC4C", limb: "#EDBE60", snout: "#EFC163", nostril: "#A67D2E" },
-  sky:     { light: "#C2E4FF", mid: "#95C7F5", dark: "#6DA3D6", limb: "#83B7E6", snout: "#8ABBE8", nostril: "#4E7BA5" },
+  pink:    { light: "#FCD8DF", mid: "#F5BCC8", dark: "#E3A2B0", ear: "#EFAAB8", snout: "#EDA0B0", nostril: "#7A4450", blush: "#F08FA6" },
+  rose:    { light: "#FFC9C9", mid: "#F3A3A6", dark: "#DC8489", ear: "#EC9498", snout: "#EA9195", nostril: "#7A3E44", blush: "#F0808C" },
+  peach:   { light: "#FFDCC2", mid: "#F7BE99", dark: "#E0A177", ear: "#F1AE86", snout: "#EFAB82", nostril: "#8A543A", blush: "#F09A76" },
+  clay:    { light: "#EFCDB6", mid: "#DBAC8E", dark: "#C08E6E", ear: "#CE9C7C", snout: "#CB9878", nostril: "#7A4F38", blush: "#D89273" },
+  ash:     { light: "#E4DCE4", mid: "#C9BCCA", dark: "#AB9CAD", ear: "#BCADBD", snout: "#B9A9BA", nostril: "#5E4C60", blush: "#C99BB4" },
+  butter:  { light: "#FBEBBE", mid: "#F0D68F", dark: "#D8BB6A", ear: "#E6C97E", snout: "#E4C67A", nostril: "#8A6F26", blush: "#E0B57A" },
+  mint:    { light: "#D3EEDA", mid: "#AEDCBB", dark: "#8CC29C", ear: "#9DD1AC", snout: "#9ACEA9", nostril: "#4A7A56", blush: "#A8CFA0" },
+  lilacpig:{ light: "#E8D6FA", mid: "#CDB0EC", dark: "#B192D6", ear: "#C0A0E2", snout: "#BD9CE0", nostril: "#5B3E84", blush: "#C994D8" },
 };
 
 export const PIG_BACKGROUNDS: Record<string, string> = {
-  apricot: "#FFE8D6",
-  coral: "#FFD3DA",
-  teal: "#CFF0EB",
-  butter: "#FFEFC2",
-  lilac: "#E7DBFF",
-  cream: "#FFF6EE",
+  oat:    "#F4EEDC",
+  gold:   "#F6EDC8",
+  lemon:  "#E6D389",
+  plum:   "#D9BAC0",
+  lilac:  "#EFE2FF",
+  cream:  "#FFFDF6",
 };
 
 export const PIG_HATS = ["none", "cap", "beret", "bucket", "party", "crown", "chef"] as const;
-export const PIG_ACCESSORIES = ["none", "sunglasses", "scarf", "blush", "tote"] as const;
+export const PIG_ACCESSORIES = ["none", "scarf"] as const;
 
 export type PigConfig = {
   color?: string;
@@ -94,7 +95,7 @@ export const DEFAULT_PIG: Required<PigConfig> = {
   color: "pink",
   hat: "none",
   accessory: "none",
-  background: "apricot",
+  background: "oat",
 };
 
 export function normalisePig(config: PigConfig | undefined | null): Required<PigConfig> {

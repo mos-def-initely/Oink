@@ -1,16 +1,23 @@
 "use client";
 
 /**
- * The user's avatar pig — spec §9.1. "Vinyl Toy" finish: glossy gradient
- * shading, a specular highlight, no outlines.
+ * The user's avatar pig — spec §9.1.
+ *
+ * Drawn in the reference style: warm brown outline (never black), soft shaded
+ * fill, blush cheeks, wide-set dot eyes with a highlight, snub snout with
+ * nostrils, small upright ears, tiny trotters, curly tail.
+ *
+ * The avatar is deliberately **neutral**. It's an identity, not a mood — the
+ * expression in the interface comes from the reaction icons instead
+ * (ReactionPigs.tsx), which is where all the attitude lives.
  *
  * Two variants:
- *   variant="face"  head only — used on map pins and in dense lists
- *   variant="full"  upright bipedal body — profile and feed only
+ *   variant="face"  head only, for map pins and dense lists
+ *   variant="full"  whole animal, used only on the feed and the profile
  *
- * Construction order matters: tail, legs, arms, torso, then head. Each limb is
- * overlapped by the piece drawn after it, so every joint is covered and nothing
- * reads as detached. The tail sits on the lower back, well clear of the arms.
+ * The snout and its two nostrils are drawn at every size — they're the most
+ * recognisably pig feature, and dropping them at small sizes makes the avatar
+ * read as a generic blob.
  */
 import { useId } from "react";
 import {
@@ -32,6 +39,9 @@ type Props = {
   className?: string;
 };
 
+const OUTLINE = "#7A4450";
+const EYE = "#4A2B33";
+
 export default function PigAvatar({
   config,
   placesLogged = 0,
@@ -49,9 +59,9 @@ export default function PigAvatar({
 
   const gradient = (
     <defs>
-      <radialGradient id={grad} cx="34%" cy="26%" r="82%">
+      <radialGradient id={grad} cx="36%" cy="28%" r="76%">
         <stop offset="0%" stopColor={p.light} />
-        <stop offset="58%" stopColor={p.mid} />
+        <stop offset="64%" stopColor={p.mid} />
         <stop offset="100%" stopColor={p.dark} />
       </radialGradient>
     </defs>
@@ -59,217 +69,182 @@ export default function PigAvatar({
 
   if (variant === "face") {
     return (
-      <svg width={size} height={size} viewBox="0 0 100 100" className={className} role="img" aria-label="Pig">
+      <svg width={size} height={size} viewBox="0 0 120 120" className={className} role="img" aria-label="Pig">
         {gradient}
-        {!bare && <circle cx="50" cy="50" r="50" fill={bg} />}
-        <Ears p={p} cx={50} cy={40} rx={33} />
-        <ellipse cx="50" cy="53" rx="33" ry="30" fill={`url(#${grad})`} />
-        <Face p={p} cx={50} cy={53} s={1} accessory={cfg.accessory} />
-        <ellipse cx="33" cy="34" rx="9" ry="6" fill="#fff" opacity="0.34" transform="rotate(-24 33 34)" />
-        <Hat hat={cfg.hat} cx={50} topY={24} w={33} />
+        {!bare && <circle cx="60" cy="60" r="60" fill={bg} />}
+        <g stroke={OUTLINE} strokeWidth="2.8" strokeLinejoin="round">
+          <path d="M30 44 Q26 20 47 31 Z" fill={p.ear} />
+          <path d="M90 44 Q94 20 73 31 Z" fill={p.ear} />
+          <ellipse cx="60" cy="62" rx="35" ry="31" fill={`url(#${grad})`} />
+          <ellipse cx="60" cy="71" rx="14" ry="10.5" fill={p.snout} />
+        </g>
+        {/* soft shade down one side */}
+        <path
+          d="M83 44 a35 31 0 0 1 -6 43"
+          fill="none"
+          stroke={p.dark}
+          strokeWidth="7"
+          opacity="0.4"
+          strokeLinecap="round"
+        />
+        <ellipse cx="34" cy="69" rx="8" ry="5" fill={p.blush} opacity="0.55" />
+        <ellipse cx="86" cy="69" rx="8" ry="5" fill={p.blush} opacity="0.55" />
+        <ellipse cx="46" cy="55" rx="3.8" ry="4.6" fill={EYE} />
+        <ellipse cx="74" cy="55" rx="3.8" ry="4.6" fill={EYE} />
+        <circle cx="47.4" cy="53.4" r="1.4" fill="#fff" />
+        <circle cx="75.4" cy="53.4" r="1.4" fill="#fff" />
+        {/* nostrils — always drawn */}
+        <ellipse cx="55" cy="71" rx="2.3" ry="3.2" fill={p.nostril} />
+        <ellipse cx="65" cy="71" rx="2.3" ry="3.2" fill={p.nostril} />
+        <Hat hat={cfg.hat} cx={60} topY={24} w={35} />
       </svg>
     );
   }
 
   // --- full body ---------------------------------------------------------
   const w = shape.waist;
-  const top = 66;
-  const bottom = 134;
-  const headCy = 46;
   const headRx = shape.head;
-  const headRy = shape.head * 0.92;
-  const armW = 11;
-  const q = (bottom - top) / 2.4;
-  const q2 = (bottom - top) / 2.2;
+  const headRy = headRx * 0.9;
 
   return (
     <svg
       width={size}
-      height={(size * 165) / 100}
-      viewBox="0 0 100 165"
+      height={(size * 134) / 130}
+      viewBox="0 0 130 134"
       className={className}
       role="img"
       aria-label="Pig"
     >
       {gradient}
 
-      {/* tail — lower back, behind the torso, nowhere near the arms */}
+      {/* tail on the lower back, clear of the arms */}
       <path
-        d={`M ${50 + w - 2} 118 q 12 -2 11 -11 q -1 -7 -7 -6`}
+        d={`M ${65 + w - 1} 90 q 13 -2 11 -14`}
         fill="none"
-        stroke={p.limb}
-        strokeWidth="4"
+        stroke={OUTLINE}
+        strokeWidth="2.8"
         strokeLinecap="round"
       />
 
-      <ellipse cx="50" cy="157" rx={w + 4} ry="4.5" fill="#2B1B3D" opacity="0.13" />
+      <g stroke={OUTLINE} strokeWidth="2.8" strokeLinejoin="round">
+        {/* Trotters first, so the body covers where they meet it. */}
+        <rect x={65 - w * 0.55} y="100" width="14" height="19" rx="6.5" fill={p.snout} />
+        <rect x={65 + w * 0.55 - 14} y="100" width="14" height="19" rx="6.5" fill={p.snout} />
 
-      {/* legs, then arms — the torso is drawn after, covering both joints */}
-      <rect x="36" y="120" width="13" height="30" rx="6.5" fill={p.limb} />
-      <rect x="51" y="120" width="13" height="30" rx="6.5" fill={p.limb} />
-      <ellipse cx="42.5" cy="150" rx="8.6" ry="4.8" fill={p.dark} />
-      <ellipse cx="57.5" cy="150" rx="8.6" ry="4.8" fill={p.dark} />
-      <rect x={50 - w - armW + 4} y="78" width={armW} height="34" rx={armW / 2} fill={p.limb} />
-      <rect x={50 + w - 4} y="78" width={armW} height="34" rx={armW / 2} fill={p.limb} />
+        {/* One rounded mass for the body — the reference pigs are blobs with
+            tiny legs, not figures with separate arms. Separate limbs read as
+            detached at avatar sizes. */}
+        <ellipse cx="65" cy="82" rx={w} ry={w * 0.9} fill={`url(#${grad})`} />
 
-      <path
-        d={`M 50 ${top} q ${-w} 2 ${-w} ${q} q 0 ${q2} ${w} ${q} q ${w} ${-q} ${w} ${-q2} q 0 ${-q} ${-w} ${-q} Z`}
-        fill={`url(#${grad})`}
-      />
+        {/* Ears behind, then the head overlapping the body so they read as one
+            silhouette rather than a head balanced on a ball. */}
+        <path d={`M ${65 - headRx + 3} 40 Q ${65 - headRx - 3} 14 ${65 - 9} 27 Z`} fill={p.ear} />
+        <path d={`M ${65 + headRx - 3} 40 Q ${65 + headRx + 3} 14 ${65 + 9} 27 Z`} fill={p.ear} />
+        <ellipse cx="65" cy="48" rx={headRx} ry={headRy} fill={`url(#${grad})`} />
+        <ellipse cx="65" cy="57" rx="12" ry="8.6" fill={p.snout} />
+      </g>
 
-      {/* belly rolls — the fatness signal (spec §9.1) */}
+      {/* belly rolls — the fatness signal */}
       {Array.from({ length: shape.rolls }).map((_, i) => {
-        const y = 96 + i * 14;
-        const spread = w - 4 - i * 1.5;
+        const y = 86 + i * 13;
+        const spread = w - 6 - i * 2;
         return (
           <path
             key={i}
-            d={`M ${50 - spread} ${y} q ${spread} ${7 + i} ${spread * 2} 0`}
+            d={`M ${65 - spread} ${y} q ${spread} ${7 + i} ${spread * 2} 0`}
             fill="none"
             stroke={p.dark}
             strokeWidth="2.4"
             strokeLinecap="round"
-            opacity="0.62"
+            opacity="0.55"
           />
         );
       })}
 
-      {cfg.accessory === "tote" && (
-        <g>
-          <rect x={50 + w - 2} y="100" width="17" height="20" rx="2.5" fill="#FF8A00" />
-          <path d={`M ${50 + w + 2} 100 q 4.5 -9 9 0`} fill="none" stroke="#FF8A00" strokeWidth="2.4" />
-        </g>
-      )}
-
-      {/* head — overlaps the torso top, so there's no floating gap */}
-      <Ears p={p} cx={50} cy={headCy - 6} rx={headRx} />
-      <ellipse cx="50" cy={headCy} rx={headRx} ry={headRy} fill={`url(#${grad})`} />
-      {shape.chin && (
-        <path
-          d={`M ${50 - headRx * 0.58} ${headCy + headRy * 0.66} q ${headRx * 0.58} 8 ${headRx * 1.16} 0`}
-          fill="none"
-          stroke={p.dark}
-          strokeWidth="2.3"
-          strokeLinecap="round"
-          opacity="0.5"
-        />
-      )}
-      <Face p={p} cx={50} cy={headCy} s={headRx / 33} accessory={cfg.accessory} />
-      <ellipse
-        cx={50 - headRx * 0.5}
-        cy={headCy - headRy * 0.55}
-        rx={headRx * 0.27}
-        ry={headRy * 0.19}
-        fill="#fff"
-        opacity="0.34"
-        transform={`rotate(-24 ${50 - headRx * 0.5} ${headCy - headRy * 0.55})`}
+      <path
+        d={`M ${65 + headRx - 4} 32 a ${headRx} ${headRy} 0 0 1 -5 36`}
+        fill="none"
+        stroke={p.dark}
+        strokeWidth="6"
+        opacity="0.35"
+        strokeLinecap="round"
       />
+      <ellipse cx={65 - headRx * 0.72} cy="56" rx="6.4" ry="4" fill={p.blush} opacity="0.55" />
+      <ellipse cx={65 + headRx * 0.72} cy="56" rx="6.4" ry="4" fill={p.blush} opacity="0.55" />
+      <ellipse cx="54" cy="44" rx="3.2" ry="3.9" fill={EYE} />
+      <ellipse cx="76" cy="44" rx="3.2" ry="3.9" fill={EYE} />
+      <circle cx="55.2" cy="42.6" r="1.2" fill="#fff" />
+      <circle cx="77.2" cy="42.6" r="1.2" fill="#fff" />
+      {/* nostrils — always drawn */}
+      <ellipse cx="61" cy="57" rx="2" ry="2.8" fill={p.nostril} />
+      <ellipse cx="69" cy="57" rx="2" ry="2.8" fill={p.nostril} />
+
       {cfg.accessory === "scarf" && (
         <path
-          d={`M ${50 - headRx + 3} ${headCy + headRy - 2} q ${headRx - 3} 9 ${(headRx - 3) * 2} 0 l 0 8 q ${-(headRx - 3)} 9 ${-(headRx - 3) * 2} 0 Z`}
-          fill="#00B39F"
+          d={`M ${65 - headRx + 2} ${48 + headRy - 2} q ${headRx - 2} 9 ${(headRx - 2) * 2} 0 l 0 8 q ${-(headRx - 2)} 9 ${-(headRx - 2) * 2} 0 Z`}
+          fill="#CFA51F"
+          stroke={OUTLINE}
+          strokeWidth="2.4"
+          strokeLinejoin="round"
         />
       )}
-      <Hat hat={cfg.hat} cx={50} topY={headCy - headRy - 2} w={headRx} />
+      <Hat hat={cfg.hat} cx={65} topY={48 - headRy - 4} w={headRx} />
     </svg>
   );
 }
 
-/* ---------- parts ---------- */
-
-type Pal = (typeof PIG_COLORS)[string];
-
-function Ears({ p, cx, cy, rx }: { p: Pal; cx: number; cy: number; rx: number }) {
-  const off = rx - 6;
-  return (
-    <>
-      <path d={`M ${cx - off} ${cy + 2} Q ${cx - off - 6} ${cy - 24} ${cx - off + 17} ${cy - 12} Z`} fill={p.limb} />
-      <path d={`M ${cx + off} ${cy + 2} Q ${cx + off + 6} ${cy - 24} ${cx + off - 17} ${cy - 12} Z`} fill={p.limb} />
-    </>
-  );
-}
-
-function Face({ p, cx, cy, s, accessory }: { p: Pal; cx: number; cy: number; s: number; accessory: string }) {
-  return (
-    <g>
-      {accessory === "blush" && (
-        <>
-          <ellipse cx={cx - 21 * s} cy={cy + 6 * s} rx={7 * s} ry={4.4 * s} fill="#FF6B8F" opacity="0.42" />
-          <ellipse cx={cx + 21 * s} cy={cy + 6 * s} rx={7 * s} ry={4.4 * s} fill="#FF6B8F" opacity="0.42" />
-        </>
-      )}
-
-      {accessory === "sunglasses" ? (
-        <g>
-          <rect x={cx - 22 * s} y={cy - 12 * s} width={17 * s} height={12 * s} rx={5 * s} fill="#2B1B3D" />
-          <rect x={cx + 5 * s} y={cy - 12 * s} width={17 * s} height={12 * s} rx={5 * s} fill="#2B1B3D" />
-          <rect x={cx - 5 * s} y={cy - 8 * s} width={10 * s} height={2.6 * s} fill="#2B1B3D" />
-        </g>
-      ) : (
-        <>
-          <ellipse cx={cx - 12 * s} cy={cy - 7 * s} rx={3.5 * s} ry={4.2 * s} fill="#3D2230" />
-          <ellipse cx={cx + 12 * s} cy={cy - 7 * s} rx={3.5 * s} ry={4.2 * s} fill="#3D2230" />
-          <circle cx={cx - 10.7 * s} cy={cy - 8.6 * s} r={1.4 * s} fill="#fff" />
-          <circle cx={cx + 13.3 * s} cy={cy - 8.6 * s} r={1.4 * s} fill="#fff" />
-        </>
-      )}
-
-      <ellipse cx={cx} cy={cy + 8 * s} rx={14 * s} ry={10.4 * s} fill={p.snout} />
-      <ellipse cx={cx - 4.6 * s} cy={cy + 8 * s} rx={2.3 * s} ry={3.4 * s} fill={p.nostril} />
-      <ellipse cx={cx + 4.6 * s} cy={cy + 8 * s} rx={2.3 * s} ry={3.4 * s} fill={p.nostril} />
-    </g>
-  );
-}
-
 function Hat({ hat, cx, topY, w }: { hat: string; cx: number; topY: number; w: number }) {
+  const s = { stroke: OUTLINE, strokeWidth: 2.6, strokeLinejoin: "round" as const };
   switch (hat) {
     case "cap":
       return (
-        <g>
-          <path d={`M ${cx - w * 0.72} ${topY + 12} A ${w * 0.72} ${w * 0.66} 0 0 1 ${cx + w * 0.72} ${topY + 12} Z`} fill="#FF4D6D" />
-          <path d={`M ${cx + 2} ${topY + 12} L ${cx + w * 1.02} ${topY + 14} L ${cx + w * 1.02} ${topY + 9} L ${cx + 2} ${topY + 7} Z`} fill="#FF7A93" />
+        <g {...s}>
+          <path d={`M ${cx - w * 0.74} ${topY + 13} A ${w * 0.74} ${w * 0.68} 0 0 1 ${cx + w * 0.74} ${topY + 13} Z`} fill="#914E56" />
+          <path d={`M ${cx + 2} ${topY + 13} L ${cx + w * 1.05} ${topY + 15} L ${cx + w * 1.05} ${topY + 10} L ${cx + 2} ${topY + 8} Z`} fill="#A9606A" />
         </g>
       );
     case "beret":
+      // Tilted and sitting off to one side — flat on the crown it reads as a
+      // helmet rather than a hat.
       return (
-        <g>
-          <ellipse cx={cx} cy={topY + 8} rx={w * 0.78} ry={w * 0.42} fill="#7B3FE4" />
-          <circle cx={cx + w * 0.36} cy={topY - 2} r={w * 0.12} fill="#7B3FE4" />
+        <g {...s} transform={`rotate(-12 ${cx} ${topY + 10})`}>
+          <ellipse cx={cx} cy={topY + 10} rx={w * 0.66} ry={w * 0.3} fill="#4D303F" />
+          <circle cx={cx + w * 0.5} cy={topY + 4} r={w * 0.1} fill="#4D303F" />
         </g>
       );
     case "bucket":
       return (
-        <g>
-          <path d={`M ${cx - w * 0.6} ${topY + 12} L ${cx - w * 0.48} ${topY - 6} L ${cx + w * 0.48} ${topY - 6} L ${cx + w * 0.6} ${topY + 12} Z`} fill="#00B39F" />
-          <ellipse cx={cx} cy={topY + 13} rx={w * 0.9} ry={w * 0.17} fill="#009C8B" />
+        <g {...s}>
+          <path d={`M ${cx - w * 0.6} ${topY + 13} L ${cx - w * 0.48} ${topY - 5} L ${cx + w * 0.48} ${topY - 5} L ${cx + w * 0.6} ${topY + 13} Z`} fill="#CFA51F" />
+          <ellipse cx={cx} cy={topY + 14} rx={w * 0.92} ry={w * 0.17} fill="#B99118" />
         </g>
       );
     case "party":
       return (
-        <g>
-          <path d={`M ${cx} ${topY - 18} L ${cx + w * 0.42} ${topY + 12} L ${cx - w * 0.42} ${topY + 12} Z`} fill="#FF8A00" />
-          <circle cx={cx} cy={topY - 18} r={w * 0.13} fill="#FF4D6D" />
+        <g {...s}>
+          <path d={`M ${cx} ${topY - 19} L ${cx + w * 0.44} ${topY + 13} L ${cx - w * 0.44} ${topY + 13} Z`} fill="#E6D389" />
+          <circle cx={cx} cy={topY - 19} r={w * 0.13} fill="#914E56" />
         </g>
       );
     case "crown":
       return (
-        <g>
+        <g {...s}>
           <path
-            d={`M ${cx - w * 0.6} ${topY + 12} L ${cx - w * 0.6} ${topY - 6} L ${cx - w * 0.3} ${topY + 2}
-                L ${cx} ${topY - 10} L ${cx + w * 0.3} ${topY + 2} L ${cx + w * 0.6} ${topY - 6}
-                L ${cx + w * 0.6} ${topY + 12} Z`}
-            fill="#FFC53D"
+            d={`M ${cx - w * 0.62} ${topY + 13} L ${cx - w * 0.62} ${topY - 5} L ${cx - w * 0.31} ${topY + 3}
+                L ${cx} ${topY - 9} L ${cx + w * 0.31} ${topY + 3} L ${cx + w * 0.62} ${topY - 5}
+                L ${cx + w * 0.62} ${topY + 13} Z`}
+            fill="#CFA51F"
           />
-          <circle cx={cx} cy={topY + 3} r={w * 0.09} fill="#FF4D6D" />
+          <circle cx={cx} cy={topY + 4} r={w * 0.09} fill="#914E56" stroke="none" />
         </g>
       );
     case "chef":
       return (
-        <g>
-          <rect x={cx - w * 0.5} y={topY + 4} width={w} height={w * 0.3} rx={w * 0.06} fill="#FFFDFB" />
-          <ellipse cx={cx - w * 0.28} cy={topY - 2} rx={w * 0.3} ry={w * 0.26} fill="#FFFDFB" />
-          <ellipse cx={cx + w * 0.28} cy={topY - 2} rx={w * 0.3} ry={w * 0.26} fill="#FFFDFB" />
-          <ellipse cx={cx} cy={topY - 7} rx={w * 0.34} ry={w * 0.3} fill="#FFFDFB" />
+        <g {...s}>
+          <rect x={cx - w * 0.5} y={topY + 5} width={w} height={w * 0.3} rx={w * 0.06} fill="#FFFDF6" />
+          <ellipse cx={cx - w * 0.28} cy={topY - 1} rx={w * 0.3} ry={w * 0.26} fill="#FFFDF6" />
+          <ellipse cx={cx + w * 0.28} cy={topY - 1} rx={w * 0.3} ry={w * 0.26} fill="#FFFDF6" />
+          <ellipse cx={cx} cy={topY - 6} rx={w * 0.34} ry={w * 0.3} fill="#FFFDF6" />
         </g>
       );
     default:

@@ -43,7 +43,7 @@ export default function ActivityCard({ item }: { item: FeedItem }) {
         <PlacePhoto
           src={item.images[0]?.url ?? place.cover_image_url}
           alt={place.name}
-          className="h-44 w-full"
+          className="h-44 w-full border-y-2 border-ink"
         />
 
         <div className="space-y-2 px-3 py-3">
@@ -75,7 +75,7 @@ export default function ActivityCard({ item }: { item: FeedItem }) {
 function ActivityBadge({ activity }: { activity: FeedItem["activity"] }) {
   if (activity === "oink") {
     return (
-      <span className="flex shrink-0 items-center gap-1 rounded-full bg-coral px-2.5 py-1 font-display text-[11px] font-bold text-white">
+      <span className="flex shrink-0 items-center gap-1 rounded-full bg-plum px-2.5 py-1 font-display text-[11px] font-bold text-white">
         <OinkPig size={16} active />
         oinked
       </span>
@@ -83,14 +83,14 @@ function ActivityBadge({ activity }: { activity: FeedItem["activity"] }) {
   }
   if (activity === "shame") {
     return (
-      <span className="flex shrink-0 items-center gap-1 rounded-full bg-tangerine px-2.5 py-1 font-display text-[11px] font-bold text-white">
+      <span className="flex shrink-0 items-center gap-1 rounded-full bg-rust px-2.5 py-1 font-display text-[11px] font-bold text-white">
         <ShamePig size={16} active />
         shamed
       </span>
     );
   }
   return (
-    <span className="shrink-0 rounded-full bg-teal-pale px-2.5 py-1 font-display text-[11px] font-bold text-teal-ink">
+    <span className="shrink-0 rounded-full bg-gold-pale px-2.5 py-1 font-display text-[11px] font-bold text-[#7A6212]">
       recommends
     </span>
   );

@@ -88,7 +88,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
             onClick={() => act(() => api.react(place.id, "oink"))}
             disabled={busy}
             className={`btn flex flex-col items-center gap-1 py-3.5 ${
-              place.my_reaction === "oink" ? "bg-coral text-white shadow-pop" : "bg-cream shadow-soft"
+              place.my_reaction === "oink" ? "bg-plum text-oat" : "bg-cream"
             }`}
           >
             <OinkPig size={40} active={place.my_reaction === "oink"} />
@@ -98,7 +98,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
             onClick={() => act(() => api.react(place.id, "shame"))}
             disabled={busy}
             className={`btn flex flex-col items-center gap-1 py-3.5 ${
-              place.my_reaction === "shame" ? "bg-tangerine text-white shadow-soft" : "bg-cream shadow-soft"
+              place.my_reaction === "shame" ? "bg-rust text-oat" : "bg-cream"
             }`}
           >
             <ShamePig size={40} active={place.my_reaction === "shame"} />
@@ -108,8 +108,8 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
 
         {/* Who oinked, who shamed — two labelled groups (spec §6.4) */}
         <section className="grid gap-2.5">
-          <PeopleGroup title="Oinked" people={place.oinked_by} tone="coral" />
-          <PeopleGroup title="Shamed" people={place.shamed_by} tone="tangerine" />
+          <PeopleGroup title="Oinked" people={place.oinked_by} tone="plum" />
+          <PeopleGroup title="Shamed" people={place.shamed_by} tone="rust" />
         </section>
 
         {canWishlist && (
@@ -119,7 +119,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
             }
             disabled={busy}
             className={`btn w-full ${
-              place.in_my_wishlist ? "bg-grape text-white" : "bg-cream shadow-soft"
+              place.in_my_wishlist ? "bg-lilac text-oat" : "bg-cream"
             }`}
           >
             {place.in_my_wishlist ? "★ On your wishlist" : "☆ Add to wishlist"}
@@ -138,7 +138,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
             <div className="grid grid-cols-3 gap-2">
               {place.images.map((img) => (
                 // eslint-disable-next-line @next/next/no-img-element -- local uploads
-                <img key={img.id} src={img.url} alt="" className="h-24 w-full rounded-xl object-cover shadow-soft" />
+                <img key={img.id} src={img.url} alt="" className="h-24 w-full rounded-xl object-cover" />
               ))}
             </div>
           </section>
@@ -226,9 +226,9 @@ function PeopleGroup({
 }: {
   title: string;
   people: User[];
-  tone: "coral" | "tangerine";
+  tone: "plum" | "rust";
 }) {
-  const chip = tone === "coral" ? "bg-coral" : "bg-tangerine";
+  const chip = tone === "plum" ? "bg-plum" : "bg-rust";
   return (
     <div className="card p-3.5">
       <div className="mb-2 flex items-center gap-2">

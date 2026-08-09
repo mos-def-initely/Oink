@@ -58,7 +58,7 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
                 await api.logout();
                 window.location.href = "/sign-in";
               }}
-              className="btn bg-cream px-3 py-2 text-xs shadow-soft"
+              className="btn bg-cream px-3 py-2 text-xs"
             >
               Sign out
             </button>
@@ -78,10 +78,10 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
           <p className="font-display text-sm text-ink-soft">@{user.username}</p>
 
           <div className="flex items-center gap-2 pt-1">
-            <span className="tag bg-teal-pale text-teal-ink">
+            <span className="tag bg-gold-pale text-[#7A6212]">
               {user.places_logged} {user.places_logged === 1 ? "place" : "places"}
             </span>
-            <span className="tag bg-coral text-white shadow-pop">{tierLabel} pig</span>
+            <span className="tag bg-plum text-oat">{tierLabel} pig</span>
           </div>
 
           {next && (
@@ -242,7 +242,7 @@ function Picker({
           <button
             key={opt}
             onClick={() => onChange(opt)}
-            className={`tag capitalize ${value === opt ? "bg-coral text-white shadow-pop" : ""}`}
+            className={`tag capitalize ${value === opt ? "bg-plum text-oat" : ""}`}
           >
             {swatch && (
               <span

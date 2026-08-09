@@ -12,7 +12,7 @@ import { EmptyState, PageHeader, Spinner } from "@/components/ui";
 
 const MapView = dynamic(() => import("@/components/MapView"), {
   ssr: false,
-  loading: () => <div className="h-full w-full animate-pulse bg-apricot-deep" />,
+  loading: () => <div className="h-full w-full animate-pulse bg-oat-deep" />,
 });
 
 export default function WishlistPage() {
@@ -30,13 +30,13 @@ export default function WishlistPage() {
         title="Wishlist"
         back="/profile/me"
         right={
-          <div className="flex overflow-hidden rounded-xl bg-cream shadow-soft">
+          <div className="flex overflow-hidden rounded-xl border-2 border-ink bg-cream">
             {(["list", "map"] as const).map((v) => (
               <button
                 key={v}
                 onClick={() => setView(v)}
                 className={`px-3 py-2 font-display text-sm font-bold ${
-                  view === v ? "bg-coral text-white" : "text-ink"
+                  view === v ? "bg-plum text-oat" : "text-ink"
                 }`}
               >
                 {v === "list" ? "List" : "Map"}
