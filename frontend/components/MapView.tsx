@@ -120,6 +120,8 @@ export default function MapView({
   // tick. The marker effects key off this so they re-run once it's actually
   // ready rather than silently bailing out on first render.
   const [ready, setReady] = useState(false);
+  // Bumped to force a rebuild — see the hot-reload guard below.
+  const [generation, setGeneration] = useState(0);
   // Kept in a ref so the click handler, bound once, always sees current values.
   const pickHandlers = useRef({ pickMode, onPick });
   pickHandlers.current = { pickMode, onPick };
@@ -155,6 +157,33 @@ export default function MapView({
       mapRef.current = null;
       setReady(false);
     };
+  }, [generation]);
+
+  /**
+   * Rebuild the map if a hot reload has orphaned it.
+   *
+   * Leaflet holds imperative DOM state that Fast Refresh can't hot-swap: when
+   * this module is replaced, React re-runs the component but the init effect
+   * doesn't, leaving `mapRef` pointing at a map whose container was thrown
+   * away. The map then looks broken until a full page reload — which is a poor
+   * thing to ask of anyone editing the file. Development only; there are no
+   * hot reloads in production, so this never runs there.
+   */
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production") return;
+    const timer = setInterval(() => {
+      const map = mapRef.current;
+      if (map && !map.getContainer().isConnected) {
+        map.remove();
+        mapRef.current = null;
+        markersRef.current = [];
+        pickMarkerRef.current = null;
+        framedRef.current = false;
+        setReady(false);
+        setGeneration((g) => g + 1);
+      }
+    }, 1000);
+    return () => clearInterval(timer);
   }, []);
 
   // Leaflet doesn't recompute its size when the container changes behind an
