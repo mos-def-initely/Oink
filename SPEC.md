@@ -121,6 +121,13 @@ Reverse-chronological cards: **full-body pig** + name + timestamp, activity badg
 - **Pins show the pig face.** Where several people rate a place, up to three faces fan out behind the leader like a hand of cards, plus a count chip beyond three. Shame-only places get a greyed-out pin.
 - Tap pin → bottom sheet → View details.
 - Filters: kind, budget (as price pigs), category.
+- **Kind and cuisine prefill themselves.** OSM's `type` maps to kind
+  (restaurant / bar / cafe) and its `cuisine` tag to category tags — Monmouth
+  Coffee resolves to Cafe · Specialty Coffee, The Harp to Bar · Pub, Padella to
+  Restaurant · Italian. Bars take their category from the type rather than the
+  cuisine tag, since their vocabulary is fixed. A prefill never overwrites a
+  choice the user has already made, and reverse-geocoded results are only
+  trusted when the matched object is the venue itself rather than a neighbour.
 - **Add-place flow — a Google Maps link is optional.** Four ways in: search by name (type-ahead), use current location, drop a pin, or paste a Maps link. Whenever a link or search result resolves, **the pin drops automatically**. Category is a **searchable dropdown** that filters remaining options as you type; bars use a fixed vocabulary, restaurants/cafes allow custom tags.
 - Adding a place **auto-oinks it**, so it appears on your profile and as an endorsed pin straight away.
 

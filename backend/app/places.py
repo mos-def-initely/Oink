@@ -367,6 +367,7 @@ def search_places(
             continue
         city, area = _split_osm_address(r)
         display = r.get("display_name") or ""
+        kind, category = classify_from_osm(r)
         out.append(
             PlaceCandidate(
                 name=r.get("name") or display.split(",")[0].strip() or query,
@@ -378,6 +379,8 @@ def search_places(
                 postcode=(r.get("address") or {}).get("postcode"),
                 lat=lat,
                 lng=lng,
+                kind=kind,
+                category=category,
             )
         )
     return out[:limit]
@@ -417,6 +420,8 @@ def parse_google_maps_link(url: str) -> ParseLinkResponse:
             )
 
     address = city = area = postcode = None
+    kind: Optional[str] = None
+    category: List[str] = []
     if lat is not None and lng is not None:
         osm = _reverse_geocode_osm(lat, lng)
         # Only the *geographic* fields are trustworthy here. Reverse geocoding
@@ -428,6 +433,10 @@ def parse_google_maps_link(url: str) -> ParseLinkResponse:
         address = _street_address(osm) or osm.get("display_name")
         city, area = _split_osm_address(osm)
         postcode = (osm.get("address") or {}).get("postcode")
+        # Only trust the classification if the matched object is the venue
+        # itself rather than the building or a neighbour.
+        if (osm.get("type") or "").lower() in _OSM_KIND:
+            kind, category = classify_from_osm(osm)
     else:
         # No coordinates in the URL. Prefer the postal address the phone app's
         # link carries — a street and postcode geocode precisely, where the
@@ -448,6 +457,8 @@ def parse_google_maps_link(url: str) -> ParseLinkResponse:
                 city = city or best.city
                 area = area or best.area
                 postcode = postcode or best.postcode
+                kind = kind or best.kind
+                category = category or best.category
 
     resolved = bool(name or (lat is not None and lng is not None))
     return ParseLinkResponse(
@@ -458,6 +469,8 @@ def parse_google_maps_link(url: str) -> ParseLinkResponse:
         postcode=postcode,
         lat=lat,
         lng=lng,
+        kind=kind,
+        category=category,
         resolved=resolved,
         source="url_parse" if resolved else "none",
     )
@@ -572,3 +585,93 @@ def find_place_photo(
         if image:
             return image
     return None
+
+
+# --- Deriving kind and cuisine from OSM tags -------------------------------
+
+# OSM's `type` says what sort of establishment it is; our `kind` is coarser.
+_OSM_KIND = {
+    "restaurant": "restaurant", "fast_food": "restaurant", "food_court": "restaurant",
+    "cafe": "cafe", "deli": "cafe", "bakery": "cafe", "ice_cream": "cafe",
+    "coffee_shop": "cafe", "tea": "cafe", "pastry": "cafe", "confectionery": "cafe",
+    "pub": "bar", "bar": "bar", "biergarten": "bar", "nightclub": "bar", "wine_bar": "bar",
+}
+
+# Bars use a fixed vocabulary (spec §6.3), and OSM's type maps onto it directly.
+_OSM_BAR_CATEGORY = {
+    "pub": "Pub",
+    "biergarten": "Beer Garden",
+    "nightclub": "Club",
+    "bar": "Cocktail Bar",
+    "wine_bar": "Wine Bar",
+}
+
+# OSM cuisine values are snake_case and semicolon-separated ("pizza;italian").
+# Most title-case cleanly; these don't.
+_OSM_CUISINE = {
+    "coffee_shop": "Specialty Coffee",
+    "bar_and_grill": "Grill",
+    "fish_and_chips": "Fish & Chips",
+    "sandwich": "Sandwiches",
+    "bubble_tea": "Tea House",
+    "ice_cream": "Ice Cream",
+    "steak_house": "Steak",
+    "friture": "Fried Chicken",
+    "noodle": "Noodles",
+    "sushi": "Sushi",
+    "kebab": "Kebab",
+    "bagel": "Bakery",
+    "donut": "Bakery",
+    "cake": "Patisserie",
+    "breakfast": "Brunch",
+    "brunch": "Brunch",
+    # Too vague to be worth a tag
+    "regional": "",
+    "international": "",
+    "local": "",
+    "various": "",
+}
+
+
+def _cuisine_tags(raw: Optional[str]) -> List[str]:
+    """Turn an OSM `cuisine` value into our category tags."""
+    if not raw:
+        return []
+    out: List[str] = []
+    for part in re.split(r"[;,]", raw):
+        key = part.strip().lower()
+        if not key:
+            continue
+        if key in _OSM_CUISINE:
+            mapped = _OSM_CUISINE[key]
+            if mapped and mapped not in out:
+                out.append(mapped)
+            continue
+        # Default: snake_case → Title Case, with small words left alone.
+        words = key.replace("_", " ").split()
+        pretty = " ".join(w if w in {"and", "of", "with"} else w.capitalize() for w in words)
+        if pretty and pretty not in out:
+            out.append(pretty)
+    return out[:4]
+
+
+def classify_from_osm(row: dict) -> Tuple[Optional[str], List[str]]:
+    """Best-effort (kind, category tags) for an OSM result.
+
+    Returns (None, []) when OSM has nothing useful — the add-place form keeps
+    whatever the user picked rather than being overwritten with a guess.
+    """
+    osm_type = (row.get("type") or "").lower()
+    tags = row.get("extratags") or {}
+    kind = _OSM_KIND.get(osm_type)
+
+    if kind == "bar":
+        # Bars take their category from the type, not the cuisine tag.
+        category = [_OSM_BAR_CATEGORY.get(osm_type, "Cocktail Bar")]
+    else:
+        category = _cuisine_tags(tags.get("cuisine"))
+        # A bakery or deli is a useful tag in its own right.
+        if osm_type in {"bakery", "deli", "ice_cream"} and not category:
+            category = [osm_type.replace("_", " ").title()]
+
+    return kind, category
