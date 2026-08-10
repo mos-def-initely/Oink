@@ -94,7 +94,7 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
               what it's about to lose, which the place count alone never says. */}
           {dead ? (
             <p className="text-center text-xs font-bold text-ink-soft">
-              Starved out. Log anywhere to revive {isMe ? "your" : "their"} pig.
+              Feed to revive — log anywhere and {isMe ? "your" : "their"} pig comes straight back.
             </p>
           ) : (
             <>
