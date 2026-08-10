@@ -20,6 +20,7 @@ import {
   normalisePig,
 } from "@/lib/pig";
 import PigAvatar from "@/components/pigs/PigAvatar";
+import HowItWorks from "@/components/HowItWorks";
 import PlaceListCard from "@/components/PlaceListCard";
 import BottomTabBar, { TabBarSpacer } from "@/components/BottomTabBar";
 import { EmptyState, PageHeader, Sheet, Spinner } from "@/components/ui";
@@ -30,6 +31,7 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
   const [me, setMe] = useState<User | null>(null);
   const [places, setPlaces] = useState<PlaceSummary[] | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
@@ -55,17 +57,27 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
       <PageHeader
         title={isMe ? "You" : user.display_name}
         right={
-          isMe ? (
+          <div className="flex items-center gap-2">
             <button
-              onClick={async () => {
-                await api.logout();
-                window.location.href = "/sign-in";
-              }}
-              className="btn bg-cream px-3 py-2 text-xs"
+              onClick={() => setHelpOpen(true)}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-cream font-display text-sm font-extrabold italic"
+              aria-label="How Oink works"
+              title="How Oink works"
             >
-              Sign out
+              i
             </button>
-          ) : undefined
+            {isMe && (
+              <button
+                onClick={async () => {
+                  await api.logout();
+                  window.location.href = "/sign-in";
+                }}
+                className="btn bg-cream px-3 py-2 text-xs"
+              >
+                Sign out
+              </button>
+            )}
+          </div>
         }
       />
 
@@ -157,6 +169,8 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
           }}
         />
       )}
+
+      <HowItWorks open={helpOpen} onClose={() => setHelpOpen(false)} />
     </>
   );
 }

@@ -4,6 +4,7 @@
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ApiError, api } from "@/lib/api";
+import { queueIntroIfNew } from "@/lib/intro";
 import { ErrorNote } from "@/components/ui";
 import PigAvatar from "@/components/pigs/PigAvatar";
 
@@ -21,11 +22,12 @@ function SignInForm() {
     setError(null);
     setBusy(true);
     try {
-      if (mode === "signup") {
-        await api.signup(username, password, displayName || username);
-      } else {
-        await api.login(username, password);
-      }
+      const { user } =
+        mode === "signup"
+          ? await api.signup(username, password, displayName || username)
+          : await api.login(username, password);
+      // Queue the explainer for anyone who hasn't seen it on this device.
+      queueIntroIfNew(user.id);
       // The session cookie is set by the API; a full navigation lets the Next
       // middleware see it immediately.
       window.location.href = params.get("next") || "/";

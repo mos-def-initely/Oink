@@ -5,7 +5,7 @@
  *
  * Reference style: warm brown outline (never black), blush cheeks, wide-set dot
  * eyes with a highlight, snub snout with nostrils, small upright ears, tiny
- * trotters, curly tail.
+ * trotters. No tail — it read as a stray hair at avatar size.
  *
  * **Modelling, not just outline.** A flat fill inside a uniform stroke reads as
  * a die-cut sticker. Volume comes from three soft passes clipped inside each
@@ -179,15 +179,7 @@ export default function PigAvatar({
         <ellipse cx="65" cy="48" rx={headRx} ry={headRy} />
       </clipPath>
 
-      {/* Tail starts outside the right arm's outer edge, so it comes off the
-          rump rather than out of the arm. */}
-      <path
-        d={`M ${65 + w + 5} 88 q 12 -3 10 -14`}
-        fill="none"
-        stroke={OUTLINE}
-        strokeWidth={STROKE + 0.4}
-        strokeLinecap="round"
-      />
+
 
       {/* ground shadow */}
       <ellipse cx="65" cy="122" rx={w * 0.8} ry="5" fill={p.dark} opacity="0.28" filter={`url(#${blur})`} />

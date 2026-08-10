@@ -7,10 +7,16 @@ import type { FeedItem } from "@/lib/types";
 import ActivityCard from "@/components/ActivityCard";
 import BottomTabBar, { TabBarSpacer } from "@/components/BottomTabBar";
 import { EmptyState, PageHeader, Spinner } from "@/components/ui";
+import HowItWorks from "@/components/HowItWorks";
+import { introPending, markIntroSeen } from "@/lib/intro";
 
 export default function FeedScreen({ initialItems }: { initialItems: FeedItem[] | null }) {
   const [items, setItems] = useState<FeedItem[] | null>(initialItems);
   const [error, setError] = useState<string | null>(null);
+  // Set at sign-in for anyone who hasn't seen the explainer on this device.
+  const [introFor, setIntroFor] = useState<string | null>(null);
+
+  useEffect(() => setIntroFor(introPending()), []);
 
   useEffect(() => {
     // Already server-rendered — don't fetch the same thing again on mount.
@@ -38,6 +44,14 @@ export default function FeedScreen({ initialItems }: { initialItems: FeedItem[] 
 
       <TabBarSpacer />
       <BottomTabBar />
+
+      <HowItWorks
+        open={!!introFor}
+        onClose={() => {
+          if (introFor) markIntroSeen(introFor);
+          setIntroFor(null);
+        }}
+      />
     </>
   );
 }

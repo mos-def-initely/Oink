@@ -163,6 +163,13 @@ function pinHtml(place: PlaceSummary): string {
   return `
     <div style="position:relative; width:${PIN_W}px; height:54px; ${shamed ? "filter:grayscale(1);opacity:.85;" : ""}">
       ${layers}${chip}
+      <div style="
+        position:absolute; left:50%; bottom:-7px; transform:translateX(-50%);
+        width:0; height:0;
+        border-left:6px solid transparent; border-right:6px solid transparent;
+        border-top:9px solid ${shamed ? "#8E8478" : "#4D303F"};
+        filter:none;
+      "></div>
     </div>`;
 }
 
@@ -377,10 +384,8 @@ export default function MapView({
           const icon = L.divIcon({
             className: "oink-pin",
             html: pinHtml(place),
-            iconSize: [PIN_W, 54],
-            // No tail to point with, so the lead face's own centre marks the
-            // place: it sits at left:17 and is 42 across.
-            iconAnchor: [38, 21],
+            iconSize: [PIN_W, 61],
+            iconAnchor: [PIN_W / 2, 61],
           });
           markersRef.current.push(
             L.marker([place.lat, place.lng], { icon, zIndexOffset: voterCount(place) * 1000 })
