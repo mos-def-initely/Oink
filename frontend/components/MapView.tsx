@@ -175,9 +175,11 @@ function pinHtml(place: PlaceSummary): string {
 
 function clusterHtml(group: PlaceSummary[]): string {
   // Show a couple of faces so a cluster still reads as "your friends' places",
-  // with the count doing the real work.
+  // with the count doing the real work. Shamers count as faces here exactly as
+  // they do on a pin: a place someone only shamed was contributing nothing, so
+  // a cluster of two could show a single face and look broken.
   const faces = group
-    .flatMap((p) => p.recommenders)
+    .flatMap((p) => [...(p.recommenders ?? []), ...(p.shamers ?? [])])
     .slice(0, 2)
     .map(
       (u, i) => `<div style="position:absolute; ${i === 0 ? "left:4px" : "right:4px"}; top:6px;
