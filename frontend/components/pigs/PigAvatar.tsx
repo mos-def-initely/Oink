@@ -146,19 +146,36 @@ export default function PigAvatar({
       <rect x="51" y="114" width="13" height="36" rx="6.5" fill={p.limb} />
       <ellipse cx="42.5" cy="150" rx="8.6" ry="4.8" fill={p.dark} />
       <ellipse cx="57.5" cy="150" rx="8.6" ry="4.8" fill={p.dark} />
-      <rect x={50 - w - armW + 4} y="78" width={armW} height="34" rx={armW / 2} fill={p.limb} />
-      <rect x={50 + w - 4} y="78" width={armW} height="34" rx={armW / 2} fill={p.limb} />
-      {shape.muscle &&
-        [-1, 1].map((side) => (
-          <ellipse
-            key={side}
-            cx={50 + side * (w + armW / 2 - 4)}
-            cy="86"
-            rx={armW * 0.62}
-            ry="10"
-            fill={p.limb}
-          />
-        ))}
+      {/* Arms. Anchored to how wide the torso actually is at the shoulder and
+          angled outward from there — pinned to the waist width instead, they
+          started outside a body that hasn't widened yet and read as detached.
+          The torso is drawn after these, so the joint ends up covered. */}
+      {[-1, 1].map((side) => {
+        // Start the arm where the torso is already wide enough to swallow its
+        // inner edge. Pinned higher — as they were — the pear hasn't flared yet
+        // and the shoulder floats free of the body.
+        const armTop = shape.muscle ? 80 : 86;
+        const innerEdge = shape.muscle ? w * 0.86 : w - 6;
+        const x = 50 + side * (innerEdge + armW / 2);
+        // Everything but the muscular tier hangs straight down, flush along the
+        // torso. Only Hunky's arms are pushed out, by the lats under them.
+        const angle = shape.muscle ? side * 9 : 0;
+        return (
+          <g key={side} transform={`rotate(${angle} ${x} ${armTop + 3})`}>
+            <rect
+              x={x - armW / 2}
+              y={armTop}
+              width={armW}
+              height="34"
+              rx={armW / 2}
+              fill={p.limb}
+            />
+            {shape.muscle && (
+              <ellipse cx={x} cy={armTop + 9} rx={armW * 0.66} ry="10.5" fill={p.limb} />
+            )}
+          </g>
+        );
+      })}
 
       <path d={torsoPath} fill={`url(#${grad})`} />
 
