@@ -15,6 +15,8 @@ import {
   PIG_ACCESSORIES,
   PIG_BACKGROUNDS,
   PIG_HATS,
+  PIG_HELD,
+  HELD_LABELS,
   daysUntilDecay,
   PIG_SPECIES,
   SPECIES_COLORS,
@@ -415,6 +417,13 @@ function PigCustomiser({
           format={(v) => (v === "none" ? "none" : truffleLabel(v))}
         />
 
+        <Picker
+          label="holding"
+          options={[...PIG_HELD]}
+          value={cfg.held}
+          onChange={(v) => setCfg({ ...cfg, held: v })}
+          format={(v) => HELD_LABELS[v] ?? v}
+        />
         <Picker
           label="background"
           options={Object.keys(PIG_BACKGROUNDS)}

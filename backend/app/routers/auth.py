@@ -76,6 +76,22 @@ def me(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-def logout(response: Response):
-    response.delete_cookie(config.COOKIE_NAME, path="/")
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+def logout():
+    """Clear the session cookie.
+
+    The delete has to be set on the response that's actually returned. Setting
+    it on an injected Response and then returning a fresh one threw the header
+    away, so the cookie survived and signing out did nothing.
+
+    The attributes have to match the ones it was set with, or the browser treats
+    it as a different cookie and leaves the original in place.
+    """
+    response = Response(status_code=status.HTTP_204_NO_CONTENT)
+    response.delete_cookie(
+        config.COOKIE_NAME,
+        path="/",
+        httponly=True,
+        samesite="lax",
+        secure=config.COOKIE_SECURE,
+    )
+    return response

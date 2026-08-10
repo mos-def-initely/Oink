@@ -25,6 +25,7 @@
  * recognisably pig feature, and without them the avatar reads as a blob.
  */
 import { useId } from "react";
+import Held from "@/components/pigs/Held";
 import {
   PIG_BACKGROUNDS,
   SPECIES_COLORS,
@@ -47,6 +48,9 @@ type Props = {
   variant?: "face" | "full";
   /** Drops the circular background — used inside map pins. */
   bare?: boolean;
+  /** Puts a chef's knife in one trotter. The logo and the sign-in pig only. */
+  /** Overrides the saved slot — the logo and sign-in pig use it. */
+  holding?: string | null;
   className?: string;
 };
 
@@ -61,6 +65,7 @@ export default function PigAvatar({
   size = 44,
   variant = "face",
   bare = false,
+  holding = null,
   className = "",
 }: Props) {
   const uid = useId().replace(/:/g, "");
@@ -327,6 +332,12 @@ export default function PigAvatar({
         </g>
       )}
 
+      {/* Whatever they're holding. `holding` is the prop the logo and sign-in
+          pig use; otherwise it comes from the saved avatar. */}
+      {(holding ?? (cfg.held !== "none" ? cfg.held : null)) && (
+        <Held item={(holding ?? cfg.held) as string} armX={armX} />
+      )}
+
       {dress.under && <g transform={bodyT}>{dress.under}</g>}
       {dress.shell && <Shell fill={dress.shell.fill} k={dress.shell.k} />}
       {dress.onBody && <g transform={bodyT}>{dress.onBody}</g>}
@@ -413,15 +424,6 @@ export default function PigAvatar({
       <ellipse cx="61" cy="57" rx="2" ry="2.8" fill={p.nostril} />
       <ellipse cx="69" cy="57" rx="2" ry="2.8" fill={p.nostril} />
 
-      {cfg.accessory === "scarf" && (
-        <path
-          d={`M ${65 - headRx + 2} ${48 + headRy - 2} q ${headRx - 2} 9 ${(headRx - 2) * 2} 0 l 0 8 q ${-(headRx - 2)} 9 ${-(headRx - 2) * 2} 0 Z`}
-          fill="#CFA51F"
-          stroke={OUTLINE}
-          strokeWidth={STROKE}
-          strokeLinejoin="round"
-        />
-      )}
       {/* A second chin is a fold, so it's drawn as the shadow one jaw casts on
           the next — never a lighter shape laid over the face, which reads as a
           panel stuck on rather than flesh. Clipped to the head so the soft edge

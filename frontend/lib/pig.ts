@@ -221,7 +221,7 @@ export const EAR_COVERING_HATS = new Set([
 export function hidesEars(hat: string | undefined): boolean {
   return !!hat && EAR_COVERING_HATS.has(hat);
 }
-export const PIG_ACCESSORIES = ["none", "blush", "scarf"] as const;
+export const PIG_ACCESSORIES = ["none", "blush", "sunglasses"] as const;
 
 /**
  * Costumes (spec §9.3). Club Penguin's memorable items were never garments, they
@@ -262,6 +262,35 @@ export const PIG_FACES = ["none", "shades", "specs", "monocle", "eyepatch", "mou
  * means the variety picker doubles as the companion picker.
  */
 export const PIG_COMPANIONS = ["none", "truffle"] as const;
+
+/** Things a pig can be brandishing. Its own slot, so it stacks with everything. */
+export const PIG_HELD = [
+  "none", "knife", "guitar", "briefcase", "pistol", "wine", "pint",
+  "coffee", "rollingpin", "pan", "baguette", "umbrella", "balloon",
+  "bouquet", "camera", "trophy", "torch", "fishingrod",
+] as const;
+export type Held = (typeof PIG_HELD)[number];
+
+export const HELD_LABELS: Record<string, string> = {
+  none: "nothing",
+  knife: "knife",
+  guitar: "guitar",
+  briefcase: "briefcase",
+  pistol: "pistol",
+  wine: "wine glass",
+  pint: "pint",
+  coffee: "coffee",
+  rollingpin: "rolling pin",
+  pan: "frying pan",
+  baguette: "baguette",
+  umbrella: "umbrella",
+  balloon: "balloon",
+  bouquet: "bouquet",
+  camera: "camera",
+  trophy: "trophy",
+  torch: "torch",
+  fishingrod: "fishing rod",
+};
 export type Companion = (typeof PIG_COMPANIONS)[number];
 
 export type TrufflePalette = {
@@ -321,6 +350,7 @@ export type PigConfig = {
   face?: string;
   companion?: string;
   truffle?: string;
+  held?: string;
 };
 
 export const DEFAULT_PIG: Required<PigConfig> = {
@@ -333,6 +363,7 @@ export const DEFAULT_PIG: Required<PigConfig> = {
   face: "none",
   companion: "none",
   truffle: "burgundy",
+  held: "none",
 };
 
 export function normalisePig(config: PigConfig | undefined | null): Required<PigConfig> {
@@ -355,6 +386,7 @@ export function normalisePig(config: PigConfig | undefined | null): Required<Pig
     costume: pick(c.costume, PIG_COSTUMES, DEFAULT_PIG.costume),
     face: pick(c.face, PIG_FACES, DEFAULT_PIG.face),
     companion: pick(c.companion, PIG_COMPANIONS, DEFAULT_PIG.companion),
+    held: pick(c.held, PIG_HELD, DEFAULT_PIG.held),
     truffle: c.truffle && TRUFFLE_VARIETIES[c.truffle] ? c.truffle : DEFAULT_PIG.truffle,
   };
 }
