@@ -86,7 +86,7 @@ export default function PigAvatar({
         {!bare && <circle cx="50" cy="50" r="50" fill={bg} />}
         <Ears p={p} cx={50} cy={40} rx={33} />
         <ellipse cx="50" cy="53" rx="33" ry="30" fill={`url(#${grad})`} />
-        <Face p={p} cx={50} cy={53} s={1} accessory={cfg.accessory} dead={dead} />
+        <Face p={p} cx={50} cy={53} s={1} accessory={cfg.accessory} dead={dead} lean={shape.muscle} />
         <ellipse cx="33" cy="34" rx="9" ry="6" fill="#fff" opacity="0.34" transform="rotate(-24 33 34)" />
         <Hat hat={cfg.hat} cx={50} topY={24} w={33} />
       </svg>
@@ -105,14 +105,28 @@ export default function PigAvatar({
   // way round. Built from mirrored cubics so neither side can corner.
   const shoulder = w * 0.66;
   const widest = top + (bottom - top) * 0.62;
-  const torsoPath = [
+  const h = bottom - top;
+  const torsoPath = shape.muscle
+    ? // Hunky: the width sits in the chest and the waist pulls in under it, so
+      // the outline itself does most of the work before any shading is added.
+      [
+        `M 50 ${top}`,
+        `C ${50 + w * 0.88} ${top + 1}, ${50 + w} ${top + h * 0.1}, ${50 + w} ${top + h * 0.28}`,
+        `C ${50 + w} ${top + h * 0.45}, ${50 + w * 0.6} ${top + h * 0.5}, ${50 + w * 0.57} ${top + h * 0.66}`,
+        `C ${50 + w * 0.55} ${bottom - 7}, ${50 + w * 0.48} ${bottom}, 50 ${bottom}`,
+        `C ${50 - w * 0.48} ${bottom}, ${50 - w * 0.55} ${bottom - 7}, ${50 - w * 0.57} ${top + h * 0.66}`,
+        `C ${50 - w * 0.6} ${top + h * 0.5}, ${50 - w} ${top + h * 0.45}, ${50 - w} ${top + h * 0.28}`,
+        `C ${50 - w} ${top + h * 0.1}, ${50 - w * 0.88} ${top + 1}, 50 ${top}`,
+        "Z",
+      ].join(" ")
+    : [
     `M 50 ${top}`,
     `C ${50 + shoulder} ${top}, ${50 + w} ${widest - (widest - top) * 0.45}, ${50 + w} ${widest}`,
     `C ${50 + w} ${bottom - (bottom - widest) * 0.3}, ${50 + w * 0.62} ${bottom}, 50 ${bottom}`,
     `C ${50 - w * 0.62} ${bottom}, ${50 - w} ${bottom - (bottom - widest) * 0.3}, ${50 - w} ${widest}`,
     `C ${50 - w} ${widest - (widest - top) * 0.45}, ${50 - shoulder} ${top}, 50 ${top}`,
     "Z",
-  ].join(" ");
+      ].join(" ");
 
   return (
     <svg
@@ -134,76 +148,138 @@ export default function PigAvatar({
       <ellipse cx="57.5" cy="150" rx="8.6" ry="4.8" fill={p.dark} />
       <rect x={50 - w - armW + 4} y="78" width={armW} height="34" rx={armW / 2} fill={p.limb} />
       <rect x={50 + w - 4} y="78" width={armW} height="34" rx={armW / 2} fill={p.limb} />
+      {shape.muscle &&
+        [-1, 1].map((side) => (
+          <ellipse
+            key={side}
+            cx={50 + side * (w + armW / 2 - 4)}
+            cy="86"
+            rx={armW * 0.62}
+            ry="10"
+            fill={p.limb}
+          />
+        ))}
 
       <path d={torsoPath} fill={`url(#${grad})`} />
 
-      {/* Belly rolls — the fatness signal (spec §9.1).
-          A roll hangs *over* the one beneath it, so the lobes are drawn from
-          the bottom up: each one covers the top of the one below, leaving only
-          its overhanging lower arc visible. Shadows go on afterwards, cast down
-          onto the crown of whatever is underneath. Drawn wider than the waist
-          on purpose, so the outline scallops instead of the folds being painted
-          flat onto a smooth oval. */}
-      {shape.rolls > 0 &&
-        (() => {
-          const n = shape.rolls;
-          const bellyTop = top + (bottom - top) * 0.3;
-          const bellyBottom = bottom - 6;
-          const step = (bellyBottom - bellyTop) / n;
-          const lobes = Array.from({ length: n }).map((_, i) => ({
-            i,
-            cy: bellyTop + step * (i + 0.5),
-            // Widest through the middle of the belly, easing into the hips.
-            rx: w + 1.6 - Math.abs(i - (n - 1) / 2) * 1.0 - (i === n - 1 ? 2.6 : 0),
-            // Overlap heavily — an exposed top edge is what made these read as
-            // a stack of separate discs rather than one continuous belly.
-            ry: step * 0.98,
-          }));
-          return (
+      {/* Chest and belly.
+          A roll is a horizontal cylinder of flesh: lit along its crown, falling
+          into shadow underneath, deepest in the crease where the next begins.
+          So these are *shading*, not shapes — ellipses carrying their own
+          top-light-to-bottom-dark ramp, clipped to the torso. Filling them with
+          the body's own gradient (as an earlier pass did) gave every fold the
+          same flat tone as the belly behind it, which is why they read as cling
+          film rather than fat. */}
+      {(shape.belly || shape.moobs || shape.muscle) && (
+        <g clipPath={`url(#${clip})`}>
+          <defs>
+            <clipPath id={clip}>
+              <path d={torsoPath} />
+            </clipPath>
+            <linearGradient
+              id={`${fold}-chest`}
+              gradientUnits="userSpaceOnUse"
+              x1="0"
+              y1={top + h * 0.1}
+              x2="0"
+              y2={top + h * 0.34}
+            >
+              <stop offset="0%" stopColor="#fff" stopOpacity="0.22" />
+              <stop offset="42%" stopColor="#fff" stopOpacity="0" />
+              <stop offset="60%" stopColor={p.dark} stopOpacity="0" />
+              <stop offset="100%" stopColor={p.dark} stopOpacity="0.62" />
+            </linearGradient>
+          </defs>
+
+          {/* Moobs — chest fat sitting above the gut, each with the crease
+              underneath that makes it hang rather than float. */}
+          {!!shape.moobs &&
+            [-1, 1].map((side) => {
+              const scale = shape.moobs ?? 1;
+              const cx = 50 + side * w * 0.44;
+              const cy = top + h * 0.24;
+              return (
+                <ellipse
+                  key={side}
+                  cx={cx}
+                  cy={cy}
+                  rx={w * 0.5 * scale}
+                  ry={h * 0.13 * scale}
+                  fill={`url(#${fold}-chest)`}
+                />
+              );
+            })}
+
+          {/* The gut: one big volume with the crease under its overhang, rather
+              than a stack of folds. Stripes of shading never looked like fat. */}
+          {!!shape.belly && (
             <>
               <defs>
-                {lobes.map(({ i, cy, ry }) => (
-                  <linearGradient
-                    key={i}
-                    id={`${fold}-${i}`}
-                    gradientUnits="userSpaceOnUse"
-                    x1="0"
-                    y1={cy + ry * 0.52}
-                    x2="0"
-                    y2={cy + ry * 0.52 + step * 0.85}
-                  >
-                    <stop offset="0%" stopColor={p.dark} stopOpacity="0.52" />
-                    <stop offset="100%" stopColor={p.dark} stopOpacity="0" />
-                  </linearGradient>
-                ))}
+                <linearGradient
+                  id={`${fold}-belly`}
+                  gradientUnits="userSpaceOnUse"
+                  x1="0"
+                  y1={top + h * 0.44}
+                  x2="0"
+                  y2={bottom + 2}
+                >
+                  <stop offset="0%" stopColor="#fff" stopOpacity={0.2 * shape.belly} />
+                  <stop offset="34%" stopColor="#fff" stopOpacity="0" />
+                  <stop offset="56%" stopColor={p.dark} stopOpacity="0" />
+                  <stop offset="100%" stopColor={p.dark} stopOpacity={0.55 * shape.belly} />
+                </linearGradient>
               </defs>
-
-              {[...lobes].reverse().map(({ i, cy, rx, ry }) => (
-                <ellipse key={i} cx="50" cy={cy} rx={rx} ry={ry} fill={`url(#${grad})`} />
-              ))}
-
-              {lobes.slice(0, -1).map(({ i, cy, rx, ry }) => (
-                <g key={i}>
-                  <ellipse
-                    cx="50"
-                    cy={cy + ry * 0.9}
-                    rx={rx * 0.99}
-                    ry={step * 0.6}
-                    fill={`url(#${fold}-${i})`}
-                  />
-                  <ellipse
-                    cx={50 - rx * 0.1}
-                    cy={cy + ry * 0.34}
-                    rx={rx * 0.55}
-                    ry={step * 0.2}
-                    fill="#fff"
-                    opacity="0.11"
-                  />
-                </g>
-              ))}
+              <ellipse
+                cx="50"
+                cy={top + h * 0.74}
+                rx={w * 1.02}
+                ry={h * 0.3 * (0.7 + shape.belly * 0.3)}
+                fill={`url(#${fold}-belly)`}
+              />
             </>
-          );
-        })()}
+          )}
+
+          {/* Muscle definition: pecs above, a two-column stack of abs below,
+              split by a centre line. Same light-over-shadow logic as the folds,
+              just tighter and repeated. */}
+          {shape.muscle && (
+            <g>
+              {[-1, 1].map((side) => (
+                <ellipse
+                  key={side}
+                  cx={50 + side * w * 0.42}
+                  cy={top + h * 0.2}
+                  rx={w * 0.44}
+                  ry={h * 0.12}
+                  fill={`url(#${fold}-chest)`}
+                />
+              ))}
+              {[0, 1, 2].map((row) =>
+                [-1, 1].map((side) => (
+                  <ellipse
+                    key={`${row}-${side}`}
+                    cx={50 + side * w * 0.23}
+                    cy={top + h * (0.42 + row * 0.13)}
+                    rx={w * 0.2}
+                    ry={h * 0.055}
+                    fill={`url(#${fold}-chest)`}
+                    opacity="0.8"
+                  />
+                ))
+              )}
+              <rect
+                x={49.3}
+                y={top + h * 0.3}
+                width={1.4}
+                height={h * 0.32}
+                rx={0.7}
+                fill={p.dark}
+                opacity="0.3"
+              />
+            </g>
+          )}
+        </g>
+      )}
 
       {cfg.accessory === "tote" && (
         <g>
@@ -215,17 +291,42 @@ export default function PigAvatar({
       {/* head — overlaps the torso top, so there's no floating gap */}
       <Ears p={p} cx={50} cy={headCy - 6} rx={headRx} />
       <ellipse cx="50" cy={headCy} rx={headRx} ry={headRy} fill={`url(#${grad})`} />
+      {/* Double chin — a jowl that hangs, not a line drawn on the jaw. Filled
+          with the body's own colour and shaded underneath, so it reads as
+          weight rather than as a wrinkle. */}
       {shape.chin && (
-        <path
-          d={`M ${50 - headRx * 0.58} ${headCy + headRy * 0.66} q ${headRx * 0.58} 8 ${headRx * 1.16} 0`}
-          fill="none"
-          stroke={p.dark}
-          strokeWidth="2.3"
-          strokeLinecap="round"
-          opacity="0.5"
-        />
+        <g>
+          <defs>
+            <linearGradient
+              id={`${fold}-chin`}
+              gradientUnits="userSpaceOnUse"
+              x1="0"
+              y1={headCy + headRy * 0.5}
+              x2="0"
+              y2={headCy + headRy * 1.12}
+            >
+              <stop offset="0%" stopColor="#fff" stopOpacity="0.16" />
+              <stop offset="45%" stopColor="#fff" stopOpacity="0" />
+              <stop offset="100%" stopColor={p.dark} stopOpacity="0.5" />
+            </linearGradient>
+          </defs>
+          <ellipse
+            cx="50"
+            cy={headCy + headRy * 0.72}
+            rx={headRx * 0.72}
+            ry={headRy * 0.34}
+            fill={`url(#${grad})`}
+          />
+          <ellipse
+            cx="50"
+            cy={headCy + headRy * 0.72}
+            rx={headRx * 0.72}
+            ry={headRy * 0.34}
+            fill={`url(#${fold}-chin)`}
+          />
+        </g>
       )}
-      <Face p={p} cx={50} cy={headCy} s={headRx / 33} accessory={cfg.accessory} dead={dead} />
+      <Face p={p} cx={50} cy={headCy} s={headRx / 33} accessory={cfg.accessory} dead={dead} lean={shape.muscle} />
       <ellipse
         cx={50 - headRx * 0.5}
         cy={headCy - headRy * 0.55}
@@ -267,6 +368,7 @@ function Face({
   s,
   accessory,
   dead = false,
+  lean = false,
 }: {
   p: Pal;
   cx: number;
@@ -274,6 +376,8 @@ function Face({
   s: number;
   accessory: string;
   dead?: boolean;
+  /** Hunky: brow, cheekbones and a cut jaw. */
+  lean?: boolean;
 }) {
   if (dead) {
     // Sunglasses and blush are beside the point on a corpse — X'd eyes and a
@@ -327,6 +431,52 @@ function Face({
           <ellipse cx={cx - 21 * s} cy={cy + 6 * s} rx={7 * s} ry={4.4 * s} fill="#FF6B8F" opacity="0.42" />
           <ellipse cx={cx + 21 * s} cy={cy + 6 * s} rx={7 * s} ry={4.4 * s} fill="#FF6B8F" opacity="0.42" />
         </>
+      )}
+
+      {lean && (
+        <g>
+          {/* Cheekbones caught by the light, hollow beneath them, and a heavy
+              brow — the same three marks a portrait uses to say "chiselled". */}
+          {[-1, 1].map((side) => (
+            <g key={side}>
+              <ellipse
+                cx={cx + side * 22 * s}
+                cy={cy - 3 * s}
+                rx={7 * s}
+                ry={4 * s}
+                fill="#fff"
+                opacity="0.3"
+                transform={`rotate(${side * -20} ${cx + side * 22 * s} ${cy - 3 * s})`}
+              />
+              <ellipse
+                cx={cx + side * 21 * s}
+                cy={cy + 6 * s}
+                rx={6 * s}
+                ry={3.6 * s}
+                fill={p.nostril}
+                opacity="0.15"
+                transform={`rotate(${side * 18} ${cx + side * 21 * s} ${cy + 6 * s})`}
+              />
+              <path
+                d={`M ${cx + side * 6 * s} ${cy - 14 * s} q ${side * 7 * s} ${-2.4 * s} ${side * 13 * s} ${1.6 * s}`}
+                fill="none"
+                stroke={p.nostril}
+                strokeWidth={2.4 * s}
+                strokeLinecap="round"
+                opacity="0.45"
+              />
+            </g>
+          ))}
+          {/* Cut jaw. */}
+          <path
+            d={`M ${cx - 21 * s} ${cy + 19 * s} q ${21 * s} ${9 * s} ${42 * s} 0`}
+            fill="none"
+            stroke={p.dark}
+            strokeWidth={2 * s}
+            strokeLinecap="round"
+            opacity="0.22"
+          />
+        </g>
       )}
 
       {accessory === "sunglasses" ? (
