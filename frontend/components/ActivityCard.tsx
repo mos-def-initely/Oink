@@ -3,34 +3,73 @@
 /**
  * Home feed items — spec §6.2.
  *
- * A reaction isn't a small review, it's a different kind of event, so the two
- * get different shapes:
+ * Two shapes, because a reaction isn't a small review:
  *
  *   recommendation  a card — thumbnail beside the review text and dish tags
- *   oink / shame    a single compact row — thumbnail, place, verdict, who
+ *   oink / shame    a row — who, the place, the meta, the time. No thumbnail.
  *
- * That's deliberate. An oink carries no text, so a card built around a review
- * would sit half empty; padding it out with cuisine and budget would make an
- * endorsement look like a write-up and flatten the feed into identical blocks.
- * Two shapes give the feed a rhythm, and reviews stand out because they're the
- * thing worth stopping for.
+ * The row carries **no thumbnail on purpose**. Most places reached only by a
+ * reaction have no photo, so the tile was the generated letter placeholder far
+ * more often than a picture — a coloured square repeated down the page, saying
+ * nothing. A review keeps its thumbnail, which is where a photo actually is.
+ *
+ * Agreement is folded in rather than repeated (see lib/feed.ts): where other
+ * people have oinked the same place, they appear as a face and a count at the
+ * foot of the log they agreed with, instead of each getting a row of their own.
  *
  * No rating appears anywhere (spec §8).
  */
 import Link from "next/link";
 import { googlePhotoSrc } from "@/lib/api";
-import type { FeedItem } from "@/lib/types";
+import type { FeedItem, User } from "@/lib/types";
+import { agreementLabel } from "@/lib/feed";
 import PigAvatar from "@/components/pigs/PigAvatar";
 import { BudgetTag } from "@/components/pigs/PricePig";
 import { KIND_LABELS, timeAgo } from "@/components/ui";
 import PlacePhoto from "@/components/PlacePhoto";
 
-export default function ActivityCard({ item }: { item: FeedItem }) {
-  return item.activity === "recommendation" ? <ReviewCard item={item} /> : <ReactionRow item={item} />;
+export default function ActivityCard({
+  item,
+  agreed = [],
+}: {
+  item: FeedItem;
+  agreed?: User[];
+}) {
+  return item.activity === "recommendation" ? (
+    <ReviewCard item={item} agreed={agreed} />
+  ) : (
+    <ReactionRow item={item} agreed={agreed} />
+  );
+}
+
+/**
+ * Everyone who oinked the same place after it was logged: one face, a count for
+ * the rest, and their names in the label. One face rather than a pile because a
+ * pile wraps as soon as a fourth person joins, and the names carry who it was
+ * better than three near-identical pigs at 22px.
+ */
+function Agreement({ agreed }: { agreed: User[] }) {
+  if (agreed.length === 0) return null;
+  return (
+    <>
+      <div className="rule-dashed mx-3" />
+      <div className="flex items-center gap-1.5 px-3 py-2">
+        <PigAvatar
+          config={agreed[0].pig_avatar_config}
+          placesLogged={agreed[0].places_logged}
+          lastLoggedAt={agreed[0].last_logged_at}
+          size={22}
+          variant="face"
+        />
+        {agreed.length > 1 && <span className="micro-pill bg-plum text-oat">+{agreed.length - 1}</span>}
+        <span className="micro min-w-0 truncate">{agreementLabel(agreed)}</span>
+      </div>
+    </>
+  );
 }
 
 /** Someone wrote something — the full card. */
-function ReviewCard({ item }: { item: FeedItem }) {
+function ReviewCard({ item, agreed }: { item: FeedItem; agreed: User[] }) {
   const place = item.restaurant;
 
   return (
@@ -92,54 +131,66 @@ function ReviewCard({ item }: { item: FeedItem }) {
           )}
         </div>
       </Link>
+
+      <Agreement agreed={agreed} />
     </article>
   );
 }
 
-/** Someone just reacted — one row, nothing padded out. */
-function ReactionRow({ item }: { item: FeedItem }) {
+/** Someone reacted — a row, and no thumbnail (see the note at the top). */
+function ReactionRow({ item, agreed }: { item: FeedItem; agreed: User[] }) {
   const place = item.restaurant;
   const shamed = item.activity === "shame";
 
   return (
     <article className="card">
-      <Link href={`/restaurant/${place.id}`} className="flex items-center gap-2.5 p-2.5">
-        <PlacePhoto
-          src={place.cover_image_url}
-          alt={place.name}
-          className="h-[46px] w-[46px] shrink-0 rounded-md border-2 border-ink"
-        />
+      <div className="flex items-center gap-2.5 p-2.5">
+        <Link href={`/profile/${item.user.username}`} className="shrink-0">
+          <PigAvatar
+            config={item.user.pig_avatar_config}
+            placesLogged={item.user.places_logged}
+            lastLoggedAt={item.user.last_logged_at}
+            size={30}
+            variant="face"
+          />
+        </Link>
 
         <div className="min-w-0 flex-1">
+          {/* Header mirrors the review card — pig, name, verdict — so the two
+              shapes read as one family rather than two separate designs. */}
           <div className="flex items-center gap-1.5">
-            <h2 className="min-w-0 truncate font-display text-base font-bold leading-tight">
-              {place.name}
-            </h2>
+            <Link
+              href={`/profile/${item.user.username}`}
+              className="min-w-0 truncate font-display text-sm font-bold"
+            >
+              {item.user.display_name}
+            </Link>
             <span
               className={`micro-pill shrink-0 ${shamed ? "bg-rust text-oat" : "bg-plum text-oat"}`}
             >
               {shamed ? "shamed" : "oinked"}
             </span>
+            <span className="micro ml-auto shrink-0">{timeAgo(item.created_at)}</span>
           </div>
-          <div className="mt-0.5 flex items-center gap-1.5">
-            <p className="micro min-w-0 truncate">
-              {[place.city, KIND_LABELS[place.kind]].filter(Boolean).join(" · ")}
-            </p>
-            <BudgetTag budget={place.budget} size={20} />
-          </div>
-        </div>
 
-        <div className="flex shrink-0 items-center gap-1.5">
-          <PigAvatar
-            config={item.user.pig_avatar_config}
-            placesLogged={item.user.places_logged}
-            lastLoggedAt={item.user.last_logged_at}
-            size={24}
-            variant="face"
-          />
-          <span className="micro">{item.user.display_name}</span>
+          <Link href={`/restaurant/${place.id}`} className="block">
+            <h2 className="mt-0.5 truncate font-display text-base font-bold leading-tight">
+              {place.name}
+            </h2>
+            <div className="flex items-center gap-1.5">
+              <p className="micro min-w-0 truncate">
+                {[place.city, KIND_LABELS[place.kind]].filter(Boolean).join(" · ")}
+              </p>
+              {/* Budget is never bare `$` text — it always travels with its pig. */}
+              <BudgetTag budget={place.budget} size={20} />
+            </div>
+          </Link>
         </div>
-      </Link>
+      </div>
+
+      {/* A shame never collects agreement — it can't be the first log of a place,
+          so nothing folds onto it. */}
+      <Agreement agreed={agreed} />
     </article>
   );
 }

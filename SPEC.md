@@ -114,19 +114,40 @@ Detail responses include `oinked_by` and `shamed_by` as separate user lists (§6
 Middleware redirects unauthenticated requests to `/sign-in`.
 
 ### 6.2 Home feed
-A reaction isn't a small review, it's a different kind of event, so the two take
-different shapes:
+Two shapes, because a reaction isn't a small review:
 
 - **Recommendation** — a card: full-body pig, name, timestamp, an untilted
-  "Recommends" sticker, a dashed rule, then a 74px thumbnail beside the place
+  "recommends" sticker, a dashed rule, then a 74px thumbnail beside the place
   name, mono meta line, review text and dish tags.
-- **Oink / shame** — a single compact row: thumbnail, place name, a mono status
-  pill, meta line, and who did it.
+- **Oink / shame** — a row with the same header as the card (pig, name, verdict
+  pill, time right-aligned), then the place name in bold and its meta line.
+  **No thumbnail.**
 
-That split is deliberate. An oink carries no text, so a card built around a
-review would sit half empty, and padding it with cuisine and budget would make
-an endorsement look like a write-up. Two shapes give the feed a rhythm and let
-reviews stand out. No rating anywhere.
+The row carries no thumbnail on purpose. Most places reached only by a reaction
+have no photo, so the tile was the generated letter placeholder far more often
+than a picture — a coloured square repeated down the page, carrying nothing. A
+review keeps its thumbnail, which is where a photo actually is.
+
+**An oink means two different things, and the feed says which.** Oinking a place
+nobody has logged is *introducing* it, which is an event and gets its own row.
+Oinking a place someone already logged is *agreeing*, which isn't news on its own
+— it folds onto the log it agrees with and shows as one face, a `+n` count, and
+the names.
+
+The anchor is the **first log of that place in the feed**, whichever kind it is,
+so a place introduced by an oink collects agreement on that oink row and a place
+introduced by a review collects it on the review card.
+
+Two things never fold. A **shame** stays its own row: putting a disagreement on
+somebody's own card is a different decision from showing agreement, and one to
+take separately. A **second recommendation** stays its own card: writing your own
+review is a log, not agreement, however many people got there first.
+
+The feed is a recent-activity window, so an oink whose original log has scrolled
+out of it has nothing to attach to and becomes its own row — the alternative
+loses the event entirely.
+
+No rating anywhere.
 
 ### 6.3 Discover
 - Map default, framed on the logged places once on load.

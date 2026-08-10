@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import type { FeedItem } from "@/lib/types";
 import ActivityCard from "@/components/ActivityCard";
+import { foldFeed } from "@/lib/feed";
 import BottomTabBar, { TabBarSpacer } from "@/components/BottomTabBar";
 import { EmptyState, PageHeader, Spinner } from "@/components/ui";
 import HowItWorks from "@/components/HowItWorks";
@@ -41,9 +42,10 @@ export default function FeedScreen({ initialItems }: { initialItems: FeedItem[] 
         {items?.length === 0 && (
           <EmptyState title="nothing here yet" body="head to discover and log the first place." />
         )}
-        {items?.map((item) => (
-          <ActivityCard key={`${item.activity}-${item.id}`} item={item} />
-        ))}
+        {items &&
+          foldFeed(items).map(({ item, agreed }) => (
+            <ActivityCard key={`${item.activity}-${item.id}`} item={item} agreed={agreed} />
+          ))}
       </main>
 
       <TabBarSpacer />
