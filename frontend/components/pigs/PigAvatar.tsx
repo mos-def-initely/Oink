@@ -157,9 +157,10 @@ export default function PigAvatar({
         const armTop = shape.muscle ? 80 : 86;
         const innerEdge = shape.muscle ? w * 0.86 : w - 6;
         const x = 50 + side * (innerEdge + armW / 2);
-        // Everything but the muscular tier hangs straight down, flush along the
-        // torso. Only Hunky's arms are pushed out, by the lats under them.
-        const angle = shape.muscle ? side * 9 : 0;
+        // The wider the body, the further the arms are shoved off vertical —
+        // a slim pig's hang straight down, a fat one's can't. Derived from the
+        // waist so it scales with the tier rather than being set per tier.
+        const angle = side * Math.max(0, (w - TIER_SHAPE.slim.waist) * 0.9);
         return (
           <g key={side} transform={`rotate(${angle} ${x} ${armTop + 3})`}>
             <rect
