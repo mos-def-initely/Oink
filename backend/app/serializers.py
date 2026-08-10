@@ -138,7 +138,8 @@ def restaurant_summary(restaurant: Restaurant, ctx: RestaurantContext) -> Restau
         postcode=restaurant.postcode,
         lat=restaurant.lat,
         lng=restaurant.lng,
-        cover_image_url=restaurant.cover_image_url,
+        # Uploaded photo wins; the auto-sourced one is the fallback.
+        cover_image_url=restaurant.cover_image_url or restaurant.photo_url,
         google_maps_url=restaurant.google_maps_url,
         recommenders=recommenders,
         recommender_count=len(recommenders),

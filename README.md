@@ -178,7 +178,9 @@ frontend/
 
 - **Follower graph** — every account is in one shared circle.
 - **Password reset** — no email in the system at all.
-- **Photo auto-sourcing** — places without a photo get a generated placeholder.
+- **Photo coverage** — auto-sourcing finds a photo for roughly a third of
+  places without a Google key. Run `backend/backfill_photos.py` after adding one
+  to fill in the rest.
 
 ---
 

@@ -255,7 +255,8 @@ def _search_osm(query: str, limit: int = 6) -> List[dict]:
         with httpx.Client(timeout=_TIMEOUT) as client:
             resp = client.get(
                 "https://nominatim.openstreetmap.org/search",
-                params={"q": query, "format": "jsonv2", "addressdetails": 1, "limit": limit},
+                params={"q": query, "format": "jsonv2", "addressdetails": 1,
+                        "extratags": 1, "limit": limit},
                 headers={"User-Agent": _OSM_UA},
             )
             return resp.json() if resp.status_code == 200 else []
@@ -460,3 +461,114 @@ def parse_google_maps_link(url: str) -> ParseLinkResponse:
         resolved=resolved,
         source="url_parse" if resolved else "none",
     )
+
+
+# --- Auto-sourcing a place photo ------------------------------------------
+
+_OG_PATTERNS = (
+    re.compile(r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)', re.I),
+    re.compile(r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']', re.I),
+    re.compile(r'<meta[^>]+name=["\']twitter:image["\'][^>]+content=["\']([^"\']+)', re.I),
+)
+
+
+def _og_image(site: str) -> Optional[str]:
+    """Pull a page's social-sharing image — the photo it publishes about itself."""
+    try:
+        with httpx.Client(follow_redirects=True, timeout=_TIMEOUT) as client:
+            resp = client.get(site, headers={"User-Agent": _BROWSER_UA})
+        if resp.status_code != 200:
+            return None
+        for pattern in _OG_PATTERNS:
+            match = pattern.search(resp.text or "")
+            if match:
+                url = match.group(1).strip()
+                if url.startswith("//"):
+                    url = "https:" + url
+                if url.startswith("http"):
+                    return url
+    except (httpx.HTTPError, ValueError):
+        return None
+    return None
+
+
+def _google_place_photo(name: str, lat: Optional[float], lng: Optional[float]) -> Optional[str]:
+    """Places photo URL, proxied so the API key never reaches the browser."""
+    results = _search_google(name, 1)
+    if not results:
+        return None
+    photos = results[0].get("photos") or []
+    if not photos:
+        return None
+    ref = photos[0].get("photo_reference")
+    if not ref:
+        return None
+    return (
+        "https://maps.googleapis.com/maps/api/place/photo"
+        f"?maxwidth=800&photo_reference={ref}&key={config.GOOGLE_MAPS_API_KEY}"
+    )
+
+
+def _metres_between(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+    """Great-circle distance, good enough for a few-hundred-metre sanity check."""
+    from math import asin, cos, radians, sin, sqrt
+
+    r = 6371000.0
+    dlat = radians(lat2 - lat1)
+    dlng = radians(lng2 - lng1)
+    a = sin(dlat / 2) ** 2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlng / 2) ** 2
+    return 2 * r * asin(sqrt(a))
+
+
+# A name search can return a completely different business that happens to
+# share a name — "Kiln" in London finds Kiln Theatre before the Soho
+# restaurant. We already know exactly where the place is, so anything further
+# than this from its pin isn't it.
+_PHOTO_MATCH_RADIUS_M = 250.0
+
+
+def find_place_photo(
+    name: str, city: Optional[str] = None, lat: Optional[float] = None, lng: Optional[float] = None
+) -> Optional[str]:
+    """Best-effort cover photo for a newly added place.
+
+    With a Google key this uses Places Photos, which has near-complete coverage.
+
+    Without one, it goes through OpenStreetMap: many restaurants carry a
+    `website` tag, and a restaurant's own site almost always publishes an
+    `og:image` — its own promotional photo, the same one a link preview would
+    show. Coverage is roughly half in spot checks, which beats a blank card.
+
+    Never raises and never blocks anything important; a miss just leaves the
+    generated placeholder in place.
+    """
+    name = (name or "").strip()
+    if not name:
+        return None
+
+    if config.GOOGLE_MAPS_API_KEY:
+        photo = _google_place_photo(name, lat, lng)
+        if photo:
+            return photo
+
+    query = ", ".join(p for p in [name, city] if p)
+    for row in _search_osm(query, 5):
+        # Reject anything that isn't physically at the place we're looking at.
+        if lat is not None and lng is not None:
+            try:
+                if _metres_between(lat, lng, float(row["lat"]), float(row["lon"])) > _PHOTO_MATCH_RADIUS_M:
+                    continue
+            except (KeyError, TypeError, ValueError):
+                continue
+        tags = row.get("extratags") or {}
+        site = tags.get("website") or tags.get("contact:website")
+        if not site:
+            continue
+        if site.startswith("//"):
+            site = "https:" + site
+        if not site.startswith("http"):
+            site = "https://" + site
+        image = _og_image(site)
+        if image:
+            return image
+    return None

@@ -262,4 +262,14 @@ Run both servers, seed, and walk the golden path **at a phone viewport (390×844
 - **The Google Maps Embed API can't be used for Discover** — it's an iframe, so custom pig pins, clustering and tap-to-drop-a-pin are all impossible. The Maps JavaScript API is the upgrade path.
 - **Category vocabulary differs by kind** — bars use a fixed set (Pub / Club / Beer Garden / Cocktail Bar / …); restaurants and cafes use free-form cuisine tags with suggestions.
 - **`review_text` is required** on a recommendation. With ratings removed, a recommendation with no text carries no more information than an oink.
-- **No auto-sourcing of photos.** Places without an uploaded photo get a generated placeholder.
+- **Photos are auto-sourced, best-effort.** Priority is: a photo someone
+  uploaded → an auto-sourced one → a generated placeholder. Keyless, the source
+  is OpenStreetMap's `website` tag followed by that site's `og:image` — the
+  restaurant's own published photo. Coverage is roughly a third; a Google key
+  raises it to near-complete via Places Photos.
+
+  Two guards matter. A candidate is rejected unless it sits within 250m of the
+  place's own pin — searching "Kiln" in London otherwise returns Kiln *Theatre*
+  and puts its photo on a Thai restaurant. And because these are hotlinked from
+  someone else's server, a failed load falls back to the placeholder rather than
+  leaving a broken image.

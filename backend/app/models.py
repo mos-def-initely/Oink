@@ -78,6 +78,9 @@ class Restaurant(Base):
     # Optional: a place can be added by dropping a pin or searching by name.
     google_maps_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     cover_image_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # Auto-sourced fallback image (spec §15). An uploaded photo always wins;
+    # this only fills the gap so a new place isn't a blank placeholder.
+    photo_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_by: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=_now)
 

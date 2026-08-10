@@ -2,11 +2,22 @@
 
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    HTTPException,
+    Query,
+    UploadFile,
+    status,
+)
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from .. import storage
+from ..places import find_place_photo
+from ..db import SessionLocal
 from ..db import get_db
 from ..deps import get_current_user, get_optional_user
 from ..models import Reaction, Restaurant, RestaurantImage, User
@@ -62,9 +73,30 @@ def list_restaurants(
     return restaurant_summaries(db, rows)
 
 
+def _attach_photo(restaurant_id: str, name: str, city: Optional[str], lat: float, lng: float) -> None:
+    """Find a cover photo after the fact.
+
+    Runs as a background task so adding a place returns immediately — the
+    lookup makes two network round trips and there's no reason to make someone
+    wait for a picture. A miss just leaves the generated placeholder.
+    """
+    photo = find_place_photo(name, city, lat, lng)
+    if not photo:
+        return
+    session = SessionLocal()
+    try:
+        place = session.get(Restaurant, restaurant_id)
+        if place and not place.photo_url:
+            place.photo_url = photo
+            session.commit()
+    finally:
+        session.close()
+
+
 @router.post("", response_model=RestaurantDetail, status_code=status.HTTP_201_CREATED)
 def create_restaurant(
     payload: RestaurantCreate,
+    background: BackgroundTasks,
     db: Session = Depends(get_db),
     viewer: User = Depends(get_current_user),
 ):
@@ -91,6 +123,8 @@ def create_restaurant(
 
     db.commit()
     db.refresh(place)
+
+    background.add_task(_attach_photo, place.id, place.name, place.city, place.lat, place.lng)
     return restaurant_detail(db, place, viewer)
 
 
