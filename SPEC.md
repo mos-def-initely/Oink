@@ -243,6 +243,16 @@ Avatars are full-body, so anyone with a truffle brings it along. Idle bob is
 staggered per pig off the id hash so the crowd breathes out of step, and it stops
 entirely under `prefers-reduced-motion`.
 
+**Pinch to zoom, drag to pan**, and pinching zooms about the point between your
+fingers rather than a corner — the field holds still under whatever you're
+looking at. Coming out of a pinch re-anchors to the finger still down, or the
+field jumps by however far apart the two were.
+
+**The grass never runs out.** Scenery used to be positioned nodes inside the
+field, so pulling back ran past its edge into bare green. It's now one repeating
+tile laid far beyond the pigs, which keeps going however far out you go and
+still scales with the zoom because it sits inside the transformed layer.
+
 Search pans to the first match and dims the rest rather than filtering the field
 down — the sty should stay a place you're looking around, not collapse into a
 list.
