@@ -54,6 +54,8 @@ type Props = {
   onSelect: (place: PlaceSummary) => void;
   /** Fires as the map settles, so search can be biased to the visible area. */
   onCenterChange?: (lat: number, lng: number) => void;
+  /** Set to move the map somewhere — a city picked from search. */
+  focusPoint?: { lat: number; lng: number } | null;
   /** Enables tap-to-drop-a-pin while adding a new place. */
   pickMode?: boolean;
   onPick?: (lat: number, lng: number) => void;
@@ -206,6 +208,7 @@ export default function MapView({
   places,
   onSelect,
   onCenterChange,
+  focusPoint,
   pickMode = false,
   onPick,
   pickedPoint,
@@ -411,6 +414,15 @@ export default function MapView({
       }
     })();
   }, [places, onSelect, ready, zoomTick, locateTick]);
+
+  // Jump to a city picked from search. Claims the framing slot so a late
+  // geolocation fix or the pin-fit fallback can't yank the view back.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready || !focusPoint) return;
+    framedRef.current = true;
+    map.setView([focusPoint.lat, focusPoint.lng], CITY_ZOOM);
+  }, [focusPoint, ready]);
 
   // The dropped pin while adding a place
   useEffect(() => {

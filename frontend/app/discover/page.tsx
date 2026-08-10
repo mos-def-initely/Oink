@@ -52,6 +52,12 @@ export default function DiscoverPage() {
   const [pickedPoint, setPickedPoint] = useState<{ lat: number; lng: number } | null>(null);
   // Where the map is pointed. Biases place search to the area on screen.
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | null>(null);
+  // Jump-to-a-city search. Geocoded through the same place lookup the add-place
+  // flow uses, so it needs no extra backend.
+  const [cityQuery, setCityQuery] = useState("");
+  const [cityBusy, setCityBusy] = useState(false);
+  const [cityError, setCityError] = useState<string | null>(null);
+  const [focusPoint, setFocusPoint] = useState<{ lat: number; lng: number } | null>(null);
 
   const [kinds, setKinds] = useState<Kind[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
@@ -118,6 +124,29 @@ export default function DiscoverPage() {
     setList(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
   }
 
+  async function goToCity(e: React.FormEvent) {
+    e.preventDefault();
+    const q = cityQuery.trim();
+    if (q.length < 3) return;
+    setCityBusy(true);
+    setCityError(null);
+    try {
+      const [best] = await api.searchPlaces(q);
+      if (!best) {
+        setCityError("Couldn't find that place.");
+        return;
+      }
+      // A new object each time, so searching the same city twice still moves
+      // the map back if you've panned away since.
+      setFocusPoint({ lat: best.lat, lng: best.lng });
+      setView("map");
+    } catch {
+      setCityError("Couldn't look that up.");
+    } finally {
+      setCityBusy(false);
+    }
+  }
+
   /** Changing the type prunes subtypes that no longer belong to it — otherwise a
    *  leftover cuisine silently filters every bar away. */
   function toggleKind(k: Kind) {
@@ -157,6 +186,28 @@ export default function DiscoverPage() {
             ))}
           </div>
         </div>
+        <form onSubmit={goToCity} className="mt-2 flex gap-2">
+          <input
+            className="field flex-1 py-2 text-sm"
+            value={cityQuery}
+            onChange={(e) => {
+              setCityQuery(e.target.value);
+              setCityError(null);
+            }}
+            placeholder="Jump to a city or area…"
+            aria-label="Search for a city"
+            enterKeyHint="search"
+          />
+          <button
+            type="submit"
+            className="btn-plain px-4 text-sm"
+            disabled={cityBusy || cityQuery.trim().length < 3}
+          >
+            {cityBusy ? "…" : "Go"}
+          </button>
+        </form>
+        {cityError && <p className="mt-1 px-1 text-xs font-bold text-tangerine">{cityError}</p>}
+
         {pickMode && (
           <p className="mt-2 rounded-lg bg-teal px-3 py-2 text-center font-display text-xs font-bold text-white">
             Tap the map to drop your pin
@@ -173,6 +224,7 @@ export default function DiscoverPage() {
               places={filtered}
               onSelect={setSelected}
               onCenterChange={(lat, lng) => setMapCenter({ lat, lng })}
+              focusPoint={focusPoint}
               pickMode={pickMode}
               pickedPoint={pickedPoint}
               onPick={(lat, lng) => {
