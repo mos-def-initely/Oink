@@ -73,10 +73,11 @@ export default function PigAvatar({
   // Every pig has a soft blush already; the accessory turns it up, so picking
   // it reads as a decision rather than a barely-there tweak.
   const rosy = cfg.accessory === "blush";
+  const shades = cfg.accessory === "sunglasses";
   // Cap, beret, bucket, chef and top hat sit down over the ears; a party cone
   // and a crown perch between them, so those two leave the ears showing.
   const earsHidden = hidesEars(cfg.hat);
-  const blushScale = rosy ? 1.4 : 1;
+  const blushScale = rosy ? 1.35 : 1;
   const blushAlpha = rosy ? 0.82 : 0.5;
 
   const grad = `g-${uid}`;
@@ -119,8 +120,8 @@ export default function PigAvatar({
           <ellipse cx="42" cy="42" rx="22" ry="16" fill="#fff" opacity="0.34" filter={`url(#${blur})`} />
         </g>
 
-        <ellipse cx="34" cy="69" rx={8 * blushScale} ry={5 * blushScale} fill={p.blush} opacity={blushAlpha} filter={`url(#${blur})`} />
-        <ellipse cx="86" cy="69" rx={8 * blushScale} ry={5 * blushScale} fill={p.blush} opacity={blushAlpha} filter={`url(#${blur})`} />
+        <ellipse cx="34" cy="69" rx={5.4 * blushScale} ry={3.4 * blushScale} fill={p.blush} opacity={blushAlpha} filter={`url(#${blur})`} />
+        <ellipse cx="86" cy="69" rx={5.4 * blushScale} ry={3.4 * blushScale} fill={p.blush} opacity={blushAlpha} filter={`url(#${blur})`} />
 
         {/* Snout sits proud of the face — shadow above it, highlight on top */}
         <ellipse cx="60" cy="66" rx="14" ry="8" fill={p.dark} opacity="0.4" filter={`url(#${blur})`} />
@@ -134,6 +135,8 @@ export default function PigAvatar({
             <line x1={74 - 4} y1={55 - 4} x2={74 + 4} y2={55 + 4} />
             <line x1={74 + 4} y1={55 - 4} x2={74 - 4} y2={55 + 4} />
           </g>
+        ) : shades ? (
+          <Shades lx={46} rx={74} cy={54} lens={10.5} />
         ) : (
           <>
             <ellipse cx="46" cy="55" rx="3.8" ry="4.6" fill={EYE} />
@@ -260,8 +263,8 @@ export default function PigAvatar({
         <ellipse cx={65 - headRx * 0.42} cy="34" rx={headRx * 0.6} ry={headRy * 0.45} fill="#fff" opacity="0.32" filter={`url(#${blur})`} />
       </g>
 
-      <ellipse cx={65 - headRx * 0.72} cy="56" rx={6.4 * blushScale} ry={4 * blushScale} fill={p.blush} opacity={blushAlpha} filter={`url(#${blur})`} />
-      <ellipse cx={65 + headRx * 0.72} cy="56" rx={6.4 * blushScale} ry={4 * blushScale} fill={p.blush} opacity={blushAlpha} filter={`url(#${blur})`} />
+      <ellipse cx={65 - headRx * 0.72} cy="56" rx={4.4 * blushScale} ry={2.8 * blushScale} fill={p.blush} opacity={blushAlpha} filter={`url(#${blur})`} />
+      <ellipse cx={65 + headRx * 0.72} cy="56" rx={4.4 * blushScale} ry={2.8 * blushScale} fill={p.blush} opacity={blushAlpha} filter={`url(#${blur})`} />
 
       <ellipse cx="65" cy="53" rx="12" ry="6.5" fill={p.dark} opacity="0.38" filter={`url(#${blur})`} />
       <ellipse cx="65" cy="57" rx="12" ry="8.6" fill={p.snout} stroke={OUTLINE} strokeWidth={STROKE} />
@@ -274,6 +277,8 @@ export default function PigAvatar({
           <line x1={76 - 3.4} y1={44 - 3.4} x2={76 + 3.4} y2={44 + 3.4} />
           <line x1={76 + 3.4} y1={44 - 3.4} x2={76 - 3.4} y2={44 + 3.4} />
         </g>
+      ) : shades ? (
+        <Shades lx={54} rx={76} cy={43.5} lens={8.6} />
       ) : (
         <>
           <ellipse cx="54" cy="44" rx="3.2" ry="3.9" fill={EYE} />
@@ -297,6 +302,28 @@ export default function PigAvatar({
       )}
       <Hat hat={cfg.hat} cx={65} topY={48 - headRy - 4} w={headRx} />
     </svg>
+  );
+}
+
+/** Two rounded lenses and a bridge, in her outline rather than a hard black. */
+function Shades({ lx, rx, cy, lens }: { lx: number; rx: number; cy: number; lens: number }) {
+  const h = lens * 0.78;
+  return (
+    <g stroke={OUTLINE} strokeWidth={STROKE - 0.3} strokeLinejoin="round">
+      <rect x={lx - lens / 2} y={cy - h / 2} width={lens} height={h} rx={h * 0.42} fill="#43262F" />
+      <rect x={rx - lens / 2} y={cy - h / 2} width={lens} height={h} rx={h * 0.42} fill="#43262F" />
+      <line x1={lx + lens / 2} y1={cy} x2={rx - lens / 2} y2={cy} strokeWidth={STROKE - 0.5} />
+      <line
+        x1={lx - lens / 2 + 1.4}
+        y1={cy - h / 2 + 1.8}
+        x2={lx + lens / 2 - 2.2}
+        y2={cy - h / 2 + 1.8}
+        stroke="#fff"
+        strokeOpacity="0.45"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+    </g>
   );
 }
 

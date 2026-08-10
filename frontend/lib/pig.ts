@@ -167,7 +167,7 @@ export function hidesEars(hat: string | undefined): boolean {
 
 // Accessories are hers: the rebuilt pig draws blush and a scarf, and offering
 // options the art can't render would be a menu of no-ops.
-export const PIG_ACCESSORIES = ["none", "blush", "scarf"] as const;
+export const PIG_ACCESSORIES = ["none", "blush", "scarf", "sunglasses"] as const;
 
 export type PigConfig = {
   color?: string;
