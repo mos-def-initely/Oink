@@ -154,6 +154,12 @@ ears, tiny trotters, curly tail.
 The avatar is deliberately **neutral** — it is an identity, not a mood. All the
 expression in the interface comes from the reaction icons instead.
 
+**Modelling, not just outline.** A flat fill inside a uniform stroke reads as a
+die-cut sticker. Volume comes from three soft passes clipped inside each form —
+a core shadow down the lower-right, a broad highlight on the upper left, and a
+contact shadow where the head meets the body — all Gaussian-blurred, with a
+thinner stroke so the line stops dominating.
+
 Construction: a rounded body with the head overlapping it, so the whole thing
 reads as one silhouette. Arms are drawn **on top of** the body edges in the
 slightly darker ear tone — that's what makes them read as arms in front. Drawn

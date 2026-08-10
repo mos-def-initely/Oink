@@ -3,21 +3,26 @@
 /**
  * The user's avatar pig — spec §9.1.
  *
- * Drawn in the reference style: warm brown outline (never black), soft shaded
- * fill, blush cheeks, wide-set dot eyes with a highlight, snub snout with
- * nostrils, small upright ears, tiny trotters, curly tail.
+ * Reference style: warm brown outline (never black), blush cheeks, wide-set dot
+ * eyes with a highlight, snub snout with nostrils, small upright ears, tiny
+ * trotters, curly tail.
  *
- * The avatar is deliberately **neutral**. It's an identity, not a mood — the
- * expression in the interface comes from the reaction icons instead
- * (ReactionPigs.tsx), which is where all the attitude lives.
+ * **Modelling, not just outline.** A flat fill inside a uniform stroke reads as
+ * a die-cut sticker. Volume comes from three soft passes clipped inside each
+ * form — a core shadow down the lower-right, a broad highlight on the upper
+ * left, and a contact shadow where the head meets the body — all blurred, with
+ * a thinner stroke so the line stops dominating. That's what makes it read as a
+ * character rather than a decal.
+ *
+ * The avatar is deliberately **neutral**. It's an identity, not a mood; all the
+ * expression lives in the reaction icons (ReactionPigs.tsx).
  *
  * Two variants:
  *   variant="face"  head only, for map pins and dense lists
  *   variant="full"  whole animal, used only on the feed and the profile
  *
- * The snout and its two nostrils are drawn at every size — they're the most
- * recognisably pig feature, and dropping them at small sizes makes the avatar
- * read as a generic blob.
+ * The snout and its two nostrils are drawn at every size — the most
+ * recognisably pig feature, and without them the avatar reads as a blob.
  */
 import { useId } from "react";
 import {
@@ -39,8 +44,9 @@ type Props = {
   className?: string;
 };
 
-const OUTLINE = "#7A4450";
-const EYE = "#4A2B33";
+const OUTLINE = "#8A5460";
+const EYE = "#43262F";
+const STROKE = 2.1;
 
 export default function PigAvatar({
   config,
@@ -55,40 +61,55 @@ export default function PigAvatar({
   const p = PIG_COLORS[cfg.color];
   const bg = PIG_BACKGROUNDS[cfg.background];
   const shape = TIER_SHAPE[fatnessTier(placesLogged)];
-  const grad = `pig-${uid}`;
 
-  const gradient = (
+  const grad = `g-${uid}`;
+  const blur = `b-${uid}`;
+  const headClip = `hc-${uid}`;
+  const bodyClip = `bc-${uid}`;
+
+  const defs = (
     <defs>
-      <radialGradient id={grad} cx="36%" cy="28%" r="76%">
+      <radialGradient id={grad} cx="34%" cy="24%" r="82%">
         <stop offset="0%" stopColor={p.light} />
-        <stop offset="64%" stopColor={p.mid} />
+        <stop offset="52%" stopColor={p.mid} />
         <stop offset="100%" stopColor={p.dark} />
       </radialGradient>
+      <filter id={blur} x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="4" />
+      </filter>
     </defs>
   );
 
   if (variant === "face") {
     return (
       <svg width={size} height={size} viewBox="0 0 120 120" className={className} role="img" aria-label="Pig">
-        {gradient}
+        {defs}
+        <clipPath id={headClip}>
+          <ellipse cx="60" cy="62" rx="35" ry="31" />
+        </clipPath>
+
         {!bare && <circle cx="60" cy="60" r="60" fill={bg} />}
-        <g stroke={OUTLINE} strokeWidth="2.8" strokeLinejoin="round">
+
+        <g stroke={OUTLINE} strokeWidth={STROKE} strokeLinejoin="round">
           <path d="M30 44 Q26 20 47 31 Z" fill={p.ear} />
           <path d="M90 44 Q94 20 73 31 Z" fill={p.ear} />
           <ellipse cx="60" cy="62" rx="35" ry="31" fill={`url(#${grad})`} />
-          <ellipse cx="60" cy="71" rx="14" ry="10.5" fill={p.snout} />
         </g>
-        {/* soft shade down one side */}
-        <path
-          d="M83 44 a35 31 0 0 1 -6 43"
-          fill="none"
-          stroke={p.dark}
-          strokeWidth="7"
-          opacity="0.4"
-          strokeLinecap="round"
-        />
-        <ellipse cx="34" cy="69" rx="8" ry="5" fill={p.blush} opacity="0.55" />
-        <ellipse cx="86" cy="69" rx="8" ry="5" fill={p.blush} opacity="0.55" />
+
+        {/* Soft modelling, clipped inside the head */}
+        <g clipPath={`url(#${headClip})`}>
+          <ellipse cx="78" cy="86" rx="34" ry="26" fill={p.dark} opacity="0.5" filter={`url(#${blur})`} />
+          <ellipse cx="42" cy="42" rx="22" ry="16" fill="#fff" opacity="0.34" filter={`url(#${blur})`} />
+        </g>
+
+        <ellipse cx="34" cy="69" rx="8" ry="5" fill={p.blush} opacity="0.5" filter={`url(#${blur})`} />
+        <ellipse cx="86" cy="69" rx="8" ry="5" fill={p.blush} opacity="0.5" filter={`url(#${blur})`} />
+
+        {/* Snout sits proud of the face — shadow above it, highlight on top */}
+        <ellipse cx="60" cy="66" rx="14" ry="8" fill={p.dark} opacity="0.4" filter={`url(#${blur})`} />
+        <ellipse cx="60" cy="71" rx="14" ry="10.5" fill={p.snout} stroke={OUTLINE} strokeWidth={STROKE} />
+        <ellipse cx="57" cy="67" rx="7" ry="3" fill="#fff" opacity="0.28" filter={`url(#${blur})`} />
+
         <ellipse cx="46" cy="55" rx="3.8" ry="4.6" fill={EYE} />
         <ellipse cx="74" cy="55" rx="3.8" ry="4.6" fill={EYE} />
         <circle cx="47.4" cy="53.4" r="1.4" fill="#fff" />
@@ -96,6 +117,7 @@ export default function PigAvatar({
         {/* nostrils — always drawn */}
         <ellipse cx="55" cy="71" rx="2.3" ry="3.2" fill={p.nostril} />
         <ellipse cx="65" cy="71" rx="2.3" ry="3.2" fill={p.nostril} />
+
         <Hat hat={cfg.hat} cx={60} topY={24} w={35} />
       </svg>
     );
@@ -115,37 +137,39 @@ export default function PigAvatar({
       role="img"
       aria-label="Pig"
     >
-      {gradient}
+      {defs}
+      <clipPath id={bodyClip}>
+        <ellipse cx="65" cy="82" rx={w} ry={w * 0.9} />
+      </clipPath>
+      <clipPath id={headClip}>
+        <ellipse cx="65" cy="48" rx={headRx} ry={headRy} />
+      </clipPath>
 
-      {/* Tail starts outside the right arm's outer edge (65 + w + 4), so it
-          reads as coming off the rump rather than out of the arm. */}
+      {/* Tail starts outside the right arm's outer edge, so it comes off the
+          rump rather than out of the arm. */}
       <path
         d={`M ${65 + w + 5} 88 q 12 -3 10 -14`}
         fill="none"
         stroke={OUTLINE}
-        strokeWidth="2.8"
+        strokeWidth={STROKE + 0.4}
         strokeLinecap="round"
       />
 
-      <g stroke={OUTLINE} strokeWidth="2.8" strokeLinejoin="round">
-        {/* Trotters first, so the body covers where they meet it. */}
+      {/* ground shadow */}
+      <ellipse cx="65" cy="122" rx={w * 0.8} ry="5" fill={p.dark} opacity="0.28" filter={`url(#${blur})`} />
+
+      <g stroke={OUTLINE} strokeWidth={STROKE} strokeLinejoin="round">
         <rect x={65 - w * 0.55} y="100" width="14" height="19" rx="6.5" fill={p.snout} />
         <rect x={65 + w * 0.55 - 14} y="100" width="14" height="19" rx="6.5" fill={p.snout} />
-
         <ellipse cx="65" cy="82" rx={w} ry={w * 0.9} fill={`url(#${grad})`} />
+      </g>
 
-        {/* Arms sit ON TOP of the body edges in the slightly darker ear tone —
-            that's what makes them read as arms in front rather than as limbs
-            floating beside a ball. Drawn behind the body they look detached. */}
-        <rect x={65 - w - 4} y="74" width="13" height="24" rx="6.5" fill={p.ear} />
-        <rect x={65 + w - 9} y="74" width="13" height="24" rx="6.5" fill={p.ear} />
-
-        {/* Ears behind, then the head overlapping the body so they read as one
-            silhouette rather than a head balanced on a ball. */}
-        <path d={`M ${65 - headRx + 3} 40 Q ${65 - headRx - 3} 14 ${65 - 9} 27 Z`} fill={p.ear} />
-        <path d={`M ${65 + headRx - 3} 40 Q ${65 + headRx + 3} 14 ${65 + 9} 27 Z`} fill={p.ear} />
-        <ellipse cx="65" cy="48" rx={headRx} ry={headRy} fill={`url(#${grad})`} />
-        <ellipse cx="65" cy="57" rx="12" ry="8.6" fill={p.snout} />
+      {/* Body modelling */}
+      <g clipPath={`url(#${bodyClip})`}>
+        <ellipse cx={65 + w * 0.5} cy="104" rx={w * 1.1} ry={w * 0.7} fill={p.dark} opacity="0.48" filter={`url(#${blur})`} />
+        <ellipse cx={65 - w * 0.4} cy="66" rx={w * 0.6} ry={w * 0.4} fill="#fff" opacity="0.3" filter={`url(#${blur})`} />
+        {/* contact shadow cast by the head onto the body */}
+        <ellipse cx="65" cy="62" rx={headRx * 0.95} ry="12" fill={p.dark} opacity="0.55" filter={`url(#${blur})`} />
       </g>
 
       {/* belly rolls — the fatness signal */}
@@ -158,23 +182,39 @@ export default function PigAvatar({
             d={`M ${65 - spread} ${y} q ${spread} ${7 + i} ${spread * 2} 0`}
             fill="none"
             stroke={p.dark}
-            strokeWidth="2.4"
+            strokeWidth="2"
             strokeLinecap="round"
-            opacity="0.55"
+            opacity="0.5"
           />
         );
       })}
 
-      <path
-        d={`M ${65 + headRx - 4} 32 a ${headRx} ${headRy} 0 0 1 -5 36`}
-        fill="none"
-        stroke={p.dark}
-        strokeWidth="6"
-        opacity="0.35"
-        strokeLinecap="round"
-      />
-      <ellipse cx={65 - headRx * 0.72} cy="56" rx="6.4" ry="4" fill={p.blush} opacity="0.55" />
-      <ellipse cx={65 + headRx * 0.72} cy="56" rx="6.4" ry="4" fill={p.blush} opacity="0.55" />
+      {/* Arms sit ON TOP of the body edges in the darker ear tone, which is what
+          makes them read as arms in front rather than limbs beside a ball. */}
+      <g stroke={OUTLINE} strokeWidth={STROKE} strokeLinejoin="round">
+        <rect x={65 - w - 4} y="74" width="13" height="24" rx="6.5" fill={p.ear} />
+        <rect x={65 + w - 9} y="74" width="13" height="24" rx="6.5" fill={p.ear} />
+      </g>
+
+      <g stroke={OUTLINE} strokeWidth={STROKE} strokeLinejoin="round">
+        <path d={`M ${65 - headRx + 3} 40 Q ${65 - headRx - 3} 14 ${65 - 9} 27 Z`} fill={p.ear} />
+        <path d={`M ${65 + headRx - 3} 40 Q ${65 + headRx + 3} 14 ${65 + 9} 27 Z`} fill={p.ear} />
+        <ellipse cx="65" cy="48" rx={headRx} ry={headRy} fill={`url(#${grad})`} />
+      </g>
+
+      {/* Head modelling */}
+      <g clipPath={`url(#${headClip})`}>
+        <ellipse cx={65 + headRx * 0.5} cy="68" rx={headRx} ry={headRy * 0.8} fill={p.dark} opacity="0.48" filter={`url(#${blur})`} />
+        <ellipse cx={65 - headRx * 0.42} cy="34" rx={headRx * 0.6} ry={headRy * 0.45} fill="#fff" opacity="0.32" filter={`url(#${blur})`} />
+      </g>
+
+      <ellipse cx={65 - headRx * 0.72} cy="56" rx="6.4" ry="4" fill={p.blush} opacity="0.5" filter={`url(#${blur})`} />
+      <ellipse cx={65 + headRx * 0.72} cy="56" rx="6.4" ry="4" fill={p.blush} opacity="0.5" filter={`url(#${blur})`} />
+
+      <ellipse cx="65" cy="53" rx="12" ry="6.5" fill={p.dark} opacity="0.38" filter={`url(#${blur})`} />
+      <ellipse cx="65" cy="57" rx="12" ry="8.6" fill={p.snout} stroke={OUTLINE} strokeWidth={STROKE} />
+      <ellipse cx="62.5" cy="54" rx="6" ry="2.4" fill="#fff" opacity="0.26" filter={`url(#${blur})`} />
+
       <ellipse cx="54" cy="44" rx="3.2" ry="3.9" fill={EYE} />
       <ellipse cx="76" cy="44" rx="3.2" ry="3.9" fill={EYE} />
       <circle cx="55.2" cy="42.6" r="1.2" fill="#fff" />
@@ -188,7 +228,7 @@ export default function PigAvatar({
           d={`M ${65 - headRx + 2} ${48 + headRy - 2} q ${headRx - 2} 9 ${(headRx - 2) * 2} 0 l 0 8 q ${-(headRx - 2)} 9 ${-(headRx - 2) * 2} 0 Z`}
           fill="#CFA51F"
           stroke={OUTLINE}
-          strokeWidth="2.4"
+          strokeWidth={STROKE}
           strokeLinejoin="round"
         />
       )}
@@ -198,7 +238,7 @@ export default function PigAvatar({
 }
 
 function Hat({ hat, cx, topY, w }: { hat: string; cx: number; topY: number; w: number }) {
-  const s = { stroke: OUTLINE, strokeWidth: 2.6, strokeLinejoin: "round" as const };
+  const s = { stroke: OUTLINE, strokeWidth: STROKE + 0.2, strokeLinejoin: "round" as const };
   switch (hat) {
     case "cap":
       return (
@@ -208,8 +248,7 @@ function Hat({ hat, cx, topY, w }: { hat: string; cx: number; topY: number; w: n
         </g>
       );
     case "beret":
-      // Tilted and sitting off to one side — flat on the crown it reads as a
-      // helmet rather than a hat.
+      // Tilted and off to one side — flat on the crown it reads as a helmet.
       return (
         <g {...s} transform={`rotate(-12 ${cx} ${topY + 10})`}>
           <ellipse cx={cx} cy={topY + 10} rx={w * 0.66} ry={w * 0.3} fill="#4D303F" />
