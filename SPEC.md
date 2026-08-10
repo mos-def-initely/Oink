@@ -225,6 +225,58 @@ all three keep the fatness tiers, nostrils and shading.
 ### 9.2 Price-tier pig
 Budget is **never** bare `$` text. Four fixed pigs, always with the label beside them: `$` peasant (patched smock, straw), `$$` casual (tee), `$$$` smart (collared shirt), `$$$$` posh (top hat, monocle, cigar, tailcoat).
 
+### 9.3 Costumes
+The avatar has four independent slots — **costume, headwear, face, companion** —
+and the point is that they **stack**. Club Penguin's memorable items were never
+garments, they were characters, and a few dozen items produced hundreds of
+visibly distinct penguins only because several could be worn at once.
+
+Three everyday tops (hoodie, puffer, dungarees) sit alongside eleven costumes:
+princess, pirate, raver, astronaut, superhero, ninja, dinosaur, wizard,
+rockstar, chef, hot dog.
+
+Two rules make a costume read as worn rather than stuck on:
+
+- **It changes the silhouette.** A garment that only recolours the torso reads as
+  a bib. The puffer is drawn wider than the body, the gown flares past the
+  trotters, hoods sit behind the head.
+- **Sleeves recolour the arms.** Arms left in the coat colour were what made the
+  first attempt fail, more than any amount of detail on the chest.
+
+Costumes are drawn once in normalised space (waist 30, head radius 27.5) and
+scaled about the body or head centre, so one set of paths fits all four fatness
+tiers. The two anchors are separate because head and waist grow at different
+rates between tiers.
+
+Each costume names the headwear it implies, which fills an **empty** hat slot but
+never overrides a hat already chosen. The slots stay independent on purpose: a
+viking helmet over a princess gown is a legitimate outcome, and that freedom is
+where the humour lives.
+
+The face slot is separate from headwear so sunglasses can be worn under a hat.
+
+Costumes and companions need a body, so they appear only where the full-body
+variant does — the feed and the profile. Map pins draw the head alone and are
+unaffected.
+
+### 9.4 Companions
+The puffle role: a second creature standing beside the animal, rather than a
+prop it has to hold — the pig has no hand to hold anything with.
+
+Twelve, led by the **truffle**, which is the one a pig would actually be hunting.
+It is the only companion with its own colour set, and those are the real
+varieties — burgundy, black périgord, white alba, summer — which is a better
+colour story than arbitrary tints and keeps the joke intact.
+
+The rest are animals: piglet, duckling, parrot, cat, fox, hedgehog, bunny, frog,
+mouse, tortoise, snail.
+
+The companion stands to the animal's **left**, since the tail comes off the right
+hip. Its position is offset from the body but clamped to the frame edge — a round
+animal leaves no clear space beside it, so the companion may stand slightly in
+front rather than shrinking to fit. A companion that shrank would read as further
+away, not as a smaller creature.
+
 ## 10. Aesthetic — "Damson"
 
 Warm, outlined, and a bit grumpy. Derived from supplied references: a pig

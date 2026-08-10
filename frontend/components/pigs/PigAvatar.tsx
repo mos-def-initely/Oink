@@ -34,6 +34,8 @@ import {
   fatnessTier,
   normalisePig,
 } from "@/lib/pig";
+import { costumeParts, faceItem } from "./Costume";
+import { companion, companionTransform } from "./Companion";
 
 type Props = {
   config?: PigConfig | null;
@@ -71,6 +73,11 @@ export default function PigAvatar({
   const rosy = cfg.accessory === "blush";
   const blushScale = rosy ? 1.4 : 1;
   const blushAlpha = rosy ? 0.82 : 0.5;
+
+  // Costume parts are drawn in normalised space (waist 30, head radius 27.5) and
+  // scaled about the matching centre, so one set of paths fits every tier.
+  const dress = costumeParts(cfg.costume, OUTLINE);
+  const specs = faceItem(cfg.face, OUTLINE);
 
   const grad = `g-${uid}`;
   const blur = `b-${uid}`;
@@ -138,6 +145,12 @@ export default function PigAvatar({
         <ellipse cx="55" cy="71" rx="2.3" ry="3.2" fill={p.nostril} />
         <ellipse cx="65" cy="71" rx="2.3" ry="3.2" fill={p.nostril} />
 
+        {/* Face items scale from the same head geometry as the hat. The costume
+            and companion slots have nothing to attach to here — this variant
+            draws no body — so they're simply absent on pins and dense lists. */}
+        {specs && (
+          <g transform="translate(60 55) scale(1.27) translate(-65 -48)">{specs}</g>
+        )}
         <Hat hat={cfg.hat} cx={60} topY={24} w={35} outline={OUTLINE} />
       </svg>
     );
@@ -147,6 +160,10 @@ export default function PigAvatar({
   const w = shape.waist;
   const headRx = shape.head;
   const headRy = headRx * 0.9;
+  // Body-anchored costume parts scale about the torso centre, head-anchored ones
+  // about the head centre — the two grow at different rates between tiers.
+  const bodyT = `translate(65 82) scale(${w / 30}) translate(-65 -82)`;
+  const headT = `translate(65 48) scale(${headRx / 27.5}) translate(-65 -48)`;
 
   return (
     <svg
@@ -164,6 +181,8 @@ export default function PigAvatar({
       <clipPath id={headClip}>
         <ellipse cx="65" cy="48" rx={headRx} ry={headRy} />
       </clipPath>
+
+      {dress.under && <g transform={bodyT}>{dress.under}</g>}
 
       {/* Tail starts outside the right arm's outer edge, so it comes off the
           rump rather than out of the arm. */}
@@ -209,12 +228,27 @@ export default function PigAvatar({
         );
       })}
 
+      {dress.onBody && <g transform={bodyT}>{dress.onBody}</g>}
+
       {/* Arms sit ON TOP of the body edges in the darker ear tone, which is what
-          makes them read as arms in front rather than limbs beside a ball. */}
+          makes them read as arms in front rather than limbs beside a ball.
+          A sleeved costume recolours them — arms left in the coat colour are
+          what made an outfit read as a bib stuck on the front. */}
       <g stroke={OUTLINE} strokeWidth={STROKE} strokeLinejoin="round">
-        <rect x={65 - w - 4} y="74" width="13" height="24" rx="6.5" fill={p.ear} />
-        <rect x={65 + w - 9} y="74" width="13" height="24" rx="6.5" fill={p.ear} />
+        <rect x={65 - w - 4} y="74" width="13" height="24" rx="6.5" fill={dress.sleeve ?? p.ear} />
+        <rect x={65 + w - 9} y="74" width="13" height="24" rx="6.5" fill={dress.sleeve ?? p.ear} />
       </g>
+      {/* Cuffs come off real arm geometry rather than the scaled group, so they
+          stay on the ends of the arms at every tier. */}
+      {dress.cuff && (
+        <g stroke={OUTLINE} strokeWidth={STROKE - 0.3} strokeLinejoin="round">
+          <rect x={65 - w - 4} y="91" width="13" height="7" rx="3.2" fill={dress.cuff} />
+          <rect x={65 + w - 9} y="91" width="13" height="7" rx="3.2" fill={dress.cuff} />
+        </g>
+      )}
+
+      {dress.overArms && <g transform={bodyT}>{dress.overArms}</g>}
+      {dress.behindHead && <g transform={headT}>{dress.behindHead}</g>}
 
       <g stroke={OUTLINE} strokeWidth={STROKE} strokeLinejoin="round">
         <BodyEars species={species} fill={p.ear} headRx={headRx} />
@@ -252,7 +286,14 @@ export default function PigAvatar({
           strokeLinejoin="round"
         />
       )}
+      {dress.headExtra && <g transform={headT}>{dress.headExtra}</g>}
+      {specs && <g transform={headT}>{specs}</g>}
       <Hat hat={cfg.hat} cx={65} topY={48 - headRy - 4} w={headRx} outline={OUTLINE} />
+      {dress.front && <g transform={bodyT}>{dress.front}</g>}
+
+      {cfg.companion !== "none" && (
+        <g transform={companionTransform(w)}>{companion(cfg.companion, uid, cfg.truffle)}</g>
+      )}
     </svg>
   );
 }
@@ -396,7 +437,112 @@ function Hat({ hat, cx, topY, w, outline }: { hat: string; cx: number; topY: num
           <ellipse cx={cx} cy={topY - 6} rx={w * 0.34} ry={w * 0.3} fill="#FFFDF6" />
         </g>
       );
-    default:
-      return null;
+    // --- costume headwear -------------------------------------------------
+    // These are drawn against a nominal head radius of 27.5 and scaled to the
+    // real one, so a slim pig's viking helmet doesn't swallow its face.
+    default: {
+      const k = w / 27.5;
+      const inner = COSTUME_HATS[hat];
+      if (!inner) return null;
+      return (
+        <g {...s} transform={`translate(${cx} ${topY + 4}) scale(${k}) translate(${-65} ${-24})`}>
+          {inner}
+        </g>
+      );
+    }
   }
 }
+
+/** Headwear drawn in normalised head space (centre 65, brim around y=30). */
+const COSTUME_HATS: Record<string, React.ReactNode> = {
+  bandana: (
+    <>
+      <path d="M40 30 q25 -14 50 0 q-25 10 -50 0 Z" fill="#A9503C" />
+      <path d="M88 30 l12 6 -3 -9 Z" fill="#A9503C" />
+    </>
+  ),
+  flowers: (
+    <>
+      {[0, 1, 2, 3, 4].map((i) => {
+        const cols = ["#E6D389", "#D8B5F7", "#F5BCC8", "#A8DCC0", "#E6D389"];
+        return (
+          <g key={i} transform={`translate(${44 + i * 11} ${24 - Math.abs(i - 2) * 3})`}>
+            {[0, 1, 2, 3, 4].map((a) => (
+              <circle
+                key={a}
+                cx={4.5 * Math.cos(a * 1.2566)}
+                cy={4.5 * Math.sin(a * 1.2566)}
+                r="3.4"
+                fill={cols[i]}
+              />
+            ))}
+            <circle r="2.4" fill="#CFA51F" />
+          </g>
+        );
+      })}
+    </>
+  ),
+  beanie: (
+    <>
+      <path d="M40 32 q0 -22 25 -22 q25 0 25 22 Z" fill="#4E7FA8" />
+      <rect x="38" y="27" width="54" height="8" rx="4" fill="#3E6A8E" />
+      <circle cx="65" cy="9" r="5" fill="#FFFDF6" />
+    </>
+  ),
+  pirate: (
+    <>
+      <path d="M36 30 q29 -16 58 0 q-29 8 -58 0 Z" fill="#4D303F" />
+      <path d="M44 24 q21 -18 42 0 Z" fill="#4D303F" />
+      <circle cx="65" cy="16" r="3" fill="#FFFDF6" stroke="none" />
+      <path d="M60 21 l10 -6 M60 15 l10 6" stroke="#FFFDF6" strokeWidth="1.8" />
+    </>
+  ),
+  sunhat: (
+    <>
+      <ellipse cx="65" cy="32" rx="36" ry="8" fill="#E6D389" />
+      <path d="M48 30 q0 -18 17 -18 q17 0 17 18 Z" fill="#E6D389" />
+      <path d="M48 26 q17 6 34 0" stroke="#914E56" strokeWidth="3.4" fill="none" />
+    </>
+  ),
+  headphones: (
+    <>
+      <path d="M40 34 q0 -26 25 -26 q25 0 25 26" fill="none" stroke="#4D303F" strokeWidth="4" />
+      <rect x="33" y="30" width="13" height="18" rx="5" fill="#39D6A0" />
+      <rect x="84" y="30" width="13" height="18" rx="5" fill="#39D6A0" />
+    </>
+  ),
+  viking: (
+    <>
+      <path d="M44 30 q21 -16 42 0 Z" fill="#9A9088" />
+      <path d="M44 28 q-14 -6 -12 -20 q10 2 14 14 Z" fill="#FFFDF6" />
+      <path d="M86 28 q14 -6 12 -20 q-10 2 -14 14 Z" fill="#FFFDF6" />
+    </>
+  ),
+  flatcap: (
+    <>
+      <path d="M44 30 q21 -18 42 -2 Z" fill="#806B28" />
+      <path d="M40 30 q22 6 46 -2 l4 4 q-25 8 -52 2 Z" fill="#806B28" />
+    </>
+  ),
+  wizard: (
+    <>
+      <path d="M40 32 L65 -10 L90 32 Z" fill="#4A3E7A" />
+      <ellipse cx="65" cy="32" rx="30" ry="6" fill="#3B3163" />
+      {[0, 1, 2].map((i) => (
+        <path
+          key={i}
+          d={`M${56 + i * 7} ${8 + i * 7} l1.6 4 4-1 -3 3 3 3 -4-1 -1.6 4 -1.6-4 -4 1 3-3 -3-3 4 1 Z`}
+          fill="#E6D389"
+          stroke="none"
+        />
+      ))}
+    </>
+  ),
+  helmet: (
+    <>
+      <path d="M38 40 q0 -32 27 -32 q27 0 27 32 q-13 6 -27 6 q-14 0 -27 -6 Z" fill="#FFFDF6" />
+      <path d="M40 34 q25 8 50 0" fill="none" opacity="0.5" />
+      <rect x="60" y="4" width="10" height="8" rx="3" fill="#CFA51F" />
+    </>
+  ),
+};

@@ -123,8 +123,68 @@ export const SPECIES_DEFAULT_COLOR: Record<Species, string> = {
   hog: "sand",
 };
 
-export const PIG_HATS = ["none", "cap", "beret", "bucket", "party", "crown", "chef"] as const;
+export const PIG_HATS = [
+  "none", "cap", "beret", "bucket", "party", "crown", "chef",
+  "bandana", "flowers", "beanie", "pirate", "sunhat", "headphones", "viking",
+  "flatcap", "wizard", "helmet",
+] as const;
 export const PIG_ACCESSORIES = ["none", "blush", "scarf"] as const;
+
+/**
+ * Costumes (spec §9.3). Club Penguin's memorable items were never garments, they
+ * were characters — so three everyday tops sit alongside eleven costumes.
+ *
+ * `hat` is the headwear each costume implies. Picking a costume fills an empty
+ * hat slot with it but never overrides a hat already chosen: the slots stay
+ * independent, and a viking helmet over a princess gown is a legitimate outcome.
+ */
+export const PIG_COSTUMES = [
+  "none",
+  "hoodie", "puffer", "dungarees",
+  "princess", "pirate", "raver", "astronaut", "superhero", "ninja",
+  "dinosaur", "wizard", "rockstar", "chef", "hotdog",
+] as const;
+export type Costume = (typeof PIG_COSTUMES)[number];
+
+export const COSTUME_LABELS: Record<Costume, string> = {
+  none: "none", hoodie: "hoodie", puffer: "puffer", dungarees: "dungarees",
+  princess: "princess", pirate: "pirate", raver: "raver", astronaut: "astronaut",
+  superhero: "superhero", ninja: "ninja", dinosaur: "dinosaur", wizard: "wizard",
+  rockstar: "rockstar", chef: "chef", hotdog: "hot dog",
+};
+
+/** The hat each costume suggests, applied only when the hat slot is empty. */
+export const COSTUME_HAT: Partial<Record<Costume, string>> = {
+  princess: "crown", pirate: "pirate", raver: "headphones", astronaut: "helmet",
+  wizard: "wizard", rockstar: "bandana", chef: "chef", dinosaur: "none",
+};
+
+/** Face items are their own slot so they stack with a hat. */
+export const PIG_FACES = ["none", "shades", "specs", "monocle", "eyepatch", "moustache"] as const;
+
+/**
+ * Companions (spec §9.4) — the puffle role. The truffle leads because it's the
+ * one a pig would actually be hunting, and it's the only companion with its own
+ * colour set: real truffles already come in varieties.
+ */
+export const PIG_COMPANIONS = [
+  "none", "truffle", "piglet", "duckling", "parrot", "cat", "fox",
+  "hedgehog", "bunny", "frog", "mouse", "tortoise", "snail",
+] as const;
+export type Companion = (typeof PIG_COMPANIONS)[number];
+
+export type TrufflePalette = { fill: string; dark: string; line: string; blush: string };
+
+export const TRUFFLE_VARIETIES: Record<string, TrufflePalette> = {
+  burgundy:  { fill: "#7E5B44", dark: "#5A3F2E", line: "#3A281E", blush: "#D4808C" },
+  perigord:  { fill: "#4A3A30", dark: "#2B2019", line: "#191210", blush: "#B06A78" },
+  alba:      { fill: "#E4D3AE", dark: "#C4AE83", line: "#7E6A48", blush: "#E08A94" },
+  summer:    { fill: "#9C7A4E", dark: "#75563A", line: "#4A3527", blush: "#D4808C" },
+};
+
+export const TRUFFLE_LABELS: Record<string, string> = {
+  burgundy: "burgundy", perigord: "black périgord", alba: "white alba", summer: "summer",
+};
 
 export type PigConfig = {
   species?: string;
@@ -132,6 +192,10 @@ export type PigConfig = {
   hat?: string;
   accessory?: string;
   background?: string;
+  costume?: string;
+  face?: string;
+  companion?: string;
+  truffle?: string;
 };
 
 export const DEFAULT_PIG: Required<PigConfig> = {
@@ -140,6 +204,10 @@ export const DEFAULT_PIG: Required<PigConfig> = {
   hat: "none",
   accessory: "none",
   background: "oat",
+  costume: "none",
+  face: "none",
+  companion: "none",
+  truffle: "burgundy",
 };
 
 export function normalisePig(config: PigConfig | undefined | null): Required<PigConfig> {
@@ -157,7 +225,17 @@ export function normalisePig(config: PigConfig | undefined | null): Required<Pig
     accessory: c.accessory ?? DEFAULT_PIG.accessory,
     background:
       c.background && PIG_BACKGROUNDS[c.background] ? c.background : DEFAULT_PIG.background,
+    // Unknown slot values fall back rather than throwing, so a config saved by a
+    // newer build still renders on an older one instead of blanking the avatar.
+    costume: pick(c.costume, PIG_COSTUMES, DEFAULT_PIG.costume),
+    face: pick(c.face, PIG_FACES, DEFAULT_PIG.face),
+    companion: pick(c.companion, PIG_COMPANIONS, DEFAULT_PIG.companion),
+    truffle: c.truffle && TRUFFLE_VARIETIES[c.truffle] ? c.truffle : DEFAULT_PIG.truffle,
   };
+}
+
+function pick(value: string | undefined, allowed: readonly string[], fallback: string): string {
+  return value && allowed.includes(value) ? value : fallback;
 }
 
 // --- Price tiers (spec §9.2) ----------------------------------------------

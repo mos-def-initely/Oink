@@ -16,6 +16,14 @@ import {
   PIG_SPECIES,
   SPECIES_COLORS,
   SPECIES_DEFAULT_COLOR,
+  PIG_COSTUMES,
+  PIG_FACES,
+  PIG_COMPANIONS,
+  COSTUME_LABELS,
+  COSTUME_HAT,
+  TRUFFLE_VARIETIES,
+  TRUFFLE_LABELS,
+  type Costume,
   SPECIES_LABELS,
   Species,
   fatnessTier,
@@ -232,6 +240,45 @@ function PigCustomiser({
           swatch={(v) => SPECIES_COLORS[cfg.species as Species][v].mid}
         />
         <Picker
+          label="costume"
+          options={[...PIG_COSTUMES]}
+          value={cfg.costume}
+          onChange={(v) =>
+            setCfg({
+              ...cfg,
+              costume: v,
+              // A costume fills an empty hat slot with the one it implies, but
+              // never overrides a hat already chosen — the slots stay
+              // independent, so a viking helmet on a princess gown is allowed.
+              hat: cfg.hat === "none" ? COSTUME_HAT[v as Costume] ?? "none" : cfg.hat,
+            })
+          }
+          render={(v) => COSTUME_LABELS[v as Costume]}
+        />
+        <Picker
+          label="face"
+          options={[...PIG_FACES]}
+          value={cfg.face}
+          onChange={(v) => setCfg({ ...cfg, face: v })}
+        />
+        <Picker
+          label="companion"
+          options={[...PIG_COMPANIONS]}
+          value={cfg.companion}
+          onChange={(v) => setCfg({ ...cfg, companion: v })}
+        />
+        {cfg.companion === "truffle" && (
+          <Picker
+            label="truffle"
+            options={Object.keys(TRUFFLE_VARIETIES)}
+            value={cfg.truffle}
+            onChange={(v) => setCfg({ ...cfg, truffle: v })}
+            swatch={(v) => TRUFFLE_VARIETIES[v].fill}
+            render={(v) => TRUFFLE_LABELS[v]}
+          />
+        )}
+
+        <Picker
           label="background"
           options={Object.keys(PIG_BACKGROUNDS)}
           value={cfg.background}
@@ -265,12 +312,15 @@ function Picker({
   value,
   onChange,
   swatch,
+  render,
 }: {
   label: string;
   options: string[];
   value: string;
   onChange: (v: string) => void;
   swatch?: (v: string) => string;
+  /** For options whose key isn't what a person should read — "hotdog". */
+  render?: (v: string) => string;
 }) {
   return (
     <section>
@@ -288,7 +338,7 @@ function Picker({
                 style={{ background: swatch(opt) }}
               />
             )}
-            {opt}
+            {render ? render(opt) : opt}
           </button>
         ))}
       </div>
