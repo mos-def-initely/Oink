@@ -47,7 +47,13 @@ const INK = "#4D303F";
 /** Darker than INK and cooler — a suit has to out-rank the outline. */
 const CHARCOAL = "#3A2530";
 
-export function costumeParts(costume: string, outline: string): CostumeParts {
+/**
+ * @param skin the wearer's coat colour, for garments that open onto it. Only
+ *   the unbuttoned suit needs it: the jacket shell is painted over the whole
+ *   torso before any of this is drawn, so a hole in the shirt shows jacket, not
+ *   pig, unless the chest is painted back in.
+ */
+export function costumeParts(costume: string, outline: string, skin = "#EFAFC0"): CostumeParts {
   const s = { stroke: outline, strokeWidth: 2.1, strokeLinejoin: "round" as const };
   const thin = { stroke: outline, strokeWidth: 1.7, fill: "none" };
 
@@ -305,32 +311,44 @@ export function costumeParts(costume: string, outline: string): CostumeParts {
         shell: { fill: CHARCOAL },
         onBody: (
           <>
-            {/* Chest, drawn first so the shirt's neckline cuts a hole down to
-                it. Only the open shirt leaves any of it showing — and it has to
-                be a wide hole, or the lapels close over it and the whole point
-                of the costume disappears. */}
+            {/* The bare chest, painted back over the jacket, then a few
+                strands on it. Both are drawn before the shirt so the shirt's
+                neckline is what crops them — the skin can't leak out past the
+                collar however wide the V is cut. */}
             {open && (
-              <g stroke={outline} strokeWidth="2" fill="none" strokeLinecap="round">
-                <path d="M59 66 q3.5 -5 7 -0.5 q3.5 -5 7 0.5" />
-                <path d="M60 73 q3.5 -5 7 -0.5 q3.5 -5 6 0.5" />
-                <path d="M61.5 80 q3.5 -5 7 -0.5" />
-                <path d="M63 87 q3 -4.5 6 -0.5" />
-              </g>
+              <>
+                {/* Drawn generously and left for the shirt, which goes on top,
+                    to crop — a patch cut to the exact neckline leaves slivers
+                    of jacket down both sides of the opening. */}
+                <path d="M55 54 L75 54 L72 96 L58 96 Z" fill={skin} stroke="none" />
+                {/* A few strands, and they have to sit low: the head covers the
+                    chest down to about y=77 here, so anything above that is
+                    drawn for nobody. */}
+                <g stroke={outline} strokeWidth="1.5" fill="none" strokeLinecap="round">
+                  <path d="M61 78 q4 -5 8 -0.5" />
+                  <path d="M62 84 q3.5 -4.5 7 -0.5" />
+                  <path d="M63 89 q3 -4 6 -0.5" />
+                </g>
+              </>
             )}
             <path
               d={
                 open
-                  ? "M53 56 L57 56 L65 90 L73 56 L77 56 L72 106 L58 106 Z"
+                  ? // Two front panels held apart, not a V: a V narrows to
+                    // nothing exactly where the chest is visible, so the
+                    // opening is parallel-sided until it closes at the button.
+                    "M53 56 L59 56 L59 84 Q65 91 71 84 L71 56 L77 56 L72 106 L58 106 Z"
                   : "M55 56 L75 56 L72 106 L58 106 Z"
               }
               fill={CREAM}
               {...s}
             />
             {open ? (
-              // Collar falling open either side of the gap.
+              // Collar falling open either side of the gap — kept short, or it
+              // closes over the very window it's meant to open.
               <>
-                <path d="M57 56 L65 90 L51 67 Z" fill={CREAM} {...s} />
-                <path d="M73 56 L65 90 L79 67 Z" fill={CREAM} {...s} />
+                <path d="M59 56 L60 74 L50 65 Z" fill={CREAM} {...s} />
+                <path d="M71 56 L70 74 L80 65 Z" fill={CREAM} {...s} />
               </>
             ) : (
               <>
@@ -350,8 +368,8 @@ export function costumeParts(costume: string, outline: string): CostumeParts {
                 the chest showing between them. */}
             {open ? (
               <>
-                <path d="M46 56 Q51 72 59 88 L61 77 Q55 65 54 55 Z" fill={CHARCOAL} {...s} />
-                <path d="M84 56 Q79 72 71 88 L69 77 Q75 65 76 55 Z" fill={CHARCOAL} {...s} />
+                <path d="M45 56 Q50 72 57 89 L59 77 Q53 65 52 55 Z" fill={CHARCOAL} {...s} />
+                <path d="M85 56 Q80 72 73 89 L71 77 Q77 65 78 55 Z" fill={CHARCOAL} {...s} />
               </>
             ) : (
               <>

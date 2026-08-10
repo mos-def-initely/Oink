@@ -92,7 +92,7 @@ export default function PigAvatar({
   const earsHidden = hidesEars(cfg.hat);
   // Costume parts are drawn in normalised space and scaled about the body or
   // head centre; the garment shell comes off the real silhouette (below).
-  const dress = costumeParts(cfg.costume, OUTLINE);
+  const dress = costumeParts(cfg.costume, OUTLINE, p.mid);
   const specs = faceItem(cfg.face, OUTLINE);
   const blushScale = rosy ? 1.35 : 1;
   const blushAlpha = rosy ? 0.82 : 0.5;
