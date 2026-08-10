@@ -24,10 +24,10 @@ import { ShamePig } from "@/components/pigs/ReactionPigs";
 // with ssr:false.
 import "leaflet/dist/leaflet.css";
 
-// Positron, warmed by a CSS filter in globals.css into the aged-paper look.
-// Its hairline roads and dimmed labels survive a tint; Voyager's coloured roads
-// turn to pale yellow mush under the same treatment.
-const TILE_URL = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+// Voyager. Warmed Positron was tried to match the oat palette, but tinting it
+// left the roads too quiet to navigate by — contrast beats colour-matching on
+// a map you actually use.
+const TILE_URL = "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
 const TILE_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
 

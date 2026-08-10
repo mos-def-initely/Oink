@@ -68,17 +68,18 @@
     @apply text-[9px] uppercase tracking-[0.14em] text-ink-soft;
   }
 
+  /* Status pills — oinked, shamed. The app's display face, lowercase, to match
+     the wordmark. Mono is reserved for metadata (timestamps, meta lines), not
+     for anything that reads as a word in its own right. */
   .micro-pill {
-    font-family: ui-monospace, "SF Mono", Menlo, monospace;
-    @apply inline-flex items-center rounded-full px-2.5 py-1 text-[9px]
-           uppercase tracking-[0.12em] leading-none;
+    @apply inline-flex items-center rounded-full px-2.5 py-1 font-display
+           text-[11px] font-bold lowercase leading-none;
   }
 
   /* Outlined badge, sitting proud of the card. Deliberately not rotated. */
   .sticker {
-    font-family: ui-monospace, "SF Mono", Menlo, monospace;
     @apply inline-flex items-center rounded-full border-2 border-ink px-2.5
-           py-1 text-[9px] uppercase tracking-[0.12em] leading-none;
+           py-1 font-display text-[11px] font-bold lowercase leading-none;
   }
 
   .rule-dashed {
@@ -96,15 +97,9 @@
    rest of the app rather than sitting in it like a window. */
 .leaflet-container {
   font-family: inherit;
-  background: #F4ECDD;
+  background: #EDEBE7;
 }
 
-/* Warm-paper basemap. CARTO's Positron tiles are clean but cold; warming them
-   here puts the map in the same world as the oat palette without needing a
-   paid tile provider. Scoped to the tile pane so pins keep true colour. */
-.leaflet-tile-pane {
-  filter: sepia(0.32) saturate(0.72) hue-rotate(-8deg) brightness(0.99) contrast(1.12);
-}
 
 .leaflet-control-attribution {
   background: rgba(255, 253, 246, 0.85) !important;

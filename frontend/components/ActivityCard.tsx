@@ -52,7 +52,7 @@ function ReviewCard({ item }: { item: FeedItem }) {
           </Link>
           <p className="micro">{timeAgo(item.created_at)}</p>
         </div>
-        <span className="sticker bg-lemon text-ink-deep">Recommends</span>
+        <span className="sticker bg-lemon text-ink-deep">recommends</span>
       </div>
 
       <div className="rule-dashed mx-3" />
@@ -106,7 +106,7 @@ function ReactionRow({ item }: { item: FeedItem }) {
             <span
               className={`micro-pill shrink-0 ${shamed ? "bg-rust text-oat" : "bg-plum text-oat"}`}
             >
-              {shamed ? "Shamed" : "Oinked"}
+              {shamed ? "shamed" : "oinked"}
             </span>
           </div>
           <p className="micro mt-0.5 truncate">

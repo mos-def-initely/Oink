@@ -133,9 +133,10 @@ reviews stand out. No rating anywhere.
 - **Pins show one pig face**, plus a count chip when more than one person rates
   the place. A stacked fan was tried and crowded badly where pins sit close
   together. Shame-only places get a greyed-out pin with the angry pig.
-- **Basemap** is CARTO Positron warmed by a CSS filter into aged paper, so the
-  map sits in the oat palette rather than beside it. Scoped to the tile pane so
-  pins keep true colour.
+- **Basemap** is CARTO Voyager at full contrast. Warming Positron into aged
+  paper was tried so the map would sit in the oat palette, but it left roads too
+  quiet to navigate by — on a map you actually use, contrast beats
+  colour-matching.
 - Tap pin → bottom sheet → View details.
 - Filters: kind, budget (as price pigs), category.
 - **Kind and cuisine prefill themselves.** OSM's `type` maps to kind
@@ -244,7 +245,8 @@ difference from earlier iterations.
   spaced) carry timestamps, place meta lines and status pills, so the display
   face is reserved for things that are actually headings.
 - **Wordmark**: lowercase `oink`, olive `#806B28`, tight tracking.
-- **Badges** are outlined and **never rotated**.
+- **Badges** — `oinked`, `shamed`, `recommends` — are outlined, **never
+  rotated**, and set in the display face **lowercase**, matching the wordmark.
 - **Dashed rules** separate a card's header from its body.
 - **Dish tags are lilac**, distinct from the gold accents.
 - **Lemon** appears on exactly two surfaces — the profile header and empty

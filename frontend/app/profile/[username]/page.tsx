@@ -88,7 +88,7 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
             <span className="sticker bg-cream text-ink">
               {user.places_logged} {user.places_logged === 1 ? "place" : "places"}
             </span>
-            <span className="sticker bg-plum text-oat">{tierLabel}</span>
+            <span className="sticker bg-plum text-oat">{tierLabel.toLowerCase()}</span>
           </div>
 
           {next && (
