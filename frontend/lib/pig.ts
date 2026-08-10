@@ -171,18 +171,52 @@ export const PIG_FACES = ["none", "shades", "specs", "monocle", "eyepatch", "mou
 export const PIG_COMPANIONS = ["none", "truffle"] as const;
 export type Companion = (typeof PIG_COMPANIONS)[number];
 
-export type TrufflePalette = { fill: string; dark: string; line: string; blush: string };
+export type TrufflePalette = {
+  fill: string;
+  dark: string;
+  line: string;
+  blush: string;
+  /** The pentagonal warts. Separate from `dark` because on a pale coat the two
+   *  are nearly the same value, and the warts turn to noise instead of reading
+   *  as structure — they need a tone that stays dark whatever the fill is. */
+  facet: string;
+};
 
+/** The four real ones. A white alba really is a different-looking object from a
+ *  black périgord, so these carry more variety than four tints would. */
+const REAL_TRUFFLES: Record<string, TrufflePalette> = {
+  burgundy:  { fill: "#7E5B44", dark: "#5A3F2E", line: "#3A281E", blush: "#D4808C", facet: "#5A3F2E" },
+  perigord:  { fill: "#4A3A30", dark: "#2B2019", line: "#191210", blush: "#B06A78", facet: "#2B2019" },
+  alba:      { fill: "#E4D3AE", dark: "#C4AE83", line: "#7E6A48", blush: "#E08A94", facet: "#A08A5E" },
+  summer:    { fill: "#9C7A4E", dark: "#75563A", line: "#4A3527", blush: "#D4808C", facet: "#75563A" },
+};
+
+/**
+ * The coats double as truffle colours. Deriving them rather than hand-picking a
+ * second palette means the two sets can't drift apart, and it makes the useful
+ * case free: a truffle that matches your animal.
+ */
+const COAT_TRUFFLES: Record<string, TrufflePalette> = Object.fromEntries(
+  Object.entries(COAT_COLORS).map(([name, c]) => [
+    name,
+    { fill: c.mid, dark: c.dark, line: c.outline, blush: c.blush, facet: c.outline },
+  ])
+);
+
+/** Real varieties first, then the playful ones — naturalistic reads as the
+ *  default and the fun colours as a departure from it. */
 export const TRUFFLE_VARIETIES: Record<string, TrufflePalette> = {
-  burgundy:  { fill: "#7E5B44", dark: "#5A3F2E", line: "#3A281E", blush: "#D4808C" },
-  perigord:  { fill: "#4A3A30", dark: "#2B2019", line: "#191210", blush: "#B06A78" },
-  alba:      { fill: "#E4D3AE", dark: "#C4AE83", line: "#7E6A48", blush: "#E08A94" },
-  summer:    { fill: "#9C7A4E", dark: "#75563A", line: "#4A3527", blush: "#D4808C" },
+  ...REAL_TRUFFLES,
+  ...COAT_TRUFFLES,
 };
 
+/** Only the varieties whose key isn't already what a person should read. */
 export const TRUFFLE_LABELS: Record<string, string> = {
-  burgundy: "burgundy", perigord: "black périgord", alba: "white alba", summer: "summer",
+  perigord: "black périgord",
+  alba: "white alba",
 };
+
+export const truffleLabel = (name: string): string => TRUFFLE_LABELS[name] ?? name;
 
 export type PigConfig = {
   species?: string;

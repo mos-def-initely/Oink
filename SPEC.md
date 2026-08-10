@@ -272,10 +272,19 @@ duckling, parrot, fox, bunny and the rest — and cut, because a menagerie dilut
 the joke instead of extending it. The truffle is the thing a pig is actually
 hunting, so it carries the slot alone.
 
-Its colours are the real varieties — burgundy, black périgord, white alba,
-summer — which beats arbitrary tints and keeps the joke intact. Since it is the
-only companion, the variety picker doubles as the on/off control: one row in the
-customiser rather than two stacked ones.
+Its colours are the four real varieties — burgundy, black périgord, white alba,
+summer — **plus the thirteen coats**, derived from the same palette rather than
+hand-picked a second time, so the two sets can't drift apart and a truffle that
+matches your animal comes free. Naturalistic first, playful after, so the real
+ones read as the default and the fun ones as a departure from it.
+
+The warts carry their own tone, separate from the shading colour. On a pale coat
+the two are nearly the same value and the warts turn to noise; they need a tone
+that stays dark whatever the fill is, or a pink truffle reads as a scribble
+rather than a truffle.
+
+Since it is the only companion, the variety picker doubles as the on/off control:
+one row in the customiser rather than two stacked ones.
 
 It stands to the animal's **left**, since the tail comes off the right
 hip. Its position is offset from the body but clamped to the frame edge — a round

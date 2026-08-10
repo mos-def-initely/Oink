@@ -70,12 +70,12 @@ function Truffle({ variety, uid }: { variety: string; uid: string }) {
         </radialGradient>
       </defs>
       {/* feet */}
-      <path d="M24 42 q0 5 -4 5 q-4 0 -4 -4" fill="none" stroke={t.dark} strokeWidth="3.6" strokeLinecap="round" />
-      <path d="M36 42 q0 5 4 5 q4 0 4 -4" fill="none" stroke={t.dark} strokeWidth="3.6" strokeLinecap="round" />
+      <path d="M24 42 q0 5 -4 5 q-4 0 -4 -4" fill="none" stroke={t.facet} strokeWidth="3.6" strokeLinecap="round" />
+      <path d="M36 42 q0 5 4 5 q4 0 4 -4" fill="none" stroke={t.facet} strokeWidth="3.6" strokeLinecap="round" />
       <path d={TRUFFLE_LUMP} fill={`url(#${grad})`} stroke={t.line} strokeWidth="2.1" strokeLinejoin="round" />
       <g clipPath={`url(#${clip})`}>
         {TRUFFLE_FACETS.map((pts, i) => (
-          <polygon key={i} points={pts} fill="none" stroke={t.dark} strokeWidth="1.3" opacity="0.55" />
+          <polygon key={i} points={pts} fill="none" stroke={t.facet} strokeWidth="1.25" opacity="0.42" />
         ))}
       </g>
       {/* open, blushing face */}

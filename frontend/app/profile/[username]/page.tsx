@@ -21,7 +21,7 @@ import {
   COSTUME_LABELS,
   COSTUME_HAT,
   TRUFFLE_VARIETIES,
-  TRUFFLE_LABELS,
+  truffleLabel,
   type Costume,
   SPECIES_LABELS,
   Species,
@@ -274,7 +274,7 @@ function PigCustomiser({
             )
           }
           swatch={(v) => (v === "none" ? "transparent" : TRUFFLE_VARIETIES[v].fill)}
-          render={(v) => (v === "none" ? "none" : TRUFFLE_LABELS[v])}
+          render={(v) => (v === "none" ? "none" : truffleLabel(v))}
         />
 
         <Picker
