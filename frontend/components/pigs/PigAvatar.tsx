@@ -69,7 +69,11 @@ export default function PigAvatar({
   // so a dead pig still reads as the same animal rather than a different one.
   const dead = tier === "dead";
   const shape = TIER_SHAPE[tier];
-  const drained = dead ? { filter: "grayscale(1)", opacity: 0.85 } : undefined;
+  // Washed out rather than greyed: the colour someone picked is still theirs,
+  // just drained of life. Full greyscale threw the choice away entirely.
+  const drained = dead
+    ? { filter: "saturate(0.32) brightness(1.12)", opacity: 0.7 }
+    : undefined;
   // Every pig has a soft blush already; the accessory turns it up, so picking
   // it reads as a decision rather than a barely-there tweak.
   const rosy = cfg.accessory === "blush";
@@ -161,6 +165,31 @@ export default function PigAvatar({
   const headRx = shape.head;
   const headRy = headRx * 0.9;
 
+  // Hunky is built, not ball-shaped: wide across the shoulders and drawn in
+  // to the waist. Everything that hangs off the torso — the clip, the fill,
+  // the arms, the legs — has to follow the same silhouette or the limbs end up
+  // floating beside a shape that no longer reaches them.
+  const lean = !!shape.muscle;
+  const topY = 82 - w * 0.9;
+  const botY = 82 + w * 0.9;
+  const hgt = botY - topY;
+  const shoulder = lean ? w * 1.08 : w;   // half-width at the shoulders
+  const waist = lean ? w * 0.64 : w;      // half-width at the hips
+  const armX = shoulder;                  // arms hang off the shoulders
+  const legX = lean ? waist * 0.72 : w * 0.55;
+
+  const torso = lean
+    ? `M ${65 - shoulder} ${topY + hgt * 0.2}
+       Q ${65 - shoulder} ${topY} ${65 - shoulder * 0.5} ${topY}
+       L ${65 + shoulder * 0.5} ${topY}
+       Q ${65 + shoulder} ${topY} ${65 + shoulder} ${topY + hgt * 0.2}
+       C ${65 + shoulder} ${topY + hgt * 0.62} ${65 + waist} ${topY + hgt * 0.6} ${65 + waist} ${botY - hgt * 0.16}
+       Q ${65 + waist} ${botY} ${65 + waist * 0.52} ${botY}
+       L ${65 - waist * 0.52} ${botY}
+       Q ${65 - waist} ${botY} ${65 - waist} ${botY - hgt * 0.16}
+       C ${65 - waist} ${topY + hgt * 0.6} ${65 - shoulder} ${topY + hgt * 0.62} ${65 - shoulder} ${topY + hgt * 0.2} Z`
+    : "";
+
   return (
     <svg
       width={size}
@@ -173,7 +202,7 @@ export default function PigAvatar({
     >
       {defs}
       <clipPath id={bodyClip}>
-        <ellipse cx="65" cy="82" rx={w} ry={w * 0.9} />
+        {lean ? <path d={torso} /> : <ellipse cx="65" cy="82" rx={w} ry={w * 0.9} />}
       </clipPath>
       <clipPath id={headClip}>
         <ellipse cx="65" cy="48" rx={headRx} ry={headRy} />
@@ -185,9 +214,13 @@ export default function PigAvatar({
       <ellipse cx="65" cy="122" rx={w * 0.8} ry="5" fill={p.dark} opacity="0.28" filter={`url(#${blur})`} />
 
       <g stroke={OUTLINE} strokeWidth={STROKE} strokeLinejoin="round">
-        <rect x={65 - w * 0.55} y="100" width="14" height="19" rx="6.5" fill={p.snout} />
-        <rect x={65 + w * 0.55 - 14} y="100" width="14" height="19" rx="6.5" fill={p.snout} />
-        <ellipse cx="65" cy="82" rx={w} ry={w * 0.9} fill={`url(#${grad})`} />
+        <rect x={65 - legX} y="100" width="14" height="19" rx="6.5" fill={p.snout} />
+        <rect x={65 + legX - 14} y="100" width="14" height="19" rx="6.5" fill={p.snout} />
+        {lean ? (
+          <path d={torso} fill={`url(#${grad})`} />
+        ) : (
+          <ellipse cx="65" cy="82" rx={w} ry={w * 0.9} fill={`url(#${grad})`} />
+        )}
       </g>
 
       {/* Body modelling */}
@@ -283,8 +316,8 @@ export default function PigAvatar({
       {/* Arms sit ON TOP of the body edges in the darker ear tone, which is what
           makes them read as arms in front rather than limbs beside a ball. */}
       <g stroke={OUTLINE} strokeWidth={STROKE} strokeLinejoin="round">
-        <rect x={65 - w - 4} y="74" width="13" height="24" rx="6.5" fill={p.ear} />
-        <rect x={65 + w - 9} y="74" width="13" height="24" rx="6.5" fill={p.ear} />
+        <rect x={65 - armX - 4} y="74" width="13" height="24" rx="6.5" fill={p.ear} />
+        <rect x={65 + armX - 9} y="74" width="13" height="24" rx="6.5" fill={p.ear} />
       </g>
 
       <g stroke={OUTLINE} strokeWidth={STROKE} strokeLinejoin="round">
@@ -364,6 +397,26 @@ export default function PigAvatar({
             opacity="0.16"
             filter={`url(#${blur})`}
           />
+        </g>
+      )}
+
+      {/* Cheekbones: a shadow under each, so the jaw looks cut rather than soft.
+          Only on the built tier, and clipped to the head. */}
+      {lean && (
+        <g clipPath={`url(#${headClip})`}>
+          {[-1, 1].map((side) => (
+            <ellipse
+              key={side}
+              cx={65 + side * headRx * 0.56}
+              cy={48 + headRy * 0.3}
+              rx={headRx * 0.3}
+              ry={headRy * 0.14}
+              fill={p.dark}
+              opacity="0.34"
+              filter={`url(#${blur})`}
+              transform={`rotate(${side * 14} ${65 + side * headRx * 0.56} ${48 + headRy * 0.3})`}
+            />
+          ))}
         </g>
       )}
 

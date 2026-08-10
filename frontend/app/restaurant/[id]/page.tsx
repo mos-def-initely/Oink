@@ -276,6 +276,8 @@ function ReviewSheet({
   const [files, setFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Deleting a write-up is destructive and there's no undo, so it asks first.
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -284,8 +286,20 @@ function ReviewSheet({
       setDishes(existing?.recommended_dishes ?? []);
       setError(null);
       setFiles([]);
+      setConfirmingDelete(false);
     }
   }, [open, existing]);
+
+  async function remove() {
+    setSaving(true);
+    setError(null);
+    try {
+      onSaved(await api.deleteRecommendation(place.id));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't delete that");
+      setSaving(false);
+    }
+  }
 
   function addDish() {
     const value = draft.trim();
@@ -377,6 +391,42 @@ function ReviewSheet({
         <button type="submit" className="btn-primary w-full text-lg" disabled={saving}>
           {saving ? "Posting…" : existing ? "Update" : "Post it"}
         </button>
+
+        {existing &&
+          (confirmingDelete ? (
+            <div className="space-y-2 rounded-card border-2 border-rust p-3">
+              <p className="text-sm font-bold text-rust">
+                Delete your write-up? Your oink stays; only the words and dishes go.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirmingDelete(false)}
+                  className="btn-plain flex-1 text-sm"
+                  disabled={saving}
+                >
+                  Keep it
+                </button>
+                <button
+                  type="button"
+                  onClick={remove}
+                  className="btn flex-1 bg-rust text-sm text-oat"
+                  disabled={saving}
+                >
+                  {saving ? "Deleting…" : "Delete"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmingDelete(true)}
+              className="btn-quiet w-full text-sm text-rust"
+              disabled={saving}
+            >
+              Delete this write-up
+            </button>
+          ))}
       </form>
     </Sheet>
   );
