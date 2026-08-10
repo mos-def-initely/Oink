@@ -11,20 +11,19 @@
  * on the lower back well clear of the arms.
  */
 
-export type FatnessTier = "dead" | "slim" | "regular" | "chubby" | "fat" | "hunky";
+export type FatnessTier = "dead" | "slim" | "regular" | "chubby" | "fat" | "humungous";
 
 export const FATNESS_TIERS: { tier: FatnessTier; min: number; label: string }[] = [
   { tier: "slim", min: 0, label: "Slim" },
   { tier: "regular", min: 10, label: "Regular" },
   { tier: "chubby", min: 20, label: "Chubby" },
   { tier: "fat", min: 30, label: "Fat" },
-  // The top of the ladder turns the corner: eat enough and the pig comes out
-  // the other side built rather than bigger.
-  { tier: "hunky", min: 40, label: "Hunky" },
+  // No corner turned at the top — it just keeps going.
+  { tier: "humungous", min: 40, label: "Humungous" },
 ];
 
 /** Worst to best. Decay walks down this, and it bottoms out at the dead pig. */
-export const TIER_ORDER: FatnessTier[] = ["dead", "slim", "regular", "chubby", "fat", "hunky"];
+export const TIER_ORDER: FatnessTier[] = ["dead", "slim", "regular", "chubby", "fat", "humungous"];
 
 export const TIER_LABELS: Record<FatnessTier, string> = {
   dead: "Dead Pig",
@@ -32,7 +31,7 @@ export const TIER_LABELS: Record<FatnessTier, string> = {
   regular: "Regular",
   chubby: "Chubby",
   fat: "Fat",
-  hunky: "Hunky",
+  humungous: "Humungous",
 };
 
 /** How long idleness costs a tier. A fortnight — long enough that a quiet
@@ -111,8 +110,6 @@ export type TierShape = {
   belly?: number;
   /** A second jaw under the first. */
   chin?: boolean;
-  /** Draws pecs and abs instead of fat — the top of the ladder only. */
-  muscle?: boolean;
 };
 
 export const TIER_SHAPE: Record<FatnessTier, TierShape> = {
@@ -123,8 +120,9 @@ export const TIER_SHAPE: Record<FatnessTier, TierShape> = {
   chubby: { waist: 30, rolls: 0, head: 27.5, moobs: 0.68, belly: 0.8, chin: true },
   // Fat is volume, not stripes: chest and gut both full, and a second chin.
   fat: { waist: 35, rolls: 0, head: 29, moobs: 1.1, belly: 1, chin: true },
-  // Broad, but the width sits in the chest rather than the gut.
-  hunky: { waist: 32, rolls: 0, head: 27, muscle: true },
+  // The end of the road: as wide as the frame takes, chest and gut both maxed,
+  // and a head that's stopped keeping up with the body.
+  humungous: { waist: 41, rolls: 0, head: 30, moobs: 1.35, belly: 1.3, chin: true },
 };
 
 // --- Avatar customisation (spec §9.1) -------------------------------------

@@ -69,7 +69,7 @@ export default function HowItWorks({ open, onClose }: { open: boolean; onClose: 
             </div>
           </div>
           <p className="text-sm text-ink-soft">
-            Get to 20 and it comes out the other side: <strong className="text-ink">hunky</strong>.
+            Keep going and it just keeps growing: <strong className="text-ink">humungous</strong>.
           </p>
         </section>
 

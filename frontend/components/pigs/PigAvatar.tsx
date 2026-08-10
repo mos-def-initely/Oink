@@ -175,7 +175,10 @@ export default function PigAvatar({
   // to the waist. Everything that hangs off the torso — the clip, the fill,
   // the arms, the legs — has to follow the same silhouette or the limbs end up
   // floating beside a shape that no longer reaches them.
-  const lean = !!shape.muscle;
+  // There is no muscular tier any more — the top of the ladder is simply the
+  // fattest pig. Held as a constant rather than ripped out, because the costume
+  // geometry below is written around it and her work owns that.
+  const lean = false;
   const topY = 82 - w * 0.9;
   const botY = 82 + w * 0.9;
   const hgt = botY - topY;
@@ -324,25 +327,6 @@ export default function PigAvatar({
         </g>
       )}
 
-      {/* Hunky: the width sits in the chest, not the gut. Pecs and a two-column
-          stack of abs, drawn in the same stroke language as the rolls. */}
-      {shape.muscle && (
-        <g
-          clipPath={`url(#${bodyClip})`}
-          fill="none"
-          stroke={p.dark}
-          strokeWidth="2"
-          strokeLinecap="round"
-          opacity="0.5"
-        >
-          <path d={`M ${65 - w * 0.55} 72 q ${w * 0.28} 9 ${w * 0.52} 0`} />
-          <path d={`M ${65 + w * 0.03} 72 q ${w * 0.28} 9 ${w * 0.52} 0`} />
-          <line x1="65" y1="78" x2="65" y2="98" />
-          <line x1={65 - w * 0.42} y1="85" x2={65 + w * 0.42} y2="85" />
-          <line x1={65 - w * 0.38} y1="92" x2={65 + w * 0.38} y2="92" />
-        </g>
-      )}
-
       {dress.under && <g transform={bodyT}>{dress.under}</g>}
       {dress.shell && <Shell fill={dress.shell.fill} k={dress.shell.k} />}
       {dress.onBody && <g transform={bodyT}>{dress.onBody}</g>}
@@ -465,25 +449,6 @@ export default function PigAvatar({
         </g>
       )}
 
-      {/* Cheekbones: a shadow under each, so the jaw looks cut rather than soft.
-          Only on the built tier, and clipped to the head. */}
-      {lean && (
-        <g clipPath={`url(#${headClip})`}>
-          {[-1, 1].map((side) => (
-            <ellipse
-              key={side}
-              cx={65 + side * headRx * 0.56}
-              cy={48 + headRy * 0.3}
-              rx={headRx * 0.3}
-              ry={headRy * 0.14}
-              fill={p.dark}
-              opacity="0.34"
-              filter={`url(#${blur})`}
-              transform={`rotate(${side * 14} ${65 + side * headRx * 0.56} ${48 + headRy * 0.3})`}
-            />
-          ))}
-        </g>
-      )}
 
       {dress.headExtra && <g transform={headT}>{dress.headExtra}</g>}
       {specs && <g transform={headT}>{specs}</g>}
