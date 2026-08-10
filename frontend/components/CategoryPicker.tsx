@@ -76,7 +76,7 @@ export default function CategoryPicker({
               key={v}
               type="button"
               onClick={() => remove(v)}
-              className="tag bg-coral text-white shadow-pop"
+              className="tag bg-plum text-oat"
             >
               {v}
               <span aria-hidden className="ml-0.5">✕</span>
@@ -125,7 +125,7 @@ export default function CategoryPicker({
                 }
               }}
               placeholder="Search…"
-              className="w-full rounded-lg bg-apricot px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-coral"
+              className="w-full rounded-lg bg-oat px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-plum"
               autoCapitalize="none"
               autoCorrect="off"
             />
@@ -137,7 +137,7 @@ export default function CategoryPicker({
                 <button
                   type="button"
                   onClick={() => add(o)}
-                  className="w-full px-4 py-2.5 text-left text-sm hover:bg-apricot"
+                  className="w-full px-4 py-2.5 text-left text-sm hover:bg-oat"
                 >
                   {o}
                 </button>
@@ -149,7 +149,7 @@ export default function CategoryPicker({
                 <button
                   type="button"
                   onClick={() => add(query.trim())}
-                  className="w-full px-4 py-2.5 text-left text-sm font-bold text-coral hover:bg-apricot"
+                  className="w-full px-4 py-2.5 text-left text-sm font-bold text-plum hover:bg-oat"
                 >
                   + Add “{query.trim()}”
                 </button>

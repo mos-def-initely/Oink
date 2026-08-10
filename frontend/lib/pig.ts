@@ -100,27 +100,24 @@ export function nextTier(placesLogged: number): { label: string; needed: number 
  * outward rather than just stretching the silhouette sideways.
  */
 export type TierShape = {
+  /** Half-width of the body ellipse — the whole silhouette hangs off this. */
   waist: number;
+  /** Belly folds drawn across the gut. */
   rolls: number;
   head: number;
-  chin: boolean;
-  /** Swaps the pear silhouette for a V-taper and draws pecs, abs and biceps. */
+  /** Draws pecs and abs instead of folds — the top of the ladder only. */
   muscle?: boolean;
-  /** Chest fat, 0-1. */
-  moobs?: number;
-  /** Gut volume, 0-1. Read as one big belly rather than a ladder of folds. */
-  belly?: number;
 };
 
 export const TIER_SHAPE: Record<FatnessTier, TierShape> = {
-  // Gaunt: narrower than slim, and drawn greyed with X'd eyes (see PigAvatar).
-  dead: { waist: 15, rolls: 0, head: 22.5, chin: false },
-  slim: { waist: 20, rolls: 0, head: 24.5, chin: false },
-  regular: { waist: 25, rolls: 0, head: 26, chin: false, belly: 0.5 },
-  chubby: { waist: 30, rolls: 0, head: 27.5, chin: true, moobs: 0.8, belly: 0.8 },
-  fat: { waist: 35, rolls: 0, head: 29, chin: true, moobs: 1, belly: 1 },
-  // Broadest of the lot, but the width sits in the chest rather than the gut.
-  hunky: { waist: 33, rolls: 0, head: 27, chin: false, muscle: true },
+  // Gaunt, and drawn drained of colour with X'd eyes (see PigAvatar).
+  dead: { waist: 17, rolls: 0, head: 22 },
+  slim: { waist: 20, rolls: 0, head: 24.5 },
+  regular: { waist: 25, rolls: 1, head: 26 },
+  chubby: { waist: 30, rolls: 2, head: 27.5 },
+  fat: { waist: 35, rolls: 3, head: 29 },
+  // Broad, but the width sits in the chest rather than the gut, so no folds.
+  hunky: { waist: 32, rolls: 0, head: 27, muscle: true },
 };
 
 // --- Avatar customisation (spec §9.1) -------------------------------------
@@ -129,57 +126,31 @@ export type PigPalette = {
   light: string;
   mid: string;
   dark: string;
-  limb: string;
+  ear: string;
   snout: string;
   nostril: string;
+  blush: string;
 };
 
 export const PIG_COLORS: Record<string, PigPalette> = {
-  pink:    { light: "#FFC9D6", mid: "#FC9FB8", dark: "#DE7595", limb: "#EE8CA8", snout: "#F291AF", nostril: "#B05377" },
-  rose:    { light: "#FFB8B8", mid: "#F98E90", dark: "#D9686D", limb: "#EC7C80", snout: "#EE8084", nostril: "#A9484F" },
-  peach:   { light: "#FFD6B8", mid: "#FBB183", dark: "#DE8B5C", limb: "#F09E70", snout: "#F0A276", nostril: "#A96341" },
-  clay:    { light: "#EAC0A6", mid: "#D69C7C", dark: "#B67A59", limb: "#C78C6B", snout: "#CE9070", nostril: "#8A583C" },
-  lilac:   { light: "#E2CCFF", mid: "#C4A3F0", dark: "#A07FD1", limb: "#B392E2", snout: "#B995E4", nostril: "#7A57A3" },
-  mintpig: { light: "#BFF0D6", mid: "#93DBB4", dark: "#6BB891", limb: "#82CBA2", snout: "#8AD0A8", nostril: "#4E8B69" },
-  butter:  { light: "#FFE9AE", mid: "#F7CE72", dark: "#D9AC4C", limb: "#EDBE60", snout: "#EFC163", nostril: "#A67D2E" },
-  sky:     { light: "#C2E4FF", mid: "#95C7F5", dark: "#6DA3D6", limb: "#83B7E6", snout: "#8ABBE8", nostril: "#4E7BA5" },
+  pink:    { light: "#FCD8DF", mid: "#F5BCC8", dark: "#E3A2B0", ear: "#EFAAB8", snout: "#EDA0B0", nostril: "#7A4450", blush: "#F08FA6" },
+  rose:    { light: "#FFC9C9", mid: "#F3A3A6", dark: "#DC8489", ear: "#EC9498", snout: "#EA9195", nostril: "#7A3E44", blush: "#F0808C" },
+  peach:   { light: "#FFDCC2", mid: "#F7BE99", dark: "#E0A177", ear: "#F1AE86", snout: "#EFAB82", nostril: "#8A543A", blush: "#F09A76" },
+  cocoa:   { light: "#E8C4AE", mid: "#D2A183", dark: "#B58165", ear: "#C79274", snout: "#C48E70", nostril: "#6E442F", blush: "#D08A6A" },
+  slate:   { light: "#DCDCE8", mid: "#BCBCD0", dark: "#9C9CB4", ear: "#ACACC2", snout: "#A8A8BE", nostril: "#4E4E66", blush: "#B79ACB" },
+  butter:  { light: "#FBEBBE", mid: "#F0D68F", dark: "#D8BB6A", ear: "#E6C97E", snout: "#E4C67A", nostril: "#8A6F26", blush: "#E0B57A" },
+  mint:    { light: "#D3EEDA", mid: "#AEDCBB", dark: "#8CC29C", ear: "#9DD1AC", snout: "#9ACEA9", nostril: "#4A7A56", blush: "#A8CFA0" },
+  lilacpig:{ light: "#E8D6FA", mid: "#CDB0EC", dark: "#B192D6", ear: "#C0A0E2", snout: "#BD9CE0", nostril: "#5B3E84", blush: "#C994D8" },
 };
 
-/**
- * A drained version of a palette: the same hue, most of the blood gone.
- *
- * Not greyscale — a dead pig should still be recognisably the colour its owner
- * picked, so each channel is pulled most of the way toward its own luminance
- * and then lifted, which washes the colour out without discarding the hue.
- */
-export function palePalette(p: PigPalette): PigPalette {
-  const wash = (hex: string): string => {
-    const n = parseInt(hex.slice(1), 16);
-    const r = (n >> 16) & 255;
-    const g = (n >> 8) & 255;
-    const b = n & 255;
-    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-    const drain = (c: number) =>
-      Math.round(Math.max(0, Math.min(255, (c * 0.55 + lum * 0.45) * 0.96 + 15)));
-    return `#${[drain(r), drain(g), drain(b)].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
-  };
-  return {
-    light: wash(p.light),
-    mid: wash(p.mid),
-    dark: wash(p.dark),
-    limb: wash(p.limb),
-    snout: wash(p.snout),
-    nostril: wash(p.nostril),
-  };
-}
 
 export const PIG_BACKGROUNDS: Record<string, string> = {
-  apricot: "#FFE8D6",
-  coral: "#FFD3DA",
-  teal: "#CFF0EB",
-  butter: "#FFEFC2",
-  lilac: "#E7DBFF",
-  cream: "#FFF6EE",
+  oat:    "#F4EEDC",
+  gold:   "#F6EDC8",
+  lemon:  "#E6D389",
+  plum:   "#D9BAC0",
+  lilac:  "#EFE2FF",
+  cream:  "#FFFDF6",
 };
 
 export const PIG_HATS = ["none", "cap", "beret", "bucket", "party", "crown", "chef", "tophat"] as const;
@@ -193,7 +164,10 @@ export const EAR_COVERING_HATS = new Set(["cap", "beret", "bucket", "chef", "top
 export function hidesEars(hat: string | undefined): boolean {
   return !!hat && EAR_COVERING_HATS.has(hat);
 }
-export const PIG_ACCESSORIES = ["none", "sunglasses", "scarf", "blush", "tote"] as const;
+
+// Accessories are hers: the rebuilt pig draws blush and a scarf, and offering
+// options the art can't render would be a menu of no-ops.
+export const PIG_ACCESSORIES = ["none", "blush", "scarf"] as const;
 
 export type PigConfig = {
   color?: string;
@@ -206,7 +180,7 @@ export const DEFAULT_PIG: Required<PigConfig> = {
   color: "pink",
   hat: "none",
   accessory: "none",
-  background: "apricot",
+  background: "oat",
 };
 
 export function normalisePig(config: PigConfig | undefined | null): Required<PigConfig> {

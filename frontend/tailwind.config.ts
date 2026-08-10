@@ -1,42 +1,50 @@
 import type { Config } from "tailwindcss";
 
 /**
- * Oink design tokens — "Punch": clean structure, loud colour.
+ * Oink design tokens — "Damson".
  *
- * The rule that keeps it from tipping back into cartoon territory: no black
- * outlines and no hard offset shadows anywhere. Separation comes from colour
- * and soft elevation. Two loud accents (coral, tangerine) plus teal support.
+ * Built from the reference palettes: an oat ground, plum leading, gold and
+ * lemon supporting, eggplant as ink. The structural rule taken from the layout
+ * references is that containers are defined by **outlines, not shadows** —
+ * there is deliberately no shadow scale here beyond a single soft lift used
+ * only for overlays.
  */
 const config: Config = {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        ink: "#2B1B3D",
-        "ink-soft": "#6A5A7A",
-        apricot: "#FFE8D6",
-        "apricot-deep": "#FFD7BC",
-        cream: "#FFFDFB",
-        coral: "#FF4D6D",
-        "coral-deep": "#E63455",
-        tangerine: "#FF8A00",
-        teal: "#00B39F",
-        "teal-pale": "#D6F5F1",
-        "teal-ink": "#00776A",
-        butter: "#FFC53D",
-        grape: "#7B3FE4",
+        // ink
+        ink: "#4D303F",          // eggplant
+        "ink-soft": "#7A6270",
+        "ink-deep": "#2F2A35",   // blueberry, for the heaviest type
+
+        // grounds
+        oat: "#F4EEDC",
+        "oat-deep": "#E8DFC4",
+        cream: "#FFFDF6",
+
+        // accents
+        plum: "#914E56",
+        "plum-deep": "#783E46",
+        gold: "#CFA51F",
+        "gold-pale": "#F6EDC8",
+        lemon: "#E6D389",
+        rust: "#A9503C",         // shame — distinct from plum, same family
+        lilac: "#D8B5F7",
+        "lilac-pale": "#EFE2FF",
+        "lilac-ink": "#5B3E84",
       },
       fontFamily: {
         display: ["var(--font-display)", "Avenir Next", "system-ui", "sans-serif"],
         body: ["var(--font-body)", "system-ui", "sans-serif"],
       },
       boxShadow: {
-        soft: "0 2px 10px rgba(43, 27, 61, 0.09)",
-        lift: "0 4px 18px rgba(43, 27, 61, 0.12)",
-        pop: "0 3px 12px rgba(255, 77, 109, 0.30)",
+        // Only for things floating above the page — sheets, dropdowns, the FAB.
+        lift: "0 6px 20px rgba(77, 48, 63, 0.16)",
       },
       borderRadius: {
-        card: "16px",
+        card: "14px",
       },
       screens: {
         phone: "430px",

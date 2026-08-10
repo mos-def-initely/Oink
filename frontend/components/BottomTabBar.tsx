@@ -17,7 +17,7 @@ export default function BottomTabBar() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-1/2 z-[1000] w-full max-w-[480px] -translate-x-1/2 bg-cream pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_14px_rgba(43,27,61,0.10)]">
+    <nav className="fixed bottom-0 left-1/2 z-[1000] w-full max-w-[480px] -translate-x-1/2 border-t-2 border-ink bg-cream pb-[env(safe-area-inset-bottom)]">
       <ul className="flex">
         {TABS.map(({ href, label, icon: Icon }) => {
           const active =
@@ -27,7 +27,7 @@ export default function BottomTabBar() {
               <Link
                 href={href}
                 className={`flex min-h-[58px] flex-col items-center justify-center gap-0.5 py-2 font-display text-[11px] font-bold ${
-                  active ? "text-coral" : "text-ink-soft"
+                  active ? "text-plum" : "text-ink-soft"
                 }`}
               >
                 <Icon active={active} />
@@ -47,7 +47,7 @@ export function TabBarSpacer() {
 }
 
 function FeedIcon({ active }: { active: boolean }) {
-  const c = active ? "#FF4D6D" : "#6A5A7A";
+  const c = active ? "#914E56" : "#7A6270";
   return (
     <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2">
       <rect x="3" y="4" width="18" height="6" rx="2.5" />
@@ -57,7 +57,7 @@ function FeedIcon({ active }: { active: boolean }) {
 }
 
 function MapIcon({ active }: { active: boolean }) {
-  const c = active ? "#FF4D6D" : "#6A5A7A";
+  const c = active ? "#914E56" : "#7A6270";
   return (
     <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2">
       <path d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11Z" strokeLinejoin="round" />
@@ -67,7 +67,7 @@ function MapIcon({ active }: { active: boolean }) {
 }
 
 function PigIcon({ active }: { active: boolean }) {
-  const c = active ? "#FF4D6D" : "#6A5A7A";
+  const c = active ? "#914E56" : "#7A6270";
   return (
     <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2">
       <path d="M6 8 5 4l5 2.5" strokeLinejoin="round" />

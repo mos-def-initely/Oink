@@ -1,139 +1,224 @@
 "use client";
 
 /**
- * Price-tier pigs — spec §9.2. Same Vinyl Toy construction as the avatar:
- * upright, shaded, limbs joined to the torso.
+ * Price-tier pigs — spec §9.2.
  *
- *   $     peasant   — patched sack smock, bit of straw
- *   $$    casual    — plain tee
- *   $$$   smart     — collared shirt
- *   $$$$  posh      — top hat, monocle, cigar, tailcoat
+ * These appear as small as 22px next to a budget label, so they have to be
+ * told apart by **silhouette**, not by the colour of a shirt. An earlier set
+ * differed only in what the pig was wearing and every tier below posh blended
+ * into the others.
  *
- * Budget is never rendered as bare `$` text; use BudgetTag so the pig and the
- * label always travel together.
+ * Three ladders run in parallel, all readable at pin size:
+ *
+ *   tier   headwear (height = price)   accessory        clothing value
+ *   $      bare head                   straw in mouth   pale tan sack
+ *   $$     baseball cap                —                lemon tee
+ *   $$$    short-brim trilby           bow tie          plum shirt
+ *   $$$$   tall top hat                monocle + cigar  eggplant tailcoat
+ *
+ * Headwear height is the primary cue — nothing, low, medium, tall — and it
+ * survives even when the pig is 22px wide and the clothing is three pixels of
+ * colour. Clothing value ramps light-to-dark underneath as a second signal.
+ *
+ * Same construction and shading as the avatar (see PigAvatar.tsx) so the whole
+ * family reads as one hand.
  */
 import { useId } from "react";
 import { BUDGET_LABELS, Budget } from "@/lib/pig";
 
-const LIGHT = "#FFC9D6";
-const MID = "#FC9FB8";
-const DARK = "#DE7595";
-const LIMB = "#EE8CA8";
-const SNOUT = "#F291AF";
-const NOSTRIL = "#B05377";
-const INK = "#2B1B3D";
+const OUTLINE = "#8A5460";
+const EYE = "#43262F";
+const STROKE = 2.1;
+
+const LIGHT = "#FCD8DF";
+const MID = "#F5BCC8";
+const DARK = "#E3A2B0";
+const EAR = "#EFAAB8";
+const SNOUT = "#EDA0B0";
+const NOSTRIL = "#8A5460";
+
+const INK = "#4D303F";
+const PLUM = "#914E56";
+const GOLD = "#CFA51F";
+const LEMON = "#E6D389";
+const TAN = "#C9A76E";
 
 export function PricePig({ budget, size = 34 }: { budget: Budget; size?: number }) {
   const uid = useId().replace(/:/g, "");
-  const g = `pp-${uid}`;
+  const grad = `pp-${uid}`;
+  const blur = `pb-${uid}`;
+  const bodyClip = `pc-${uid}`;
+  const headClip = `ph-${uid}`;
 
   return (
-    <svg width={size} height={size} viewBox="0 0 72 100" role="img" aria-label={BUDGET_LABELS[budget]}>
+    <svg width={size} height={size} viewBox="0 0 120 130" role="img" aria-label={BUDGET_LABELS[budget]}>
       <defs>
-        <radialGradient id={g} cx="34%" cy="24%" r="82%">
+        <radialGradient id={grad} cx="34%" cy="24%" r="82%">
           <stop offset="0%" stopColor={LIGHT} />
-          <stop offset="58%" stopColor={MID} />
+          <stop offset="52%" stopColor={MID} />
           <stop offset="100%" stopColor={DARK} />
         </radialGradient>
+        <filter id={blur} x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="4" />
+        </filter>
+        <clipPath id={bodyClip}>
+          <ellipse cx="60" cy="84" rx="30" ry="27" />
+        </clipPath>
+        <clipPath id={headClip}>
+          <ellipse cx="60" cy="46" rx="26" ry="23" />
+        </clipPath>
       </defs>
 
-      {/* tail on the lower back */}
-      <path d="M55 74 q8 -1 7 -7" fill="none" stroke={LIMB} strokeWidth="3" strokeLinecap="round" />
+      {/* tail, clear of the right arm */}
+      <path d="M92 88 q12 -3 10 -14" fill="none" stroke={OUTLINE} strokeWidth={STROKE + 0.4} strokeLinecap="round" />
+      <ellipse cx="60" cy="120" rx="25" ry="5" fill={DARK} opacity="0.26" filter={`url(#${blur})`} />
 
-      {/* legs, then arms, then torso — joints stay covered */}
-      <rect x="25" y="74" width="9" height="20" rx="4.5" fill={LIMB} />
-      <rect x="38" y="74" width="9" height="20" rx="4.5" fill={LIMB} />
-      <ellipse cx="29.5" cy="94" rx="6" ry="3.4" fill={DARK} />
-      <ellipse cx="42.5" cy="94" rx="6" ry="3.4" fill={DARK} />
-      <rect x="11" y="50" width="8" height="24" rx="4" fill={LIMB} />
-      <rect x="53" y="50" width="8" height="24" rx="4" fill={LIMB} />
+      <g stroke={OUTLINE} strokeWidth={STROKE} strokeLinejoin="round">
+        <rect x="43" y="102" width="14" height="18" rx="6.5" fill={SNOUT} />
+        <rect x="63" y="102" width="14" height="18" rx="6.5" fill={SNOUT} />
+        <ellipse cx="60" cy="84" rx="30" ry="27" fill={`url(#${grad})`} />
+      </g>
 
-      <Outfit budget={budget} grad={g} />
+      {/* clothing sits inside the body outline */}
+      <g clipPath={`url(#${bodyClip})`}>
+        <Outfit budget={budget} />
+        <ellipse cx="75" cy="106" rx="33" ry="20" fill={DARK} opacity="0.42" filter={`url(#${blur})`} />
+        <ellipse cx="44" cy="68" rx="18" ry="12" fill="#fff" opacity="0.26" filter={`url(#${blur})`} />
+        <ellipse cx="60" cy="62" rx="25" ry="11" fill={DARK} opacity="0.5" filter={`url(#${blur})`} />
+      </g>
 
-      {/* head overlaps the torso top */}
-      <path d="M20 26 Q15 6 33 17 Z" fill={LIMB} />
-      <path d="M52 26 Q57 6 39 17 Z" fill={LIMB} />
-      <ellipse cx="36" cy="30" rx="19" ry="17.5" fill={`url(#${g})`} />
-      <ellipse cx="36" cy="36" rx="8" ry="6" fill={SNOUT} />
-      <ellipse cx="33.4" cy="36" rx="1.4" ry="2" fill={NOSTRIL} />
-      <ellipse cx="38.6" cy="36" rx="1.4" ry="2" fill={NOSTRIL} />
-      <ellipse cx="29.5" cy="26" rx="2.2" ry="2.7" fill="#3D2230" />
-      <ellipse cx="42.5" cy="26" rx="2.2" ry="2.7" fill="#3D2230" />
-      <circle cx="30.4" cy="25" r="0.9" fill="#fff" />
-      <circle cx="43.4" cy="25" r="0.9" fill="#fff" />
-      <ellipse cx="26" cy="20" rx="5.5" ry="3.6" fill="#fff" opacity="0.32" transform="rotate(-24 26 20)" />
+      <g stroke={OUTLINE} strokeWidth={STROKE} strokeLinejoin="round">
+        <rect x="27" y="76" width="12" height="22" rx="6" fill={EAR} />
+        <rect x="81" y="76" width="12" height="22" rx="6" fill={EAR} />
+        <path d="M37 38 Q33 15 52 26 Z" fill={EAR} />
+        <path d="M83 38 Q87 15 68 26 Z" fill={EAR} />
+        <ellipse cx="60" cy="46" rx="26" ry="23" fill={`url(#${grad})`} />
+      </g>
 
-      <Extras budget={budget} />
+      <g clipPath={`url(#${headClip})`}>
+        <ellipse cx="74" cy="64" rx="25" ry="17" fill={DARK} opacity="0.45" filter={`url(#${blur})`} />
+        <ellipse cx="48" cy="34" rx="15" ry="10" fill="#fff" opacity="0.3" filter={`url(#${blur})`} />
+      </g>
+
+      <ellipse cx="41" cy="53" rx="6" ry="3.8" fill="#F08FA6" opacity="0.45" filter={`url(#${blur})`} />
+      <ellipse cx="79" cy="53" rx="6" ry="3.8" fill="#F08FA6" opacity="0.45" filter={`url(#${blur})`} />
+
+      <ellipse cx="60" cy="51" rx="11" ry="6" fill={DARK} opacity="0.36" filter={`url(#${blur})`} />
+      <ellipse cx="60" cy="55" rx="11" ry="8" fill={SNOUT} stroke={OUTLINE} strokeWidth={STROKE} />
+      <ellipse cx="56.4" cy="55" rx="1.9" ry="2.7" fill={NOSTRIL} />
+      <ellipse cx="63.6" cy="55" rx="1.9" ry="2.7" fill={NOSTRIL} />
+
+      <ellipse cx="50" cy="42" rx="3.1" ry="3.8" fill={EYE} />
+      <ellipse cx="70" cy="42" rx="3.1" ry="3.8" fill={EYE} />
+      <circle cx="51.2" cy="40.6" r="1.2" fill="#fff" />
+      <circle cx="71.2" cy="40.6" r="1.2" fill="#fff" />
+
+      <Headwear budget={budget} />
+      <Accessory budget={budget} />
     </svg>
   );
 }
 
-const TORSO = "M36 44 q-19 2 -19 18 q0 16 19 17 q19 -1 19 -17 q0 -16 -19 -18 Z";
-const SHIRT = "M36 50 q-16 2 -16 15 q0 13 16 14 q16 -1 16 -14 q0 -13 -16 -15 Z";
-
-function Outfit({ budget, grad }: { budget: Budget; grad: string }) {
+/** Clothing — clipped to the body, so only the value ramp shows. */
+function Outfit({ budget }: { budget: Budget }) {
   switch (budget) {
     case "$":
       return (
         <>
-          <path d={TORSO} fill={`url(#${grad})`} />
-          <path d={SHIRT} fill="#C9A227" />
-          <path d="M28 62 l6 -1 1 6 -6 1 Z" fill="#A98418" />
-          <path d="M20 74 q16 5 32 0 l0 3 q-16 5 -32 0 Z" fill="#B08F1C" />
+          <path d="M60 70 q-24 2 -24 20 q0 18 24 19 q24 -1 24 -19 q0 -18 -24 -20 Z" fill={TAN} />
+          {/* patch + ragged hem */}
+          <path d="M44 88 l10 -2 2 10 -10 2 Z" fill="#A98A52" />
+          <path d="M33 106 q27 7 54 0 l0 6 q-27 7 -54 0 Z" fill="#A98A52" />
         </>
       );
     case "$$":
-      return (
-        <>
-          <path d={TORSO} fill={`url(#${grad})`} />
-          <path d={SHIRT} fill="#00B39F" />
-          <path d="M30 50 q6 6 12 0" fill="none" stroke="#009C8B" strokeWidth="1.8" />
-        </>
-      );
+      return <path d="M60 70 q-24 2 -24 20 q0 18 24 19 q24 -1 24 -19 q0 -18 -24 -20 Z" fill={LEMON} />;
     case "$$$":
       return (
         <>
-          <path d={TORSO} fill={`url(#${grad})`} />
-          <path d={SHIRT} fill="#8FC7F0" />
-          <path d="M29 49 L36 58 L43 49 L40 47.5 L36 52 L32 47.5 Z" fill="#FFFDFB" />
-          <circle cx="36" cy="65" r="1.3" fill="#5E8FB8" />
-          <circle cx="36" cy="72" r="1.3" fill="#5E8FB8" />
+          <path d="M60 70 q-24 2 -24 20 q0 18 24 19 q24 -1 24 -19 q0 -18 -24 -20 Z" fill={PLUM} />
+          <path d="M50 69 L60 80 L70 69 L66 67 L60 74 L54 67 Z" fill="#FFFDF6" />
         </>
       );
     case "$$$$":
       return (
         <>
-          <path d={TORSO} fill={`url(#${grad})`} />
-          <path d={SHIRT} fill="#2B1B3D" />
-          <path d="M30 49 q6 16 12 0 Z" fill="#FFFDFB" />
-          <path d="M31 49 L36 53 L41 49 L41 45.5 L36 49 L31 45.5 Z" fill="#FF4D6D" />
+          <path d="M60 70 q-24 2 -24 20 q0 18 24 19 q24 -1 24 -19 q0 -18 -24 -20 Z" fill={INK} />
+          <path d="M51 69 q9 24 18 0 Z" fill="#FFFDF6" />
         </>
       );
   }
 }
 
-function Extras({ budget }: { budget: Budget }) {
-  if (budget === "$") {
-    return <path d="M44 37 L54 33" stroke="#C9A227" strokeWidth="2" strokeLinecap="round" />;
+/**
+ * Headwear — the primary tier cue. Height climbs with price: nothing, a low
+ * cap, a short-brim hat, a tall top hat. That difference survives at 22px
+ * where clothing colour does not.
+ */
+function Headwear({ budget }: { budget: Budget }) {
+  const s = { stroke: OUTLINE, strokeWidth: STROKE + 0.2, strokeLinejoin: "round" as const };
+  switch (budget) {
+    case "$":
+      return null; // bare head — the cheapest silhouette is no silhouette
+    case "$$":
+      return (
+        <g {...s}>
+          <path d="M38 27 A22 20 0 0 1 82 27 Z" fill={GOLD} />
+          <path d="M62 27 L94 30 L94 24 L62 21 Z" fill="#E0BC46" />
+        </g>
+      );
+    case "$$$":
+      return (
+        <g {...s}>
+          <ellipse cx="60" cy="26" rx="34" ry="5.5" fill={PLUM} />
+          <path d="M43 26 q0 -18 17 -18 q17 0 17 18 Z" fill={PLUM} />
+          <path d="M43 22 q17 5 34 0" fill="none" stroke="#6E3A42" strokeWidth="3" />
+        </g>
+      );
+    case "$$$$":
+      return (
+        <g {...s}>
+          <rect x="42" y="-8" width="36" height="26" rx="2.5" fill={INK} />
+          <rect x="42" y="0" width="36" height="6" fill={PLUM} stroke="none" />
+          <rect x="30" y="17" width="60" height="6" rx="3" fill={INK} />
+        </g>
+      );
   }
-  if (budget === "$$$$") {
-    return (
-      <g>
-        <rect x="26" y="1" width="20" height="12" rx="1.6" fill={INK} />
-        <rect x="26" y="4" width="20" height="3" fill="#FF4D6D" />
-        <rect x="19" y="12" width="34" height="3.4" rx="1.7" fill={INK} />
-        <circle cx="42.5" cy="26" r="6" fill="none" stroke={INK} strokeWidth="1.8" />
-        <path d="M47 30.5 L50 37" stroke={INK} strokeWidth="1.4" strokeLinecap="round" />
-        <rect x="44" y="35" width="12" height="3.4" rx="1.7" fill="#8A5A2B" />
-        <circle cx="57" cy="36.7" r="1.9" fill="#FF8A00" />
-      </g>
-    );
+}
+
+/** Second-order cues, so two tiers never rest on headwear alone. */
+function Accessory({ budget }: { budget: Budget }) {
+  switch (budget) {
+    case "$":
+      // straw, sticking out sideways — breaks the silhouette on its own
+      return (
+        <g stroke={GOLD} strokeWidth="3" strokeLinecap="round">
+          <path d="M70 58 L92 50" />
+          <path d="M88 51 l5 -4" strokeWidth="2.4" />
+        </g>
+      );
+    case "$$$":
+      return (
+        <g stroke={OUTLINE} strokeWidth={STROKE} strokeLinejoin="round">
+          <path d="M54 67 L60 71 L66 67 L66 61 L60 66 L54 61 Z" fill={GOLD} />
+        </g>
+      );
+    case "$$$$":
+      return (
+        <g stroke={OUTLINE} strokeWidth={STROKE} strokeLinejoin="round">
+          <circle cx="70" cy="42" r="8.5" fill="none" strokeWidth="2.4" />
+          <path d="M76 49 L81 60" strokeWidth="2" strokeLinecap="round" />
+          <rect x="72" y="53" width="18" height="5" rx="2.5" fill="#8A5A2B" strokeWidth="2.2" />
+          <circle cx="93" cy="55.5" r="3" fill={GOLD} stroke="none" />
+        </g>
+      );
+    default:
+      return null;
   }
-  return null;
 }
 
 /** Pig + price label — the standard way budget appears anywhere in the app. */
-export function BudgetTag({ budget, size = 26 }: { budget: Budget; size?: number }) {
+export function BudgetTag({ budget, size = 28 }: { budget: Budget; size?: number }) {
   return (
     <span className="inline-flex items-center gap-1 whitespace-nowrap">
       <PricePig budget={budget} size={size} />

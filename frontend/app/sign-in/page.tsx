@@ -56,7 +56,7 @@ function SignInForm() {
                 setError(null);
               }}
               className={`btn flex-1 text-sm ${
-                mode === m ? "bg-coral text-white shadow-pop" : "bg-apricot"
+                mode === m ? "bg-plum text-white" : "bg-oat"
               }`}
             >
               {m === "login" ? "Sign in" : "Join"}
@@ -67,7 +67,7 @@ function SignInForm() {
         <label className="block">
           <span className="font-display text-sm font-bold">Username</span>
           <input
-            className="field mt-1 bg-apricot"
+            className="field mt-1 bg-oat"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             autoCapitalize="none"
@@ -81,7 +81,7 @@ function SignInForm() {
           <label className="block">
             <span className="font-display text-sm font-bold">Display name</span>
             <input
-              className="field mt-1 bg-apricot"
+              className="field mt-1 bg-oat"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder="What friends call you"
@@ -92,7 +92,7 @@ function SignInForm() {
         <label className="block">
           <span className="font-display text-sm font-bold">Password</span>
           <input
-            className="field mt-1 bg-apricot"
+            className="field mt-1 bg-oat"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}

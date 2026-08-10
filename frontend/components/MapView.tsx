@@ -98,8 +98,8 @@ function pinHtml(place: PlaceSummary): string {
     : [];
   const count = voters.length;
   const shamed = place.shamed_only;
-  const ring = shamed ? "#9A93A3" : "#FFFDFB";
-  const bg = shamed ? "#D8D4DC" : "#FFFDFB";
+  const ring = shamed ? "#8E8478" : "#4D303F";
+  const bg = shamed ? "#DCD5C6" : "#FFFDF6";
 
   // A greyed face alone doesn't say "shamed" at pin size, so a shamer's face
   // carries the angry pig as a badge — the same mark used on the reaction
@@ -108,8 +108,8 @@ function pinHtml(place: PlaceSummary): string {
     <div style="
       position:absolute; right:-3px; bottom:-3px;
       width:${size}px; height:${size}px; border-radius:50%;
-      background:#FF8A00; border:2px solid #FFFDFB;
-      box-shadow:0 1px 3px rgba(43,27,61,.35);
+      background:#A9503C; border:2px solid #FFFDF6;
+      box-shadow:0 2px 6px rgba(77,48,63,.28);
       display:flex; align-items:center; justify-content:center; overflow:hidden;
     ">${renderToStaticMarkup(<ShamePig size={size - 3} active />)}</div>`;
 
@@ -147,10 +147,10 @@ function pinHtml(place: PlaceSummary): string {
       ? `<div style="
            position:absolute; right:-4px; top:-4px;
            min-width:20px; height:20px; padding:0 5px; border-radius:10px;
-           background:#FF4D6D; color:#fff; border:2px solid #FFFDFB;
+           background:#914E56; color:#F4EEDC; border:2px solid #4D303F;
            font-family:var(--font-display),system-ui; font-size:11px; font-weight:800;
            display:flex; align-items:center; justify-content:center;
-           box-shadow:0 2px 6px rgba(43,27,61,.3);
+           box-shadow:none;
          ">${count}</div>`
       : "";
 
@@ -161,8 +161,8 @@ function pinHtml(place: PlaceSummary): string {
         position:absolute; left:50%; bottom:-7px; transform:translateX(-50%);
         width:0; height:0;
         border-left:6px solid transparent; border-right:6px solid transparent;
-        border-top:9px solid ${shamed ? "#9A93A3" : "#FFFDFB"};
-        filter:drop-shadow(0 2px 2px rgba(43,27,61,.22));
+        border-top:9px solid ${shamed ? "#8E8478" : "#4D303F"};
+        filter:none;
       "></div>
     </div>`;
 }
@@ -175,7 +175,7 @@ function clusterHtml(group: PlaceSummary[]): string {
     .slice(0, 2)
     .map(
       (u, i) => `<div style="position:absolute; ${i === 0 ? "left:4px" : "right:4px"}; top:6px;
-          width:26px; height:26px; border-radius:50%; overflow:hidden; background:#FFFDFB;">
+          width:26px; height:26px; border-radius:50%; overflow:hidden; background:#FFFDF6;">
           ${renderToStaticMarkup(
             <PigAvatar
               config={u.pig_avatar_config}
@@ -192,14 +192,14 @@ function clusterHtml(group: PlaceSummary[]): string {
     <div style="position:relative; width:56px; height:56px;">
       <div style="
         position:absolute; inset:0; border-radius:50%;
-        background:#FFFDFB; border:3px solid #FF4D6D;
-        box-shadow:0 3px 10px rgba(43,27,61,.30);
+        background:#FFFDF6; border:3px solid #4D303F;
+        box-shadow:0 3px 10px rgba(77,48,63,.24);
       "></div>
       ${faces}
       <div style="
         position:absolute; left:0; right:0; bottom:5px;
         text-align:center; font-family:var(--font-display),system-ui;
-        font-size:15px; font-weight:800; color:#FF4D6D; line-height:1;
+        font-size:15px; font-weight:800; color:#914E56; line-height:1;
       ">${group.length}</div>
     </div>`;
 }
@@ -439,10 +439,10 @@ export default function MapView({
         className: "oink-pin",
         html: `<div style="
             width:34px;height:34px;border-radius:50%;
-            background:#FF4D6D;border:3px solid #FFFDFB;
-            box-shadow:0 3px 10px rgba(43,27,61,.32);
+            background:#914E56;border:3px solid #4D303F;
+            box-shadow:0 3px 10px rgba(77,48,63,.26);
             display:flex;align-items:center;justify-content:center;
-            color:#fff;font-family:var(--font-display),system-ui;font-weight:800;font-size:20px;
+            color:#F4EEDC;font-family:var(--font-display),system-ui;font-weight:800;font-size:20px;
           ">+</div>`,
         iconSize: [34, 34],
         iconAnchor: [17, 34],

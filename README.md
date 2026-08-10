@@ -132,10 +132,17 @@ endorsed straight away.
 faces fan out behind the leader, capping at three plus a count chip. Full-body
 pigs appear only on the feed and the profile.
 
-**Pigs** — "Vinyl Toy" style: upright, gradient-shaded, no outlines. Avatars are
-customisable and gain **belly rolls** across four tiers as you log places
-(thresholds live only in `lib/pig.ts`). Price tiers are four fixed pigs —
-peasant, casual, smart, posh — and budget is never rendered as bare `$$$` text.
+**Pigs** — warm brown outlines, soft shading, blush. The avatar is deliberately
+neutral (it's an identity); all the attitude lives in the reaction icons. The
+snout and nostrils are drawn at every size, because without them the avatar
+stops reading as a pig. Avatars are customisable and gain **belly rolls** across
+four tiers as you log places (thresholds live only in `lib/pig.ts`). Price tiers
+are four fixed pigs — peasant, casual, smart, posh — and budget is never
+rendered as bare `$$$` text.
+
+**Look** — "Damson": oat ground, plum lead, gold and lemon support, eggplant
+ink, Outfit for display type. Containers are defined by **outlines, not
+shadows**; shadow is reserved for things floating above the page.
 
 ---
 
@@ -171,7 +178,9 @@ frontend/
 
 - **Follower graph** — every account is in one shared circle.
 - **Password reset** — no email in the system at all.
-- **Photo auto-sourcing** — places without a photo get a generated placeholder.
+- **Photo coverage** — auto-sourcing finds a photo for roughly a third of
+  places without a Google key. Run `backend/backfill_photos.py` after adding one
+  to fill in the rest.
 
 ---
 

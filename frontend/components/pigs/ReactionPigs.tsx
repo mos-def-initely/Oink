@@ -1,35 +1,53 @@
 "use client";
 
 /**
- * Reaction icons — spec §10. "Oink" is a happy pig, "Shame" an angry one.
- * Same Vinyl finish as the rest of the family; never a clock or a bell.
+ * Reaction icons — spec §10.
+ *
+ * These carry all the attitude in the app. The avatar pig stays neutral
+ * because it's an identity; these two are moods, so the emotion on screen
+ * comes from what someone *did* rather than from who they are.
+ *
+ *   Oink   delighted — squeezed-shut happy eyes, strong blush
+ *   Shame  furious   — angled brows, narrowed eyes, red-brown coat, steam
+ *
+ * Both keep the snout and nostrils, which is what stops them reading as
+ * generic emoji at small sizes.
  */
 import { useId } from "react";
+
+const OUTLINE = "#7A4450";
+const EYE = "#4A2B33";
 
 export function OinkPig({ size = 30, active = false }: { size?: number; active?: boolean }) {
   const uid = useId().replace(/:/g, "");
   const g = `oink-${uid}`;
-  const c = active ? ["#FFD0DC", "#FF8FAC", "#E4547C"] : ["#FFDCE4", "#FBB0C4", "#DE8CA4"];
+  const c = active
+    ? { light: "#FCD6DE", mid: "#F5BCC8", dark: "#E2A0AE", ear: "#EFAAB8", snout: "#EDA0B0", blush: "#F08FA6" }
+    : { light: "#F6E2E6", mid: "#EBCBD3", dark: "#D6B2BC", ear: "#E3BCC6", snout: "#E1B8C2", blush: "#DFAEBC" };
 
   return (
-    <svg width={size} height={size} viewBox="0 0 48 48" role="img" aria-label="Oink">
+    <svg width={size} height={size} viewBox="0 0 120 120" role="img" aria-label="Oink">
       <defs>
-        <radialGradient id={g} cx="34%" cy="26%" r="82%">
-          <stop offset="0%" stopColor={c[0]} />
-          <stop offset="58%" stopColor={c[1]} />
-          <stop offset="100%" stopColor={c[2]} />
+        <radialGradient id={g} cx="36%" cy="30%" r="76%">
+          <stop offset="0%" stopColor={c.light} />
+          <stop offset="66%" stopColor={c.mid} />
+          <stop offset="100%" stopColor={c.dark} />
         </radialGradient>
       </defs>
-      <path d="M11 18 Q7 4 21 12 Z" fill={c[2]} />
-      <path d="M37 18 Q41 4 27 12 Z" fill={c[2]} />
-      <ellipse cx="24" cy="26" rx="16" ry="14.5" fill={`url(#${g})`} />
-      {/* happy squint */}
-      <path d="M14 21 Q17.5 17 21 21" fill="none" stroke="#3D2230" strokeWidth="2.4" strokeLinecap="round" />
-      <path d="M27 21 Q30.5 17 34 21" fill="none" stroke="#3D2230" strokeWidth="2.4" strokeLinecap="round" />
-      <ellipse cx="24" cy="31" rx="7.5" ry="5.4" fill={c[2]} />
-      <ellipse cx="21.7" cy="31" rx="1.3" ry="1.9" fill="#A84468" />
-      <ellipse cx="26.3" cy="31" rx="1.3" ry="1.9" fill="#A84468" />
-      <ellipse cx="16" cy="16" rx="4.6" ry="3" fill="#fff" opacity="0.34" transform="rotate(-24 16 16)" />
+      <g stroke={OUTLINE} strokeWidth="2.8" strokeLinejoin="round">
+        <path d="M28 46 Q22 22 44 32 Z" fill={c.ear} />
+        <path d="M92 46 Q98 22 76 32 Z" fill={c.ear} />
+        <ellipse cx="60" cy="62" rx="36" ry="32" fill={`url(#${g})`} />
+        <ellipse cx="60" cy="72" rx="15" ry="11" fill={c.snout} />
+      </g>
+      <path d="M84 44 a36 32 0 0 1 -6 44" fill="none" stroke={c.dark} strokeWidth="7" opacity="0.4" strokeLinecap="round" />
+      <ellipse cx="34" cy="70" rx="8.5" ry="5.2" fill={c.blush} opacity={active ? 0.65 : 0.45} />
+      <ellipse cx="86" cy="70" rx="8.5" ry="5.2" fill={c.blush} opacity={active ? 0.65 : 0.45} />
+      {/* squeezed-shut delighted eyes */}
+      <path d="M39 55 Q47 46 55 55" fill="none" stroke={EYE} strokeWidth="3.4" strokeLinecap="round" />
+      <path d="M65 55 Q73 46 81 55" fill="none" stroke={EYE} strokeWidth="3.4" strokeLinecap="round" />
+      <ellipse cx="55" cy="72" rx="2.4" ry="3.4" fill={OUTLINE} />
+      <ellipse cx="65" cy="72" rx="2.4" ry="3.4" fill={OUTLINE} />
     </svg>
   );
 }
@@ -37,29 +55,36 @@ export function OinkPig({ size = 30, active = false }: { size?: number; active?:
 export function ShamePig({ size = 30, active = false }: { size?: number; active?: boolean }) {
   const uid = useId().replace(/:/g, "");
   const g = `shame-${uid}`;
-  const c = active ? ["#FFC49A", "#F79355", "#D96E2E"] : ["#F0D2C2", "#DDAE96", "#BE8B72"];
+  const c = active
+    ? { light: "#F6C6B4", mid: "#EDAC97", dark: "#D98D78", ear: "#E29C87", snout: "#DC9480", steam: "#B5705A" }
+    : { light: "#EDD9D0", mid: "#DCC0B4", dark: "#C4A496", ear: "#D3B2A4", snout: "#D0AEA0", steam: "#B09287" };
 
   return (
-    <svg width={size} height={size} viewBox="0 0 48 48" role="img" aria-label="Shame">
+    <svg width={size} height={size} viewBox="0 0 120 120" role="img" aria-label="Shame">
       <defs>
-        <radialGradient id={g} cx="34%" cy="26%" r="82%">
-          <stop offset="0%" stopColor={c[0]} />
-          <stop offset="58%" stopColor={c[1]} />
-          <stop offset="100%" stopColor={c[2]} />
+        <radialGradient id={g} cx="36%" cy="30%" r="76%">
+          <stop offset="0%" stopColor={c.light} />
+          <stop offset="66%" stopColor={c.mid} />
+          <stop offset="100%" stopColor={c.dark} />
         </radialGradient>
       </defs>
-      <path d="M11 18 Q7 4 21 12 Z" fill={c[2]} />
-      <path d="M37 18 Q41 4 27 12 Z" fill={c[2]} />
-      <ellipse cx="24" cy="26" rx="16" ry="14.5" fill={`url(#${g})`} />
-      {/* furrowed brows + narrowed eyes */}
-      <path d="M13 17 L21 21" stroke="#3D2230" strokeWidth="2.6" strokeLinecap="round" />
-      <path d="M35 17 L27 21" stroke="#3D2230" strokeWidth="2.6" strokeLinecap="round" />
-      <ellipse cx="18.5" cy="24.5" rx="2.1" ry="2.5" fill="#3D2230" />
-      <ellipse cx="29.5" cy="24.5" rx="2.1" ry="2.5" fill="#3D2230" />
-      <ellipse cx="24" cy="32" rx="7.5" ry="5.4" fill={c[2]} />
-      <ellipse cx="21.7" cy="32" rx="1.3" ry="1.9" fill="#8A5238" />
-      <ellipse cx="26.3" cy="32" rx="1.3" ry="1.9" fill="#8A5238" />
-      {active && <path d="M40 14 q4 -3 1 -6" fill="none" stroke="#D96E2E" strokeWidth="2.2" strokeLinecap="round" />}
+      <g stroke={OUTLINE} strokeWidth="2.8" strokeLinejoin="round">
+        <path d="M28 46 Q22 22 44 32 Z" fill={c.ear} />
+        <path d="M92 46 Q98 22 76 32 Z" fill={c.ear} />
+        <ellipse cx="60" cy="62" rx="36" ry="32" fill={`url(#${g})`} />
+        <ellipse cx="60" cy="74" rx="15" ry="11" fill={c.snout} />
+      </g>
+      <path d="M84 44 a36 32 0 0 1 -6 44" fill="none" stroke={c.dark} strokeWidth="7" opacity="0.4" strokeLinecap="round" />
+      {/* heavy angled brows — the whole expression hangs off these */}
+      <path d="M36 45 L56 55" stroke={EYE} strokeWidth="3.8" strokeLinecap="round" />
+      <path d="M84 45 L64 55" stroke={EYE} strokeWidth="3.8" strokeLinecap="round" />
+      <ellipse cx="47" cy="60" rx="3.4" ry="3.8" fill={EYE} />
+      <ellipse cx="73" cy="60" rx="3.4" ry="3.8" fill={EYE} />
+      <ellipse cx="55" cy="74" rx="2.4" ry="3.4" fill={OUTLINE} />
+      <ellipse cx="65" cy="74" rx="2.4" ry="3.4" fill={OUTLINE} />
+      {active && (
+        <path d="M96 30 q7 -5 2 -11" fill="none" stroke={c.steam} strokeWidth="3.2" strokeLinecap="round" />
+      )}
     </svg>
   );
 }

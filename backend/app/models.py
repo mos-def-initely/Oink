@@ -82,6 +82,9 @@ class Restaurant(Base):
     # from this each time they're needed.
     google_place_id: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
     cover_image_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # Auto-sourced fallback image (spec §15). An uploaded photo always wins;
+    # this only fills the gap so a new place isn't a blank placeholder.
+    photo_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_by: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=_now)
 

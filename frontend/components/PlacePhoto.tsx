@@ -1,20 +1,29 @@
+"use client";
+
 /**
- * Place imagery. v1 shows an uploaded photo if there is one, otherwise a
- * generated placeholder — no auto-sourcing from the internet (spec §15).
+ * Place imagery, in priority order:
+ *   1. a photo someone uploaded when logging the place
+ *   2. an auto-sourced photo (the place's own og:image, or Google Places)
+ *   3. a generated placeholder
+ *
+ * The auto-sourced photo is hotlinked from someone else's server, so it can
+ * disappear or start refusing requests at any time. A failed load falls back to
+ * the placeholder rather than leaving a broken image in the card.
  *
  * The placeholder is deterministic per place name, so a given place always gets
- * the same colourway rather than flickering between renders.
+ * the same colourway rather than flickering between renders, and it's drawn
+ * from the app palette so a place without a photo still belongs to the page.
  */
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const PLACEHOLDERS = [
-  ["#FF4D6D", "#FF8A00"],
-  ["#00B39F", "#FFC53D"],
-  ["#7B3FE4", "#FF4D6D"],
-  ["#FF8A00", "#FFC53D"],
-  ["#00B39F", "#7B3FE4"],
+  ["#914E56", "#CFA51F"],
+  ["#CFA51F", "#E6D389"],
+  ["#4D303F", "#914E56"],
+  ["#A9503C", "#CFA51F"],
+  ["#914E56", "#D8B5F7"],
 ];
 
 function hashName(name: string): number {
@@ -37,14 +46,19 @@ export default function PlacePhoto({
   // a broken image in the feed.
   const [failed, setFailed] = useState(false);
 
+  // A new place may arrive with a different src; give it a fresh chance.
+  useEffect(() => setFailed(false), [src]);
+
   if (src && !failed) {
-    // eslint-disable-next-line @next/next/no-img-element -- local uploads, no loader needed
     return (
+      // eslint-disable-next-line @next/next/no-img-element -- local uploads and
+      // hotlinked remote photos; the Next loader adds nothing here.
       <img
         src={src}
         alt={alt}
-        className={`object-cover ${className}`}
+        loading="lazy"
         onError={() => setFailed(true)}
+        className={`object-cover ${className}`}
       />
     );
   }
@@ -59,7 +73,7 @@ export default function PlacePhoto({
       aria-label={`${alt} (no photo yet)`}
       role="img"
     >
-      <span className="font-display text-5xl font-extrabold text-white/90">{initial}</span>
+      <span className="font-display text-5xl font-extrabold text-oat/90">{initial}</span>
     </div>
   );
 }

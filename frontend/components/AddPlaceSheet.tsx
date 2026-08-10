@@ -347,7 +347,7 @@ export default function AddPlaceSheet({
           />
           {searching && <p className="text-xs text-ink-soft">Searching…</p>}
           {!searching && searchError && (
-            <p className="rounded-lg bg-tangerine/15 px-3 py-2 text-xs font-bold text-tangerine">
+            <p className="rounded-lg bg-rust/15 px-3 py-2 text-xs font-bold text-rust">
               Search failed: {searchError}
             </p>
           )}
@@ -363,7 +363,7 @@ export default function AddPlaceSheet({
                   <button
                     type="button"
                     onClick={() => choose(c)}
-                    className="w-full px-3.5 py-2.5 text-left hover:bg-apricot"
+                    className="w-full px-3.5 py-2.5 text-left hover:bg-oat"
                   >
                     <span className="block text-sm font-bold">{c.name}</span>
                     {c.address && (
@@ -388,7 +388,7 @@ export default function AddPlaceSheet({
             </button>
           </div>
           {pickedPoint ? (
-            <p className="rounded-lg bg-teal-pale px-3 py-2 text-xs font-bold text-teal-ink">
+            <p className="rounded-lg bg-gold-pale px-3 py-2 text-xs font-bold text-[#7A6212]">
               Pin dropped at {pickedPoint.lat.toFixed(4)}, {pickedPoint.lng.toFixed(4)}
             </p>
           ) : (
@@ -396,7 +396,7 @@ export default function AddPlaceSheet({
               Pick a result above, type an address or postcode below, use your location, or drop a pin.
             </p>
           )}
-          {note && <p className="rounded-lg bg-apricot-deep px-3 py-2 text-xs">{note}</p>}
+          {note && <p className="rounded-lg bg-oat-deep px-3 py-2 text-xs">{note}</p>}
         </section>
 
         {/* Optional Google Maps link */}
@@ -405,7 +405,7 @@ export default function AddPlaceSheet({
             <button
               type="button"
               onClick={() => setShowLink(true)}
-              className="text-sm font-bold text-coral underline underline-offset-2"
+              className="text-sm font-bold text-plum underline underline-offset-2"
             >
               Or paste a Google Maps link (optional)
             </button>
@@ -446,7 +446,7 @@ export default function AddPlaceSheet({
                   setCategory([]);
                 }}
                 className={`btn flex-1 text-xs ${
-                  kind === k ? "bg-coral text-white shadow-pop" : "bg-cream shadow-soft"
+                  kind === k ? "bg-plum text-oat" : "bg-cream"
                 }`}
               >
                 {KIND_LABELS[k]}
@@ -470,7 +470,7 @@ export default function AddPlaceSheet({
                   type="button"
                   onClick={() => setBudget(b)}
                   className={`btn flex items-center justify-center px-1 py-2 ${
-                    budget === b ? "bg-butter" : "bg-cream shadow-soft"
+                    budget === b ? "bg-lemon" : "bg-cream"
                   }`}
                 >
                   <BudgetTag budget={b} size={30} />
@@ -531,7 +531,7 @@ export default function AddPlaceSheet({
 
         {/* Your take — optional. Adding a place already counts as an oink, so
             nobody is forced to write something to log somewhere. */}
-        <section className="space-y-3 border-t border-apricot-deep pt-4">
+        <section className="space-y-3 border-t border-oat-deep pt-4">
           <div>
             <p className="font-display text-sm font-bold">
               Your take <span className="font-normal text-ink-soft">— optional</span>
