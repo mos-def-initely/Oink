@@ -84,6 +84,8 @@ export default function PigAvatar({
   const blur = `b-${uid}`;
   const headClip = `hc-${uid}`;
   const bodyClip = `bc-${uid}`;
+  const chestGrad = `cg-${uid}`;
+  const bellyGrad = `bg-${uid}`;
 
   const defs = (
     <defs>
@@ -221,6 +223,52 @@ export default function PigAvatar({
         );
       })}
 
+      {/* Fat as volume rather than stripes: chest fat above, one big gut below,
+          each lit from above and creased underneath so it hangs instead of
+          floating. Clipped to the body so nothing escapes the silhouette. */}
+      {(shape.moobs || shape.belly) && (
+        <g clipPath={`url(#${bodyClip})`}>
+          <defs>
+            <linearGradient id={chestGrad} gradientUnits="userSpaceOnUse"
+              x1="0" y1={82 - w * 0.72} x2="0" y2={82 - w * 0.12}>
+              <stop offset="0%" stopColor="#fff" stopOpacity="0.26" />
+              <stop offset="45%" stopColor="#fff" stopOpacity="0" />
+              <stop offset="62%" stopColor={p.dark} stopOpacity="0" />
+              <stop offset="100%" stopColor={p.dark} stopOpacity="0.58" />
+            </linearGradient>
+            <linearGradient id={bellyGrad} gradientUnits="userSpaceOnUse"
+              x1="0" y1={82 - w * 0.05} x2="0" y2={82 + w * 0.95}>
+              <stop offset="0%" stopColor="#fff" stopOpacity={0.22 * (shape.belly ?? 0)} />
+              <stop offset="34%" stopColor="#fff" stopOpacity="0" />
+              <stop offset="56%" stopColor={p.dark} stopOpacity="0" />
+              <stop offset="100%" stopColor={p.dark} stopOpacity={0.5 * (shape.belly ?? 0)} />
+            </linearGradient>
+          </defs>
+
+          {!!shape.moobs &&
+            [-1, 1].map((side) => (
+              <ellipse
+                key={side}
+                cx={65 + side * w * 0.42}
+                cy={82 - w * 0.4}
+                rx={w * 0.48 * shape.moobs!}
+                ry={w * 0.26 * shape.moobs!}
+                fill={`url(#${chestGrad})`}
+              />
+            ))}
+
+          {!!shape.belly && (
+            <ellipse
+              cx="65"
+              cy={82 + w * 0.34}
+              rx={w * 1.02}
+              ry={w * 0.56 * (0.7 + shape.belly * 0.3)}
+              fill={`url(#${bellyGrad})`}
+            />
+          )}
+        </g>
+      )}
+
       {/* Hunky: the width sits in the chest, not the gut. Pecs and a two-column
           stack of abs, drawn in the same stroke language as the rolls. */}
       {shape.muscle && (
@@ -300,6 +348,26 @@ export default function PigAvatar({
           strokeLinejoin="round"
         />
       )}
+      {shape.chin && (
+        <g clipPath={`url(#${headClip})`}>
+          <ellipse
+            cx="65"
+            cy={48 + headRy * 0.82}
+            rx={headRx * 0.62}
+            ry={headRy * 0.3}
+            fill={p.mid}
+          />
+          <path
+            d={`M ${65 - headRx * 0.56} ${48 + headRy * 0.56} q ${headRx * 0.56} 7 ${headRx * 1.12} 0`}
+            fill="none"
+            stroke={p.dark}
+            strokeWidth="2"
+            strokeLinecap="round"
+            opacity="0.45"
+          />
+        </g>
+      )}
+
       <Hat hat={cfg.hat} cx={65} topY={48 - headRy - 4} w={headRx} />
     </svg>
   );

@@ -102,10 +102,16 @@ export function nextTier(placesLogged: number): { label: string; needed: number 
 export type TierShape = {
   /** Half-width of the body ellipse — the whole silhouette hangs off this. */
   waist: number;
-  /** Belly folds drawn across the gut. */
+  /** Belly folds drawn as creases. Kept for the lean tiers only. */
   rolls: number;
   head: number;
-  /** Draws pecs and abs instead of folds — the top of the ladder only. */
+  /** Chest fat, 0-1. Sits above the gut with a crease under it. */
+  moobs?: number;
+  /** Gut volume, 0-1. One big overhang rather than a ladder of stripes. */
+  belly?: number;
+  /** A second jaw under the first. */
+  chin?: boolean;
+  /** Draws pecs and abs instead of fat — the top of the ladder only. */
   muscle?: boolean;
 };
 
@@ -113,10 +119,11 @@ export const TIER_SHAPE: Record<FatnessTier, TierShape> = {
   // Gaunt, and drawn drained of colour with X'd eyes (see PigAvatar).
   dead: { waist: 17, rolls: 0, head: 22 },
   slim: { waist: 20, rolls: 0, head: 24.5 },
-  regular: { waist: 25, rolls: 1, head: 26 },
-  chubby: { waist: 30, rolls: 2, head: 27.5 },
-  fat: { waist: 35, rolls: 3, head: 29 },
-  // Broad, but the width sits in the chest rather than the gut, so no folds.
+  regular: { waist: 25, rolls: 1, head: 26, belly: 0.5 },
+  chubby: { waist: 30, rolls: 0, head: 27.5, moobs: 0.8, belly: 0.8, chin: true },
+  // Fat is volume, not stripes: chest and gut both full, and a second chin.
+  fat: { waist: 35, rolls: 0, head: 29, moobs: 1, belly: 1, chin: true },
+  // Broad, but the width sits in the chest rather than the gut.
   hunky: { waist: 32, rolls: 0, head: 27, muscle: true },
 };
 

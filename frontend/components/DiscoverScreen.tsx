@@ -130,6 +130,30 @@ export default function DiscoverScreen({ initialPlaces }: { initialPlaces: Place
     setList(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
   }
 
+  /** Re-ask for the location. The open-on-your-city prompt only appears once,
+   *  and a dismissed or denied one silently leaves you looking at the pins with
+   *  no way back — this is that way back. */
+  function locateMe() {
+    if (!navigator.geolocation) {
+      setCityError("This browser won't share a location.");
+      return;
+    }
+    setCityBusy(true);
+    setCityError(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setFocusPoint({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setView("map");
+        setCityBusy(false);
+      },
+      () => {
+        setCityError("Couldn't get your location — allow it in your browser, or search a city.");
+        setCityBusy(false);
+      },
+      { timeout: 8000, maximumAge: 60000 }
+    );
+  }
+
   async function goToCity(e: React.FormEvent) {
     e.preventDefault();
     const q = cityQuery.trim();
@@ -210,6 +234,16 @@ export default function DiscoverScreen({ initialPlaces }: { initialPlaces: Place
             disabled={cityBusy || cityQuery.trim().length < 3}
           >
             {cityBusy ? "…" : "Go"}
+          </button>
+          <button
+            type="button"
+            onClick={locateMe}
+            className="btn-plain px-3 text-base"
+            aria-label="Centre the map on my location"
+            title="Centre on my location"
+            disabled={cityBusy}
+          >
+            ◎
           </button>
         </form>
         {cityError && <p className="mt-1 px-1 text-xs font-bold text-rust">{cityError}</p>}
