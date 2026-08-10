@@ -53,11 +53,42 @@
 
   .tag-active { @apply bg-plum text-oat; }
 
-  /* Recommended dishes — gold, so they never compete with the plum actions. */
+  /* Recommended dishes — lilac, so they read as a different kind of thing from
+     the gold accents rather than blending into them. */
   .dish-tag {
-    @apply inline-flex items-center rounded-full border-2 border-gold
-           bg-gold-pale px-3 py-1.5 text-xs font-display font-bold
-           leading-none text-[#7A6212];
+    @apply inline-flex items-center rounded-full border-2 border-lilac
+           bg-lilac-pale px-3 py-1.5 text-xs font-display font-bold
+           leading-none text-lilac-ink;
+  }
+
+  /* Small uppercase letter-spaced mono, for timestamps, place meta and status
+     pills. Keeps the display face for things that are actually headings. */
+  .micro {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    @apply text-[9px] uppercase tracking-[0.14em] text-ink-soft;
+  }
+
+  .micro-pill {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    @apply inline-flex items-center rounded-full px-2.5 py-1 text-[9px]
+           uppercase tracking-[0.12em] leading-none;
+  }
+
+  /* Outlined badge, sitting proud of the card. Deliberately not rotated. */
+  .sticker {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    @apply inline-flex items-center rounded-full border-2 border-ink px-2.5
+           py-1 text-[9px] uppercase tracking-[0.12em] leading-none;
+  }
+
+  .rule-dashed {
+    @apply border-t-2 border-dashed border-ink/35;
+  }
+
+  /* The wordmark: lowercase, olive, tight. */
+  .wordmark {
+    @apply font-display font-bold lowercase text-olive;
+    letter-spacing: -0.04em;
   }
 }
 
@@ -65,7 +96,14 @@
    rest of the app rather than sitting in it like a window. */
 .leaflet-container {
   font-family: inherit;
-  background: #EFE7D4;
+  background: #F4ECDD;
+}
+
+/* Warm-paper basemap. CARTO's Positron tiles are clean but cold; warming them
+   here puts the map in the same world as the oat palette without needing a
+   paid tile provider. Scoped to the tile pane so pins keep true colour. */
+.leaflet-tile-pane {
+  filter: sepia(0.32) saturate(0.72) hue-rotate(-8deg) brightness(0.99) contrast(1.12);
 }
 
 .leaflet-control-attribution {

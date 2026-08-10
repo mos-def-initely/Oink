@@ -81,10 +81,44 @@ export const PIG_BACKGROUNDS: Record<string, string> = {
   cream:  "#FFFDF6",
 };
 
+/**
+ * Avatar species. Pig is the default and nobody has to choose — but species is
+ * the only avatar attribute still legible at 24px on a map pin, which is
+ * exactly where telling friends apart matters.
+ */
+export const PIG_SPECIES = ["pig", "boar", "hog"] as const;
+export type Species = (typeof PIG_SPECIES)[number];
+
+export const SPECIES_LABELS: Record<Species, string> = {
+  pig: "Pig",
+  boar: "Boar",
+  hog: "Hog",
+};
+
+/** Boar and hog have their own coats; the pig uses the customisable ones. */
+export const SPECIES_PALETTE: Record<Exclude<Species, "pig">, PigPalette> = {
+  boar: {
+    light: "#9C7A5E", mid: "#7E6049", dark: "#5F4636",
+    ear: "#6B513D", snout: "#54402F", nostril: "#241812", blush: "#8A6A50",
+  },
+  hog: {
+    light: "#E8CDAE", mid: "#D3B08C", dark: "#B78F6B",
+    ear: "#C39C77", snout: "#C09A76", nostril: "#6B4A34", blush: "#D0A98A",
+  },
+};
+
+/** Boar and hog take a darker outline than the pig's warm pink-brown. */
+export const SPECIES_OUTLINE: Record<Species, string> = {
+  pig: "#8A5460",
+  boar: "#3E2C22",
+  hog: "#6B4A34",
+};
+
 export const PIG_HATS = ["none", "cap", "beret", "bucket", "party", "crown", "chef"] as const;
 export const PIG_ACCESSORIES = ["none", "blush", "scarf"] as const;
 
 export type PigConfig = {
+  species?: string;
   color?: string;
   hat?: string;
   accessory?: string;
@@ -92,6 +126,7 @@ export type PigConfig = {
 };
 
 export const DEFAULT_PIG: Required<PigConfig> = {
+  species: "pig",
   color: "pink",
   hat: "none",
   accessory: "none",
@@ -101,6 +136,9 @@ export const DEFAULT_PIG: Required<PigConfig> = {
 export function normalisePig(config: PigConfig | undefined | null): Required<PigConfig> {
   const c = config ?? {};
   return {
+    species: (PIG_SPECIES as readonly string[]).includes(c.species ?? "")
+      ? (c.species as string)
+      : DEFAULT_PIG.species,
     color: c.color && PIG_COLORS[c.color] ? c.color : DEFAULT_PIG.color,
     hat: c.hat ?? DEFAULT_PIG.hat,
     accessory: c.accessory ?? DEFAULT_PIG.accessory,

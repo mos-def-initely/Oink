@@ -14,6 +14,9 @@ import {
   PIG_BACKGROUNDS,
   PIG_COLORS,
   PIG_HATS,
+  PIG_SPECIES,
+  SPECIES_LABELS,
+  Species,
   fatnessTier,
   nextTier,
   normalisePig,
@@ -67,7 +70,9 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
       />
 
       <main className="space-y-4 px-3 pb-4">
-        <section className="card flex flex-col items-center gap-2 p-4">
+        {/* Lemon is used on exactly two surfaces — here and empty states —
+            where there's no photography for it to fight. */}
+        <section className="flex flex-col items-center gap-2 rounded-card border-2 border-ink bg-lemon p-4">
           <PigAvatar
             config={user.pig_avatar_config}
             placesLogged={user.places_logged}
@@ -75,19 +80,20 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
             variant="full"
           />
           <h2 className="text-2xl leading-tight">{user.display_name}</h2>
-          <p className="font-display text-sm text-ink-soft">@{user.username}</p>
+          <p className="micro">@{user.username}</p>
 
-          <div className="flex items-center gap-2 pt-1">
-            <span className="tag bg-gold-pale text-[#7A6212]">
+          <div className="rule-dashed my-1 w-3/5" />
+
+          <div className="flex items-center gap-2">
+            <span className="sticker bg-cream text-ink">
               {user.places_logged} {user.places_logged === 1 ? "place" : "places"}
             </span>
-            <span className="tag bg-plum text-oat">{tierLabel} pig</span>
+            <span className="sticker bg-plum text-oat">{tierLabel}</span>
           </div>
 
           {next && (
-            <p className="text-center text-xs text-ink-soft">
-              {next.needed} more {next.needed === 1 ? "place" : "places"} until you're a{" "}
-              {next.label.toLowerCase()} pig.
+            <p className="micro text-center">
+              {next.needed} more until {next.label.toLowerCase()}
             </p>
           )}
 
@@ -186,13 +192,36 @@ function PigCustomiser({
           <input className="field mt-1" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
         </label>
 
-        <Picker
-          label="Colour"
-          options={Object.keys(PIG_COLORS)}
-          value={cfg.color}
-          onChange={(v) => setCfg({ ...cfg, color: v })}
-          swatch={(v) => PIG_COLORS[v].mid}
-        />
+        <section>
+          <p className="mb-1.5 font-display text-sm font-bold">Animal</p>
+          <div className="flex gap-2">
+            {PIG_SPECIES.map((sp) => (
+              <button
+                key={sp}
+                onClick={() => setCfg({ ...cfg, species: sp })}
+                className={`flex flex-1 flex-col items-center gap-1.5 rounded-xl border-2 border-ink p-2 ${
+                  cfg.species === sp ? "bg-plum text-oat" : "bg-cream text-ink"
+                }`}
+              >
+                <PigAvatar config={{ ...cfg, species: sp }} placesLogged={user.places_logged} size={46} variant="full" />
+                <span className="micro" style={{ color: cfg.species === sp ? "#F4EEDC" : undefined }}>
+                  {SPECIES_LABELS[sp as Species]}
+                </span>
+              </button>
+            ))}
+          </div>
+          <p className="micro mt-1.5">Pig by default — boar and hog are opt-in</p>
+        </section>
+
+        {cfg.species === "pig" && (
+          <Picker
+            label="Colour"
+            options={Object.keys(PIG_COLORS)}
+            value={cfg.color}
+            onChange={(v) => setCfg({ ...cfg, color: v })}
+            swatch={(v) => PIG_COLORS[v].mid}
+          />
+        )}
         <Picker
           label="Background"
           options={Object.keys(PIG_BACKGROUNDS)}

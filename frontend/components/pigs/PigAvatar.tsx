@@ -29,6 +29,9 @@ import {
   PIG_BACKGROUNDS,
   PIG_COLORS,
   PigConfig,
+  SPECIES_OUTLINE,
+  SPECIES_PALETTE,
+  Species,
   TIER_SHAPE,
   fatnessTier,
   normalisePig,
@@ -44,8 +47,8 @@ type Props = {
   className?: string;
 };
 
-const OUTLINE = "#8A5460";
 const EYE = "#43262F";
+const SPECIES_LABELS_ARIA: Record<Species, string> = { pig: "Pig", boar: "Boar", hog: "Hog" };
 const STROKE = 2.1;
 
 export default function PigAvatar({
@@ -58,7 +61,10 @@ export default function PigAvatar({
 }: Props) {
   const uid = useId().replace(/:/g, "");
   const cfg = normalisePig(config);
-  const p = PIG_COLORS[cfg.color];
+  const species = cfg.species as Species;
+  // Boar and hog carry their own coats; the pig uses the customisable ones.
+  const p = species === "pig" ? PIG_COLORS[cfg.color] : SPECIES_PALETTE[species];
+  const OUTLINE = SPECIES_OUTLINE[species];
   const bg = PIG_BACKGROUNDS[cfg.background];
   const shape = TIER_SHAPE[fatnessTier(placesLogged)];
   // Every pig has a soft blush already; the accessory turns it up, so picking
@@ -87,7 +93,7 @@ export default function PigAvatar({
 
   if (variant === "face") {
     return (
-      <svg width={size} height={size} viewBox="0 0 120 120" className={className} role="img" aria-label="Pig">
+      <svg width={size} height={size} viewBox="0 0 120 120" className={className} role="img" aria-label={SPECIES_LABELS_ARIA[species]}>
         {defs}
         <clipPath id={headClip}>
           <ellipse cx="60" cy="62" rx="35" ry="31" />
@@ -96,10 +102,19 @@ export default function PigAvatar({
         {!bare && <circle cx="60" cy="60" r="60" fill={bg} />}
 
         <g stroke={OUTLINE} strokeWidth={STROKE} strokeLinejoin="round">
-          <path d="M30 44 Q26 20 47 31 Z" fill={p.ear} />
-          <path d="M90 44 Q94 20 73 31 Z" fill={p.ear} />
+          <Ears species={species} fill={p.ear} />
           <ellipse cx="60" cy="62" rx="35" ry="31" fill={`url(#${grad})`} />
         </g>
+        {species === "boar" && (
+          <path
+            d="M44 34 l5 -11 4 10 5 -13 4 12 5 -11 4 10 5 -9"
+            fill="none"
+            stroke={OUTLINE}
+            strokeWidth="2.4"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+        )}
 
         {/* Soft modelling, clipped inside the head */}
         <g clipPath={`url(#${headClip})`}>
@@ -113,6 +128,7 @@ export default function PigAvatar({
         {/* Snout sits proud of the face — shadow above it, highlight on top */}
         <ellipse cx="60" cy="66" rx="14" ry="8" fill={p.dark} opacity="0.4" filter={`url(#${blur})`} />
         <ellipse cx="60" cy="71" rx="14" ry="10.5" fill={p.snout} stroke={OUTLINE} strokeWidth={STROKE} />
+        <Tusks species={species} outline={OUTLINE} />
         <ellipse cx="57" cy="67" rx="7" ry="3" fill="#fff" opacity="0.28" filter={`url(#${blur})`} />
 
         <ellipse cx="46" cy="55" rx="3.8" ry="4.6" fill={EYE} />
@@ -123,7 +139,7 @@ export default function PigAvatar({
         <ellipse cx="55" cy="71" rx="2.3" ry="3.2" fill={p.nostril} />
         <ellipse cx="65" cy="71" rx="2.3" ry="3.2" fill={p.nostril} />
 
-        <Hat hat={cfg.hat} cx={60} topY={24} w={35} />
+        <Hat hat={cfg.hat} cx={60} topY={24} w={35} outline={OUTLINE} />
       </svg>
     );
   }
@@ -140,7 +156,7 @@ export default function PigAvatar({
       viewBox="0 0 130 134"
       className={className}
       role="img"
-      aria-label="Pig"
+      aria-label={SPECIES_LABELS_ARIA[species]}
     >
       {defs}
       <clipPath id={bodyClip}>
@@ -202,8 +218,7 @@ export default function PigAvatar({
       </g>
 
       <g stroke={OUTLINE} strokeWidth={STROKE} strokeLinejoin="round">
-        <path d={`M ${65 - headRx + 3} 40 Q ${65 - headRx - 3} 14 ${65 - 9} 27 Z`} fill={p.ear} />
-        <path d={`M ${65 + headRx - 3} 40 Q ${65 + headRx + 3} 14 ${65 + 9} 27 Z`} fill={p.ear} />
+        <BodyEars species={species} fill={p.ear} headRx={headRx} />
         <ellipse cx="65" cy="48" rx={headRx} ry={headRy} fill={`url(#${grad})`} />
       </g>
 
@@ -218,6 +233,7 @@ export default function PigAvatar({
 
       <ellipse cx="65" cy="53" rx="12" ry="6.5" fill={p.dark} opacity="0.38" filter={`url(#${blur})`} />
       <ellipse cx="65" cy="57" rx="12" ry="8.6" fill={p.snout} stroke={OUTLINE} strokeWidth={STROKE} />
+      <Tusks species={species} outline={OUTLINE} cx={65} cy={57} scale={0.85} />
       <ellipse cx="62.5" cy="54" rx="6" ry="2.4" fill="#fff" opacity="0.26" filter={`url(#${blur})`} />
 
       <ellipse cx="54" cy="44" rx="3.2" ry="3.9" fill={EYE} />
@@ -237,13 +253,99 @@ export default function PigAvatar({
           strokeLinejoin="round"
         />
       )}
-      <Hat hat={cfg.hat} cx={65} topY={48 - headRy - 4} w={headRx} />
+      <Hat hat={cfg.hat} cx={65} topY={48 - headRy - 4} w={headRx} outline={OUTLINE} />
     </svg>
   );
 }
 
-function Hat({ hat, cx, topY, w }: { hat: string; cx: number; topY: number; w: number }) {
-  const s = { stroke: OUTLINE, strokeWidth: STROKE + 0.2, strokeLinejoin: "round" as const };
+/** Ears carry most of the species read: pig folds forward, boar points up,
+ *  hog flops down over the face. */
+function Ears({ species, fill }: { species: Species; fill: string }) {
+  if (species === "boar") {
+    return (
+      <>
+        <path d="M31 40 L26 14 L49 28 Z" fill={fill} />
+        <path d="M89 40 L94 14 L71 28 Z" fill={fill} />
+      </>
+    );
+  }
+  if (species === "hog") {
+    return (
+      <>
+        <path d="M28 40 Q20 34 26 56 Q34 56 36 44 Z" fill={fill} />
+        <path d="M92 40 Q100 34 94 56 Q86 56 84 44 Z" fill={fill} />
+      </>
+    );
+  }
+  return (
+    <>
+      <path d="M30 44 Q26 20 47 31 Z" fill={fill} />
+      <path d="M90 44 Q94 20 73 31 Z" fill={fill} />
+    </>
+  );
+}
+
+function BodyEars({ species, fill, headRx }: { species: Species; fill: string; headRx: number }) {
+  const l = 65 - headRx;
+  const r = 65 + headRx;
+  if (species === "boar") {
+    return (
+      <>
+        <path d={`M ${l + 3} 40 L ${l - 2} 12 L ${l + 22} 26 Z`} fill={fill} />
+        <path d={`M ${r - 3} 40 L ${r + 2} 12 L ${r - 22} 26 Z`} fill={fill} />
+      </>
+    );
+  }
+  if (species === "hog") {
+    return (
+      <>
+        <path d={`M ${l + 2} 40 Q ${l - 7} 33 ${l} 58 Q ${l + 10} 58 ${l + 12} 45 Z`} fill={fill} />
+        <path d={`M ${r - 2} 40 Q ${r + 7} 33 ${r} 58 Q ${r - 10} 58 ${r - 12} 45 Z`} fill={fill} />
+      </>
+    );
+  }
+  return (
+    <>
+      <path d={`M ${l + 3} 40 Q ${l - 3} 14 ${65 - 9} 27 Z`} fill={fill} />
+      <path d={`M ${r - 3} 40 Q ${r + 3} 14 ${65 + 9} 27 Z`} fill={fill} />
+    </>
+  );
+}
+
+/** Boar tusks curve up from the snout; the hog's are smaller and lower. */
+function Tusks({
+  species,
+  outline,
+  cx = 60,
+  cy = 71,
+  scale = 1,
+}: {
+  species: Species;
+  outline: string;
+  cx?: number;
+  cy?: number;
+  scale?: number;
+}) {
+  if (species === "pig") return null;
+  const s = scale;
+  if (species === "boar") {
+    return (
+      <g stroke={outline} strokeWidth={2.2 * s} strokeLinejoin="round">
+        <path d={`M ${cx - 15 * s} ${cy + 3 * s} q ${-3 * s} ${-12 * s} ${4 * s} ${-13 * s} q ${2 * s} ${7 * s} ${-1 * s} ${13 * s} Z`} fill="#F4EBD4" />
+        <path d={`M ${cx + 15 * s} ${cy + 3 * s} q ${3 * s} ${-12 * s} ${-4 * s} ${-13 * s} q ${-2 * s} ${7 * s} ${1 * s} ${13 * s} Z`} fill="#F4EBD4" />
+      </g>
+    );
+  }
+  return (
+    <g stroke={outline} strokeWidth={2 * s} strokeLinejoin="round">
+      <path d={`M ${cx - 13 * s} ${cy + 8 * s} q ${-2 * s} ${-6 * s} ${2 * s} ${-7 * s} q ${1 * s} ${4 * s} ${0} ${7 * s} Z`} fill="#F4EBD4" />
+      <path d={`M ${cx + 13 * s} ${cy + 8 * s} q ${2 * s} ${-6 * s} ${-2 * s} ${-7 * s} q ${-1 * s} ${4 * s} ${0} ${7 * s} Z`} fill="#F4EBD4" />
+    </g>
+  );
+}
+
+function Hat({ hat, cx, topY, w, outline }: { hat: string; cx: number; topY: number; w: number; outline: string }) {
+  const s = { stroke: outline, strokeWidth: STROKE + 0.2, strokeLinejoin: "round" as const };
   switch (hat) {
     case "cap":
       return (

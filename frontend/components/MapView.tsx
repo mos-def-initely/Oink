@@ -24,11 +24,10 @@ import { ShamePig } from "@/components/pigs/ReactionPigs";
 // with ssr:false.
 import "leaflet/dist/leaflet.css";
 
-// Voyager rather than Positron: Positron is so pale that roads read as
-// white-on-white against the app's warm ground, which looks like a map that
-// failed to load. Voyager keeps the clean, low-clutter styling but with enough
-// contrast to actually navigate by.
-const TILE_URL = "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
+// Positron, warmed by a CSS filter in globals.css into the aged-paper look.
+// Its hairline roads and dimmed labels survive a tint; Voyager's coloured roads
+// turn to pale yellow mush under the same treatment.
+const TILE_URL = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
 const TILE_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
@@ -72,22 +71,19 @@ function pinHtml(place: PlaceSummary): string {
       display:flex; align-items:center; justify-content:center; overflow:hidden;
     ">${inner}</div>`;
 
-  // Fan the extra faces out behind the leader, furthest first so the front one
-  // ends up on top.
-  const fan = Math.min(count, 3);
+  // One face, plus a chip when others agree. The stacked fan looked good in
+  // isolation but crowded badly where pins sit close together, and the chip
+  // stays legible at any zoom.
   let layers = "";
   if (count === 0) {
-    // Logged but unendorsed — the angry pig, not a generic emoji. Every icon in
-    // the app is a pig.
+    // Logged but unendorsed — the angry pig, not a generic emoji.
     layers = disc(renderToStaticMarkup(<ShamePig size={34} active />), 42, "left:9px; top:0;");
   } else {
-    if (fan >= 3) layers += disc(faceMarkup(place, 2, 24), 30, "left:0; top:12px;");
-    if (fan >= 2) layers += disc(faceMarkup(place, 1, 26), 32, "right:0; top:10px;");
-    layers += disc(faceMarkup(place, 0, 36), 42, "left:9px; top:0;");
+    layers = disc(faceMarkup(place, 0, 36), 42, "left:9px; top:0;");
   }
 
   const chip =
-    count > 3
+    count > 1
       ? `<div style="
            position:absolute; right:-4px; top:-4px;
            min-width:20px; height:20px; padding:0 5px; border-radius:10px;

@@ -1,67 +1,79 @@
 "use client";
 
 /**
- * Home feed card — spec §6.2. No rating anywhere; the review text carries it.
- * The feed is one of only two places showing the full-body pig (the other is
- * the profile) — everywhere else uses the face.
+ * Home feed items — spec §6.2.
+ *
+ * A reaction isn't a small review, it's a different kind of event, so the two
+ * get different shapes:
+ *
+ *   recommendation  a card — thumbnail beside the review text and dish tags
+ *   oink / shame    a single compact row — thumbnail, place, verdict, who
+ *
+ * That's deliberate. An oink carries no text, so a card built around a review
+ * would sit half empty; padding it out with cuisine and budget would make an
+ * endorsement look like a write-up and flatten the feed into identical blocks.
+ * Two shapes give the feed a rhythm, and reviews stand out because they're the
+ * thing worth stopping for.
+ *
+ * No rating appears anywhere (spec §8).
  */
 import Link from "next/link";
 import type { FeedItem } from "@/lib/types";
 import PigAvatar from "@/components/pigs/PigAvatar";
 import { BudgetTag } from "@/components/pigs/PricePig";
-import { OinkPig, ShamePig } from "@/components/pigs/ReactionPigs";
 import { KIND_LABELS, timeAgo } from "@/components/ui";
 import PlacePhoto from "@/components/PlacePhoto";
 
 export default function ActivityCard({ item }: { item: FeedItem }) {
+  return item.activity === "recommendation" ? <ReviewCard item={item} /> : <ReactionRow item={item} />;
+}
+
+/** Someone wrote something — the full card. */
+function ReviewCard({ item }: { item: FeedItem }) {
   const place = item.restaurant;
 
   return (
     <article className="card overflow-hidden">
-      <div className="flex items-center gap-2.5 px-3 pt-3">
+      <div className="flex items-center gap-2.5 px-3 py-2.5">
         <Link href={`/profile/${item.user.username}`} className="shrink-0">
           <PigAvatar
             config={item.user.pig_avatar_config}
             placesLogged={item.user.places_logged}
-            size={34}
+            size={32}
             variant="full"
           />
         </Link>
         <div className="min-w-0 flex-1">
           <Link
             href={`/profile/${item.user.username}`}
-            className="block truncate font-display text-sm font-extrabold"
+            className="block truncate font-display text-sm font-bold"
           >
             {item.user.display_name}
           </Link>
-          <p className="text-xs text-ink-soft">{timeAgo(item.created_at)}</p>
+          <p className="micro">{timeAgo(item.created_at)}</p>
         </div>
-        <ActivityBadge activity={item.activity} />
+        <span className="sticker bg-lemon text-ink-deep">Recommends</span>
       </div>
 
-      <Link href={`/restaurant/${place.id}`} className="mt-2.5 block">
+      <div className="rule-dashed mx-3" />
+
+      <Link href={`/restaurant/${place.id}`} className="flex gap-3 p-3">
         <PlacePhoto
           src={item.images[0]?.url ?? place.cover_image_url}
           alt={place.name}
-          className="h-44 w-full border-y-2 border-ink"
+          className="h-[74px] w-[74px] shrink-0 rounded-lg border-2 border-ink"
         />
-
-        <div className="space-y-2 px-3 py-3">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <h2 className="truncate text-xl leading-tight">{place.name}</h2>
-              <p className="text-sm text-ink-soft">
-                {[place.city, KIND_LABELS[place.kind]].filter(Boolean).join(" · ")}
-              </p>
-            </div>
-            <BudgetTag budget={place.budget} />
-          </div>
-
-          {item.review_text && <p className="text-sm leading-snug">{item.review_text}</p>}
-
+        <div className="min-w-0 flex-1">
+          <h2 className="truncate font-display text-lg font-bold leading-tight">{place.name}</h2>
+          <p className="micro mt-0.5">
+            {[place.city, KIND_LABELS[place.kind], place.budget].filter(Boolean).join(" · ")}
+          </p>
+          {item.review_text && (
+            <p className="mt-1.5 line-clamp-3 text-sm leading-snug">{item.review_text}</p>
+          )}
           {item.recommended_dishes.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 pt-0.5">
-              {item.recommended_dishes.map((dish) => (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {item.recommended_dishes.slice(0, 3).map((dish) => (
                 <span key={dish} className="dish-tag">{dish}</span>
               ))}
             </div>
@@ -72,26 +84,46 @@ export default function ActivityCard({ item }: { item: FeedItem }) {
   );
 }
 
-function ActivityBadge({ activity }: { activity: FeedItem["activity"] }) {
-  if (activity === "oink") {
-    return (
-      <span className="flex shrink-0 items-center gap-1 rounded-full bg-plum px-2.5 py-1 font-display text-[11px] font-bold text-white">
-        <OinkPig size={16} active />
-        oinked
-      </span>
-    );
-  }
-  if (activity === "shame") {
-    return (
-      <span className="flex shrink-0 items-center gap-1 rounded-full bg-rust px-2.5 py-1 font-display text-[11px] font-bold text-white">
-        <ShamePig size={16} active />
-        shamed
-      </span>
-    );
-  }
+/** Someone just reacted — one row, nothing padded out. */
+function ReactionRow({ item }: { item: FeedItem }) {
+  const place = item.restaurant;
+  const shamed = item.activity === "shame";
+
   return (
-    <span className="shrink-0 rounded-full bg-gold-pale px-2.5 py-1 font-display text-[11px] font-bold text-[#7A6212]">
-      recommends
-    </span>
+    <article className="card">
+      <Link href={`/restaurant/${place.id}`} className="flex items-center gap-2.5 p-2.5">
+        <PlacePhoto
+          src={place.cover_image_url}
+          alt={place.name}
+          className="h-[46px] w-[46px] shrink-0 rounded-md border-2 border-ink"
+        />
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <h2 className="min-w-0 truncate font-display text-base font-bold leading-tight">
+              {place.name}
+            </h2>
+            <span
+              className={`micro-pill shrink-0 ${shamed ? "bg-rust text-oat" : "bg-plum text-oat"}`}
+            >
+              {shamed ? "Shamed" : "Oinked"}
+            </span>
+          </div>
+          <p className="micro mt-0.5 truncate">
+            {[place.city, KIND_LABELS[place.kind], place.budget].filter(Boolean).join(" · ")}
+          </p>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-1.5">
+          <PigAvatar
+            config={item.user.pig_avatar_config}
+            placesLogged={item.user.places_logged}
+            size={24}
+            variant="face"
+          />
+          <span className="micro">{item.user.display_name}</span>
+        </div>
+      </Link>
+    </article>
   );
 }

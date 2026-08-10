@@ -21,7 +21,10 @@ export default function HomePage() {
 
   return (
     <>
-      <PageHeader title="Oink" />
+      <header className="sticky top-0 z-[900] flex items-baseline justify-between bg-oat/95 px-3 py-3 backdrop-blur">
+        <span className="wordmark text-3xl">oink</span>
+        <span className="micro">Feed</span>
+      </header>
 
       <main className="space-y-4 px-3 pb-4">
         {error && <EmptyState title="Couldn't load the feed" body={error} />}

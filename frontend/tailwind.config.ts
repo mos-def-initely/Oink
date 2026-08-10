@@ -31,6 +31,7 @@ const config: Config = {
         "gold-pale": "#F6EDC8",
         lemon: "#E6D389",
         rust: "#A9503C",         // shame — distinct from plum, same family
+        olive: "#806B28",
         lilac: "#D8B5F7",
         "lilac-pale": "#EFE2FF",
         "lilac-ink": "#5B3E84",

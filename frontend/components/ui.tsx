@@ -87,11 +87,15 @@ export function Spinner({ label = "Loading…" }: { label?: string }) {
   );
 }
 
+/**
+ * Lemon is used sparingly — here and on the profile header. On a card it would
+ * fight the photography; where there's none, it reads as a deliberate splash.
+ */
 export function EmptyState({ title, body }: { title: string; body?: string }) {
   return (
-    <div className="card mx-1 my-4 px-4 py-8 text-center">
-      <p className="font-display text-lg font-extrabold">{title}</p>
-      {body && <p className="mt-1 text-sm text-ink-soft">{body}</p>}
+    <div className="mx-1 my-4 rounded-card border-2 border-dashed border-ink bg-lemon px-4 py-9 text-center">
+      <p className="font-display text-lg font-bold text-ink-deep">{title}</p>
+      {body && <p className="micro mx-auto mt-2 max-w-[26ch] leading-relaxed">{body}</p>}
     </div>
   );
 }

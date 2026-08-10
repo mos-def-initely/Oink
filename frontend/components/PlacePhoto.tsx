@@ -46,15 +46,24 @@ export default function PlacePhoto({
 
   if (src && !failed) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element -- local uploads and
-      // hotlinked remote photos; the Next loader adds nothing here.
-      <img
-        src={src}
-        alt={alt}
-        loading="lazy"
-        onError={() => setFailed(true)}
-        className={`object-cover ${className}`}
-      />
+      // A whisper of warmth rather than a duotone: photos stay recognisably
+      // themselves, they just stop clashing with the palette around them.
+      <span className={`relative block overflow-hidden ${className}`}>
+        {/* eslint-disable-next-line @next/next/no-img-element -- local uploads
+            and hotlinked remote photos; the Next loader adds nothing here. */}
+        <img
+          src={src}
+          alt={alt}
+          loading="lazy"
+          onError={() => setFailed(true)}
+          className="h-full w-full object-cover"
+          style={{ filter: "saturate(0.94) contrast(1.02)" }}
+        />
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-plum opacity-[0.07] mix-blend-multiply"
+        />
+      </span>
     );
   }
 

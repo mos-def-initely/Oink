@@ -114,11 +114,28 @@ Detail responses include `oinked_by` and `shamed_by` as separate user lists (§6
 Middleware redirects unauthenticated requests to `/sign-in`.
 
 ### 6.2 Home feed
-Reverse-chronological cards: **full-body pig** + name + timestamp, activity badge (oinked / shamed / recommends), photo, place name, city, review text, recommended-dish tags. No rating.
+A reaction isn't a small review, it's a different kind of event, so the two take
+different shapes:
+
+- **Recommendation** — a card: full-body pig, name, timestamp, an untilted
+  "Recommends" sticker, a dashed rule, then a 74px thumbnail beside the place
+  name, mono meta line, review text and dish tags.
+- **Oink / shame** — a single compact row: thumbnail, place name, a mono status
+  pill, meta line, and who did it.
+
+That split is deliberate. An oink carries no text, so a card built around a
+review would sit half empty, and padding it with cuisine and budget would make
+an endorsement look like a write-up. Two shapes give the feed a rhythm and let
+reviews stand out. No rating anywhere.
 
 ### 6.3 Discover
 - Map default, framed on the logged places once on load.
-- **Pins show the pig face.** Where several people rate a place, up to three faces fan out behind the leader like a hand of cards, plus a count chip beyond three. Shame-only places get a greyed-out pin.
+- **Pins show one pig face**, plus a count chip when more than one person rates
+  the place. A stacked fan was tried and crowded badly where pins sit close
+  together. Shame-only places get a greyed-out pin with the angry pig.
+- **Basemap** is CARTO Positron warmed by a CSS filter into aged paper, so the
+  map sits in the oat palette rather than beside it. Scoped to the tile pane so
+  pins keep true colour.
 - Tap pin → bottom sheet → View details.
 - Filters: kind, budget (as price pigs), category.
 - **Kind and cuisine prefill themselves.** OSM's `type` maps to kind
@@ -193,8 +210,11 @@ Thresholds live only in `lib/pig.ts`.
 **Face variant** is used on map pins and in dense lists; the **full body**
 appears only on the feed and the profile.
 
-Species was explored (pig / boar / hog, potentially as a user choice) and
-**settled on pig alone** — the app is called Oink.
+**Species** — pig, boar or hog, chosen in the customiser with **pig as the
+default** so nobody has to decide. Species is the only avatar attribute still
+legible at 24px on a map pin, which is exactly where telling friends apart
+matters. Boar and hog carry their own coats, ears, tusks and darker outlines;
+all three keep the fatness tiers, nostrils and shading.
 
 ### 9.2 Price-tier pig
 Budget is **never** bare `$` text. Four fixed pigs, always with the label beside them: `$` peasant (patched smock, straw), `$$` casual (tee), `$$$` smart (collared shirt), `$$$$` posh (top hat, monocle, cigar, tailcoat).
@@ -219,9 +239,18 @@ difference from earlier iterations.
 | Shame | rust `#A9503C` |
 | Accent | light lilac `#D8B5F7` |
 
-- **Type**: Outfit (500–800) for the wordmark, headings and place names —
-  geometric, even, tight. Body copy stays on Nunito Sans; a tight display face
-  is unreadable at review-text sizes, and reviews are what people actually read.
+- **Type**: Outfit (500–800) for the wordmark, headings and place names.
+  Body copy stays on Nunito Sans. **Mono micro-labels** (uppercase, letter-
+  spaced) carry timestamps, place meta lines and status pills, so the display
+  face is reserved for things that are actually headings.
+- **Wordmark**: lowercase `oink`, olive `#806B28`, tight tracking.
+- **Badges** are outlined and **never rotated**.
+- **Dashed rules** separate a card's header from its body.
+- **Dish tags are lilac**, distinct from the gold accents.
+- **Lemon** appears on exactly two surfaces — the profile header and empty
+  states — where there's no photography for it to fight.
+- **Photos** get a whisper of warmth (94% saturation, 7% plum multiply) so they
+  stop clashing without becoming a duotone.
 - **Shape**: 2px eggplant outlines, 14px card radius, full-pill buttons.
 - **Reaction icons are pigs with attitude** — a delighted squeezed-eye grin for
   oink, a furious angled-brow scowl with a steam puff for shame. Never a clock
