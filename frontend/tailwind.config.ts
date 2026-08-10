@@ -33,6 +33,11 @@ const config: Config = {
         rust: "#A9503C",         // shame — distinct from plum, same family
         olive: "#806B28",
         lilac: "#D8B5F7",
+        // The pigsty's field. Green rather than mud — a sty of brown blobs
+        // reads as sludge at any zoom, and the palette had no green in it.
+        grass: "#A9C98A",
+        "grass-deep": "#8FB374",
+        "grass-pale": "#BBD79C",
         "lilac-pale": "#EFE2FF",
         "lilac-ink": "#5B3E84",
       },

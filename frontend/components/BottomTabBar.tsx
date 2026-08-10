@@ -10,6 +10,7 @@ import { usePathname } from "next/navigation";
 const TABS = [
   { href: "/", label: "feed", icon: FeedIcon },
   { href: "/discover", label: "discover", icon: MapIcon },
+  { href: "/pigsty", label: "pigsty", icon: StyIcon },
   { href: "/profile/me", label: "you", icon: PigIcon },
 ];
 
@@ -62,6 +63,19 @@ function MapIcon({ active }: { active: boolean }) {
     <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2">
       <path d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11Z" strokeLinejoin="round" />
       <circle cx="12" cy="10" r="2.5" />
+    </svg>
+  );
+}
+
+/** Three heads over a fence rail — a crowd, not one pig. */
+function StyIcon({ active }: { active: boolean }) {
+  const c = active ? "#914E56" : "#7A6270";
+  return (
+    <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2">
+      <circle cx="7" cy="9" r="3.1" />
+      <circle cx="17" cy="9" r="3.1" />
+      <circle cx="12" cy="13.5" r="3.6" />
+      <path d="M3 19.5h18" strokeLinecap="round" />
     </svg>
   );
 }

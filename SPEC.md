@@ -156,6 +156,35 @@ loses the event entirely.
 
 No rating anywhere.
 
+### 6.6 Pigsty
+The fourth tab: everyone on Oink, out on a field of grass you drag around and
+zoom, rather than a scrolling list. The point is being able to pull back and see
+the whole group standing about, which a directory can't do.
+
+**No names in the field.** At phone width twenty-odd labels can't avoid fighting
+the art, and the fix isn't smaller type — it's not drawing them. Tap a pig and
+the bar underneath says who it is, with their places, og oinks and tier. That's
+also how you find out who a penguin is in the game this borrows from.
+
+**Positions are stable.** Each pig's patch of grass comes from a hash of its user
+id, not its index in the list, so nobody moves when somebody new joins — the sty
+is only navigable if you can learn where your friends stand. Cells are claimed in
+id order with linear probing, so an arrival takes an empty cell rather than
+displacing anyone. Jitter is capped at half a cell, so two pigs can never
+overlap however they're seeded.
+
+**The field is sized from the crowd**, not fixed: five pigs shouldn't be marooned
+in a paddock built for thirty. It opens framed on everyone, and an `all` button
+returns to that view.
+
+Avatars are full-body, so anyone with a truffle brings it along. Idle bob is
+staggered per pig off the id hash so the crowd breathes out of step, and it stops
+entirely under `prefers-reduced-motion`.
+
+Search pans to the first match and dims the rest rather than filtering the field
+down — the sty should stay a place you're looking around, not collapse into a
+list.
+
 ### 6.3 Discover
 - Map default, framed on the logged places once on load.
 - **Pins show one pig face**, plus a count chip when more than one person rates

@@ -68,6 +68,25 @@ def my_wishlist(db: Session = Depends(get_db), viewer: User = Depends(get_curren
     return restaurant_summaries(db, rows)
 
 
+@router.get("", response_model=List[UserPublic])
+def list_users(db: Session = Depends(get_db), viewer: User = Depends(get_current_user)):
+    """Everyone on Oink — the pigsty (spec §6.6).
+
+    The whole group in one response, deliberately unpaginated: this is a closed
+    friend circle of tens, not thousands, and the pigsty draws all of them at
+    once. If it ever needs paging, the sty needs rethinking first.
+    """
+    users = db.execute(select(User).order_by(User.display_name)).scalars().all()
+    ids = [u.id for u in users]
+    counts = places_logged_counts(db, ids)
+    last = last_logged_map(db, ids)
+    og = og_oink_counts(db, ids)
+    return [
+        user_public(u, counts.get(u.id, 0), last.get(u.id), og.get(u.id, 0))
+        for u in users
+    ]
+
+
 @router.get("/{identifier}", response_model=UserPublic)
 def get_user(identifier: str, db: Session = Depends(get_db), viewer: User = Depends(get_current_user)):
     user = _resolve_user(db, identifier, viewer)

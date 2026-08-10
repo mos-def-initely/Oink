@@ -90,6 +90,9 @@ export const api = {
 
   logout: () => request<void>("/auth/logout", { method: "POST" }),
 
+  // --- people ---
+  users: () => request<User[]>("/users"),
+
   // --- feed ---
   feed: (limit = 30, offset = 0) => request<FeedItem[]>(`/feed?limit=${limit}&offset=${offset}`),
 

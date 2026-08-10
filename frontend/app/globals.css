@@ -135,3 +135,14 @@
   border-radius: 12px;
   box-shadow: none;
 }
+
+/* The pigsty's idle sway. Delay is staggered per pig from its id hash, so the
+   crowd breathes out of step instead of pulsing as one block. */
+@keyframes pig-bob {
+  0%, 100% { transform: translateY(0) rotate(-1.3deg); }
+  50%      { transform: translateY(-5px) rotate(1.3deg); }
+}
+.pig-bob { animation: pig-bob 3.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .pig-bob { animation: none; }
+}
