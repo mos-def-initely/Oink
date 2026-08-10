@@ -15,10 +15,10 @@ from app.security import hash_password
 PASSWORD = "oink123"
 
 USERS = [
-    ("defne", "Defne", {"color": "pink", "hat": "beret", "accessory": "none", "background": "apricot"}),
-    ("mert", "Mert", {"color": "peach", "hat": "cap", "accessory": "sunglasses", "background": "teal"}),
-    ("zeynep", "Zeynep", {"color": "rose", "hat": "none", "accessory": "blush", "background": "butter"}),
-    ("ali", "Ali", {"color": "clay", "hat": "bucket", "accessory": "scarf", "background": "lilac"}),
+    ("defne", "Defne", {"color": "pink", "hat": "beret", "accessory": "none", "background": "oat"}),
+    ("mert", "Mert", {"color": "peach", "hat": "cap", "accessory": "none", "background": "gold"}),
+    ("zeynep", "Zeynep", {"color": "rose", "hat": "none", "accessory": "scarf", "background": "lemon"}),
+    ("ali", "Ali", {"color": "cocoa", "hat": "bucket", "accessory": "none", "background": "lilac"}),
 ]
 
 # Kept to one city so the map opens usefully framed rather than zoomed out to
