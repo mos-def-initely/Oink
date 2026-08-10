@@ -32,6 +32,7 @@ import {
   PigConfig,
   TIER_SHAPE,
   fatnessTier,
+  hidesEars,
   normalisePig,
 } from "@/lib/pig";
 import { costumeParts, faceItem } from "./Costume";
@@ -81,6 +82,9 @@ export default function PigAvatar({
   // Every pig has a soft blush already; the accessory turns it up, so picking
   // it reads as a decision rather than a barely-there tweak.
   const rosy = cfg.accessory === "blush";
+  // Cap, beret, bucket, chef and the rest sit down over the ears; a party cone,
+  // a crown and the flower crown perch between them and leave them showing.
+  const earsHidden = hidesEars(cfg.hat);
   // Costume parts are drawn in normalised space and scaled about the body or
   // head centre; the garment shell comes off the real silhouette (below).
   const dress = costumeParts(cfg.costume, OUTLINE);
@@ -119,7 +123,7 @@ export default function PigAvatar({
         {!bare && <circle cx="60" cy="60" r="60" fill={bg} />}
 
         <g stroke={OUTLINE} strokeWidth={STROKE} strokeLinejoin="round">
-          <Ears species={species} fill={p.ear} />
+          {!earsHidden && <Ears species={species} fill={p.ear} />}
           <ellipse cx="60" cy="62" rx="35" ry="31" fill={`url(#${grad})`} />
         </g>
 
@@ -388,7 +392,7 @@ export default function PigAvatar({
       {dress.behindHead && <g transform={headT}>{dress.behindHead}</g>}
 
       <g stroke={OUTLINE} strokeWidth={STROKE} strokeLinejoin="round">
-        <BodyEars species={species} fill={p.ear} headRx={headRx} />
+        {!earsHidden && <BodyEars species={species} fill={p.ear} headRx={headRx} />}
         <ellipse cx="65" cy="48" rx={headRx} ry={headRy} fill={`url(#${grad})`} />
       </g>
 
@@ -631,6 +635,17 @@ function Hat({ hat, cx, topY, w, outline }: { hat: string; cx: number; topY: num
           <ellipse cx={cx} cy={topY - 6} rx={w * 0.34} ry={w * 0.3} fill="#FFFDF6" />
         </g>
       );
+    case "tophat":
+      // Tall crown, hard brim, and a band picked out in the gold so it doesn't
+      // read as a solid black block at pin size.
+      return (
+        <g {...s}>
+          <ellipse cx={cx} cy={topY + 13} rx={w * 0.95} ry={w * 0.17} fill="#3A2530" />
+          <rect x={cx - w * 0.46} y={topY - 17} width={w * 0.92} height={w * 0.85} rx={w * 0.05} fill="#4D303F" />
+          <rect x={cx - w * 0.46} y={topY + 2} width={w * 0.92} height={w * 0.16} fill="#CFA51F" stroke="none" />
+        </g>
+      );
+
     // --- costume headwear -------------------------------------------------
     // These are drawn against a nominal head radius of 27.5 and scaled to the
     // real one, so a slim pig's viking helmet doesn't swallow its face.

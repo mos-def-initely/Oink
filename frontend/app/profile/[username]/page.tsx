@@ -403,6 +403,7 @@ function PigCustomiser({
           options={[...PIG_HATS]}
           value={cfg.hat}
           onChange={(v) => setCfg({ ...cfg, hat: v })}
+          format={(v) => (v === "tophat" ? "top hat" : v)}
         />
         <Picker
           label="accessory"

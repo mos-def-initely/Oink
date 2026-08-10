@@ -274,6 +274,12 @@ where the humour lives.
 
 The face slot is separate from headwear so sunglasses can be worn under a hat.
 
+**Hats that sit down over the ears hide them** rather than poking them through —
+a cap with two ears out the sides of it reads as a mistake, not a style. Cap,
+beret, bucket, chef, top hat, beanie, pirate, sun hat, headphones, viking, flat
+cap, wizard and helmet all cover; the party cone, crown, bandana and flower crown
+perch on top and leave the ears showing.
+
 Costumes and companions need a body, so they appear only where the full-body
 variant does — the feed and the profile. Map pins draw the head alone and are
 unaffected.

@@ -204,8 +204,25 @@ export const SPECIES_DEFAULT_COLOR: Record<Species, string> = {
 export const PIG_HATS = [
   "none", "cap", "beret", "bucket", "party", "crown", "chef",
   "bandana", "flowers", "beanie", "pirate", "sunhat", "headphones", "viking",
-  "flatcap", "wizard", "helmet",
+  "flatcap", "wizard", "helmet", "tophat",
 ] as const;
+
+/**
+ * Hats whose brim or crown sits down over the ears. Those ears are then not
+ * drawn at all rather than poked through the hat — a cap with two ears sticking
+ * out the sides of it reads as a mistake, not a style.
+ *
+ * The party cone, crown, bandana and flower crown perch on top instead, so they
+ * leave the ears showing.
+ */
+export const EAR_COVERING_HATS = new Set([
+  "cap", "beret", "bucket", "chef", "tophat", "beanie", "pirate",
+  "sunhat", "viking", "helmet", "flatcap", "wizard", "headphones",
+]);
+
+export function hidesEars(hat: string | undefined): boolean {
+  return !!hat && EAR_COVERING_HATS.has(hat);
+}
 export const PIG_ACCESSORIES = ["none", "blush", "scarf"] as const;
 
 /**
