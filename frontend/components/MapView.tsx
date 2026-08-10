@@ -45,9 +45,15 @@ const PIN_W = 76;
 const DEFAULT_CENTER: [number, number] = [51.5127, -0.1345];
 const DEFAULT_ZOOM = 13;
 
+// Roughly "the city you're standing in" — close enough to read street names,
+// wide enough to take in the places across town.
+const CITY_ZOOM = 13;
+
 type Props = {
   places: PlaceSummary[];
   onSelect: (place: PlaceSummary) => void;
+  /** Fires as the map settles, so search can be biased to the visible area. */
+  onCenterChange?: (lat: number, lng: number) => void;
   /** Enables tap-to-drop-a-pin while adding a new place. */
   pickMode?: boolean;
   onPick?: (lat: number, lng: number) => void;
@@ -199,6 +205,7 @@ function clusterHtml(group: PlaceSummary[]): string {
 export default function MapView({
   places,
   onSelect,
+  onCenterChange,
   pickMode = false,
   onPick,
   pickedPoint,
@@ -218,7 +225,11 @@ export default function MapView({
   // Clusters depend on the current zoom, so re-run the marker effect when it
   // changes; without this, groups stay welded together as you zoom in.
   const [zoomTick, setZoomTick] = useState(0);
+  // Bumped when locating fails, so the pin-framing fallback gets a chance to run.
+  const [locateTick, setLocateTick] = useState(0);
   // Kept in a ref so the click handler, bound once, always sees current values.
+  const centerCb = useRef(onCenterChange);
+  centerCb.current = onCenterChange;
   const pickHandlers = useRef({ pickMode, onPick });
   pickHandlers.current = { pickMode, onPick };
 
@@ -245,6 +256,33 @@ export default function MapView({
       });
 
       map.on("zoomend", () => setZoomTick((t) => t + 1));
+      // Kept in a ref so binding once doesn't freeze a stale callback.
+      const report = () => {
+        const c = map.getCenter();
+        centerCb.current?.(c.lat, c.lng);
+      };
+      map.on("moveend", report);
+      report();
+
+      // Open on the city you're actually in rather than framing every pin —
+      // the pin bounds can span the country and open uselessly zoomed out.
+      // Claimed immediately so the pin-framing below doesn't race the callback;
+      // released again if locating fails, which lets the old behaviour stand in.
+      if (typeof navigator !== "undefined" && navigator.geolocation) {
+        framedRef.current = true;
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            if (cancelled || pickHandlers.current.pickMode) return;
+            map.setView([pos.coords.latitude, pos.coords.longitude], CITY_ZOOM, { animate: false });
+          },
+          () => {
+            if (cancelled) return;
+            framedRef.current = false;
+            setLocateTick((t) => t + 1);
+          },
+          { timeout: 8000, maximumAge: 5 * 60 * 1000 }
+        );
+      }
 
       mapRef.current = map;
       setReady(true);
@@ -363,15 +401,16 @@ export default function MapView({
         );
       });
 
-      // Frame the pins once on first load. Re-framing on every filter change
-      // yanks the view around while the user is browsing.
+      // Fallback when the browser won't share a location: frame the pins once.
+      // Only ever once — re-framing on every filter change yanks the view around
+      // while the user is browsing.
       if (places.length && !framedRef.current && !pickHandlers.current.pickMode) {
         framedRef.current = true;
         const bounds = L.latLngBounds(places.map((p) => [p.lat, p.lng] as [number, number]));
         map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16, animate: false });
       }
     })();
-  }, [places, onSelect, ready, zoomTick]);
+  }, [places, onSelect, ready, zoomTick, locateTick]);
 
   // The dropped pin while adding a place
   useEffect(() => {

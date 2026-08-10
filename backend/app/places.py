@@ -285,8 +285,32 @@ def _search_osm(query: str, limit: int = 6) -> List[dict]:
         return []
 
 
-def _search_google(query: str, limit: int = 6) -> List[dict]:
+# How far around the map's centre to prefer results. Wide enough to cover a
+# city and its outskirts, well inside Google's 50km ceiling.
+_BIAS_RADIUS_M = 30000.0
+
+
+def _search_google(
+    query: str, limit: int = 6, near: Optional[Tuple[float, float]] = None
+) -> List[dict]:
+    """Text search against Places (New).
+
+    `near` biases ranking towards where the user is looking. Without it Google
+    ranks globally by prominence, so a chain's most famous branch crowds out the
+    one round the corner — searching a restaurant with three London sites
+    returned only one. Bias is guidance, not a filter: somewhere genuinely
+    elsewhere still comes back, and an explicit location in the query overrides
+    it entirely.
+    """
     global LAST_GOOGLE_ERROR
+    body: dict = {"textQuery": query, "maxResultCount": min(limit, 20)}
+    if near:
+        body["locationBias"] = {
+            "circle": {
+                "center": {"latitude": near[0], "longitude": near[1]},
+                "radius": _BIAS_RADIUS_M,
+            }
+        }
     try:
         with httpx.Client(timeout=_TIMEOUT) as client:
             resp = client.post(
@@ -296,7 +320,7 @@ def _search_google(query: str, limit: int = 6) -> List[dict]:
                     "X-Goog-Api-Key": config.GOOGLE_MAPS_API_KEY,
                     "X-Goog-FieldMask": _SEARCH_FIELDS,
                 },
-                json={"textQuery": query, "maxResultCount": min(limit, 20)},
+                json=body,
             )
             if resp.status_code != 200:
                 # Surface the reason: a key that can't reach this API is the
@@ -414,9 +438,16 @@ def _postcode_score(supplied: Optional[str], found: Optional[str]) -> int:
 
 
 def search_places(
-    query: str, limit: int = 6, postcode: Optional[str] = None
+    query: str,
+    limit: int = 6,
+    postcode: Optional[str] = None,
+    near: Optional[Tuple[float, float]] = None,
 ) -> List[PlaceCandidate]:
-    """Free-text place search, so adding a place never *requires* a Maps link."""
+    """Free-text place search, so adding a place never *requires* a Maps link.
+
+    `near` is where the user is looking on the map, used to bias Google's
+    ranking towards nearby branches rather than the most famous one.
+    """
     query = (query or "").strip()
     if len(query) < 3:
         return []
@@ -428,7 +459,7 @@ def search_places(
     # being returned as "nothing found".
     if config.GOOGLE_MAPS_API_KEY:
         out = []
-        for raw in _search_google(query, limit):
+        for raw in _search_google(query, limit, near):
             candidate = _google_candidate(raw)
             if candidate:
                 out.append(candidate)

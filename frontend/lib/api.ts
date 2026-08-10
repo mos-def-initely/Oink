@@ -130,11 +130,17 @@ export const api = {
       body: JSON.stringify({ url }),
     }),
 
-  searchPlaces: (q: string, postcode?: string) => {
+  searchPlaces: (q: string, postcode?: string, near?: { lat: number; lng: number } | null) => {
     const params = new URLSearchParams({ q });
     // Re-ranks results onto the right district — Nominatim returns the correct
     // one but doesn't prefer it.
     if (postcode?.trim()) params.set("postcode", postcode.trim());
+    // Where the map is pointed, so Google prefers the nearby branch of a chain
+    // over its most famous one.
+    if (near) {
+      params.set("lat", String(near.lat));
+      params.set("lng", String(near.lng));
+    }
     return request<PlaceCandidate[]>(`/places/search?${params.toString()}`);
   },
 

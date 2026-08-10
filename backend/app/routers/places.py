@@ -22,7 +22,14 @@ def parse_link(payload: ParseLinkRequest, viewer: User = Depends(get_current_use
 def search(
     q: str = Query(min_length=3),
     postcode: Optional[str] = Query(default=None, description="Re-ranks results onto this district"),
+    lat: Optional[float] = Query(default=None, ge=-90, le=90, description="Where the user is looking"),
+    lng: Optional[float] = Query(default=None, ge=-180, le=180),
     viewer: User = Depends(get_current_user),
 ):
-    """Search a place by name or address, so a Google Maps link is never required."""
-    return search_places(q, postcode=postcode)
+    """Search a place by name or address, so a Google Maps link is never required.
+
+    lat/lng bias the ranking towards the visible map, so a chain's nearby branch
+    beats its most famous one.
+    """
+    near = (lat, lng) if lat is not None and lng is not None else None
+    return search_places(q, postcode=postcode, near=near)

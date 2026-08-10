@@ -50,6 +50,8 @@ export default function DiscoverPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [pickMode, setPickMode] = useState(false);
   const [pickedPoint, setPickedPoint] = useState<{ lat: number; lng: number } | null>(null);
+  // Where the map is pointed. Biases place search to the area on screen.
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | null>(null);
 
   const [kinds, setKinds] = useState<Kind[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
@@ -170,6 +172,7 @@ export default function DiscoverPage() {
             <MapView
               places={filtered}
               onSelect={setSelected}
+              onCenterChange={(lat, lng) => setMapCenter({ lat, lng })}
               pickMode={pickMode}
               pickedPoint={pickedPoint}
               onPick={(lat, lng) => {
@@ -354,6 +357,7 @@ export default function DiscoverPage() {
         open={addOpen}
         onClose={() => setAddOpen(false)}
         pickedPoint={pickedPoint}
+        near={mapCenter}
         onRequestPick={() => {
           setAddOpen(false);
           setPickMode(true);

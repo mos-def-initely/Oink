@@ -24,6 +24,8 @@ type Props = {
   open: boolean;
   onClose: () => void;
   pickedPoint: { lat: number; lng: number } | null;
+  /** The map's current centre, used to bias place search to the visible area. */
+  near?: { lat: number; lng: number } | null;
   onRequestPick: () => void;
   onPointResolved: (lat: number, lng: number) => void;
   onCreated: () => void;
@@ -33,6 +35,7 @@ export default function AddPlaceSheet({
   open,
   onClose,
   pickedPoint,
+  near = null,
   onRequestPick,
   onPointResolved,
   onCreated,
@@ -87,6 +90,9 @@ export default function AddPlaceSheet({
   // instant the pin lands).
   const pinRef = useRef(pickedPoint);
   pinRef.current = pickedPoint;
+  // A dropped pin is a sharper hint than the map centre; fall back to the map.
+  const biasRef = useRef(pickedPoint ?? near);
+  biasRef.current = pickedPoint ?? near;
 
   useEffect(() => {
     if (!open) return;
@@ -110,7 +116,7 @@ export default function AddPlaceSheet({
     debounce.current = setTimeout(async () => {
       setSearching(true);
       try {
-        setResults(await api.searchPlaces(name.trim()));
+        setResults(await api.searchPlaces(name.trim(), undefined, biasRef.current));
         setSearchError(null);
       } catch (e) {
         setResults([]);
@@ -147,7 +153,7 @@ export default function AddPlaceSheet({
         .join(", ");
       setLocating(true);
       try {
-        const [best] = await api.searchPlaces(query, postcode.trim());
+        const [best] = await api.searchPlaces(query, postcode.trim(), biasRef.current);
         if (!best) {
           setAddressMatch(null);
           return;
