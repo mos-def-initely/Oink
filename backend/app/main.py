@@ -10,6 +10,8 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
 from . import config
+# Aliased: `routers.places` below would otherwise shadow the lookup module.
+from . import places as place_lookup
 from .db import engine, init_db
 from .routers import auth, feed, places, restaurants, social, users
 
@@ -120,4 +122,7 @@ def health():
         "database_error": db_error,
         "storage": "supabase" if config.USING_SUPABASE_STORAGE else "local",
         "google_maps_key": bool(config.GOOGLE_MAPS_API_KEY),
+        # Non-null when a key is set but Google rejected the last search — the
+        # difference between "no key" and "key that doesn't work".
+        "google_maps_error": place_lookup.LAST_GOOGLE_ERROR,
     }

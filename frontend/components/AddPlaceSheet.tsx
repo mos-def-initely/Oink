@@ -64,6 +64,9 @@ export default function AddPlaceSheet({
 
   const [results, setResults] = useState<PlaceCandidate[]>([]);
   const [searching, setSearching] = useState(false);
+  // Swallowing this was the reason a broken search looked identical to a search
+  // that simply found nothing: "Searching…", then silence.
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [parsing, setParsing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -108,8 +111,10 @@ export default function AddPlaceSheet({
       setSearching(true);
       try {
         setResults(await api.searchPlaces(name.trim()));
-      } catch {
+        setSearchError(null);
+      } catch (e) {
         setResults([]);
+        setSearchError(e instanceof ApiError ? e.message : "Couldn't reach the search service");
       } finally {
         setSearching(false);
       }
@@ -335,6 +340,16 @@ export default function AddPlaceSheet({
             required
           />
           {searching && <p className="text-xs text-ink-soft">Searching…</p>}
+          {!searching && searchError && (
+            <p className="rounded-lg bg-tangerine/15 px-3 py-2 text-xs font-bold text-tangerine">
+              Search failed: {searchError}
+            </p>
+          )}
+          {!searching && !searchError && !located && name.trim().length >= 3 && results.length === 0 && (
+            <p className="text-xs text-ink-soft">
+              No matches. Type an address or postcode below, or drop a pin.
+            </p>
+          )}
           {results.length > 0 && (
             <ul className="overflow-hidden rounded-xl bg-cream shadow-lift">
               {results.map((c, i) => (

@@ -68,6 +68,11 @@ _OSM_UA = "Oink/1.0 (local dev; friend-group recommendation app)"
 
 logger = logging.getLogger("oink.places")
 
+# Last error Google's search returned, surfaced by /health. A key that can't
+# reach the API fails silently otherwise — the app just quietly serves
+# OpenStreetMap results and looks like the key did nothing.
+LAST_GOOGLE_ERROR: Optional[str] = None
+
 # Places API (New). The legacy endpoints can no longer be enabled on Cloud
 # projects created after 1 March 2025, so pointing a fresh key at them fails
 # outright rather than degrading.
@@ -281,6 +286,7 @@ def _search_osm(query: str, limit: int = 6) -> List[dict]:
 
 
 def _search_google(query: str, limit: int = 6) -> List[dict]:
+    global LAST_GOOGLE_ERROR
     try:
         with httpx.Client(timeout=_TIMEOUT) as client:
             resp = client.post(
@@ -295,10 +301,13 @@ def _search_google(query: str, limit: int = 6) -> List[dict]:
             if resp.status_code != 200:
                 # Surface the reason: a key that can't reach this API is the
                 # single most likely cause, and it's silent otherwise.
+                LAST_GOOGLE_ERROR = f"{resp.status_code}: {resp.text[:200]}"
                 logger.warning("Places search failed (%s): %s", resp.status_code, resp.text[:300])
                 return []
+            LAST_GOOGLE_ERROR = None
             return (resp.json().get("places") or [])[:limit]
-    except (httpx.HTTPError, ValueError):
+    except (httpx.HTTPError, ValueError) as exc:
+        LAST_GOOGLE_ERROR = f"{type(exc).__name__}: {exc}"
         return []
 
 
@@ -412,13 +421,20 @@ def search_places(
     if len(query) < 3:
         return []
 
+    # With a key, Google first — it knows business names OSM has never heard of.
+    # But a key that's misconfigured (API not enabled, billing off, wrong
+    # restriction) must not leave search worse off than no key at all, so an
+    # empty Google result falls through to the keyless path below rather than
+    # being returned as "nothing found".
     if config.GOOGLE_MAPS_API_KEY:
         out = []
         for raw in _search_google(query, limit):
             candidate = _google_candidate(raw)
             if candidate:
                 out.append(candidate)
-        return out
+        if out:
+            return out
+        logger.warning("Google returned nothing for %r — falling back to OpenStreetMap", query)
 
     # The postcode has to be in the query text for Nominatim to surface the
     # right district at all — searching "42 Kingsland Road" alone never returns
