@@ -114,7 +114,7 @@ export default function Held({ item, armX }: { item: string; armX: number }) {
           <path
             d={`M ${ix - 8} ${gy - 18} L ${ix + 8} ${gy - 18} L ${ix + 4.5} ${gy - 3} L ${ix - 4.5} ${gy - 3} Z`}
             fill={CREAM}
-            }
+            
           />
           <rect x={ix - 1.4} y={gy - 3} width="3" height="12" fill={CREAM} />
           <rect x={ix - 6} y={gy + 9} width="12" height="3.5" rx="1.7" fill={CREAM} />
