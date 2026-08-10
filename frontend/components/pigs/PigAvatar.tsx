@@ -348,22 +348,29 @@ export default function PigAvatar({
           strokeLinejoin="round"
         />
       )}
+      {/* A second chin is a fold, so it's drawn as the shadow one jaw casts on
+          the next — never a lighter shape laid over the face, which reads as a
+          panel stuck on rather than flesh. Clipped to the head so the soft edge
+          can't bleed past the jawline. */}
       {shape.chin && (
         <g clipPath={`url(#${headClip})`}>
           <ellipse
             cx="65"
-            cy={48 + headRy * 0.82}
-            rx={headRx * 0.62}
-            ry={headRy * 0.3}
-            fill={p.mid}
+            cy={48 + headRy * 0.52}
+            rx={headRx * 0.66}
+            ry={headRy * 0.17}
+            fill={p.dark}
+            opacity="0.3"
+            filter={`url(#${blur})`}
           />
-          <path
-            d={`M ${65 - headRx * 0.56} ${48 + headRy * 0.56} q ${headRx * 0.56} 7 ${headRx * 1.12} 0`}
-            fill="none"
-            stroke={p.dark}
-            strokeWidth="2"
-            strokeLinecap="round"
-            opacity="0.45"
+          <ellipse
+            cx="65"
+            cy={48 + headRy * 0.78}
+            rx={headRx * 0.5}
+            ry={headRy * 0.16}
+            fill="#fff"
+            opacity="0.16"
+            filter={`url(#${blur})`}
           />
         </g>
       )}
