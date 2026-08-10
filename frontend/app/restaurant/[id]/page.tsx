@@ -7,7 +7,7 @@
  */
 import { use, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ApiError, api } from "@/lib/api";
+import { ApiError, api, googlePhotoSrc } from "@/lib/api";
 import type { PlaceDetail, User } from "@/lib/types";
 import PigAvatar from "@/components/pigs/PigAvatar";
 import { BudgetTag } from "@/components/pigs/PricePig";
@@ -51,7 +51,12 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
       <PageHeader title={place.name} back="/discover" />
 
       <main className="space-y-4 px-3 pb-4">
-        <PhotoCarousel images={place.images} alt={place.name} className="h-52 w-full" />
+        <PhotoCarousel
+          images={place.images}
+          leadSrc={place.google_place_id ? googlePhotoSrc(place.id) : null}
+          alt={place.name}
+          className="h-52 w-full"
+        />
 
         <section className="card space-y-2.5 p-3.5">
           <div className="flex items-start justify-between gap-2">

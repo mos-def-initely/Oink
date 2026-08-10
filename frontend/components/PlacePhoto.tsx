@@ -5,6 +5,10 @@
  * The placeholder is deterministic per place name, so a given place always gets
  * the same colourway rather than flickering between renders.
  */
+"use client";
+
+import { useState } from "react";
+
 const PLACEHOLDERS = [
   ["#FF4D6D", "#FF8A00"],
   ["#00B39F", "#FFC53D"],
@@ -28,9 +32,21 @@ export default function PlacePhoto({
   alt: string;
   className?: string;
 }) {
-  if (src) {
+  // A src can fail: the Google listing photo 404s whenever there's no API key
+  // or the place has no photo. Falling through to the placeholder beats leaving
+  // a broken image in the feed.
+  const [failed, setFailed] = useState(false);
+
+  if (src && !failed) {
     // eslint-disable-next-line @next/next/no-img-element -- local uploads, no loader needed
-    return <img src={src} alt={alt} className={`object-cover ${className}`} />;
+    return (
+      <img
+        src={src}
+        alt={alt}
+        className={`object-cover ${className}`}
+        onError={() => setFailed(true)}
+      />
+    );
   }
 
   const [from, to] = PLACEHOLDERS[hashName(alt) % PLACEHOLDERS.length];

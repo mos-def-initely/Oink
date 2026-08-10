@@ -6,6 +6,7 @@
  * the profile) — everywhere else uses the face.
  */
 import Link from "next/link";
+import { googlePhotoSrc } from "@/lib/api";
 import type { FeedItem } from "@/lib/types";
 import PigAvatar from "@/components/pigs/PigAvatar";
 import { BudgetTag } from "@/components/pigs/PricePig";
@@ -41,8 +42,13 @@ export default function ActivityCard({ item }: { item: FeedItem }) {
       </div>
 
       <Link href={`/restaurant/${place.id}`} className="mt-2.5 block">
+        {/* Google's listing photo leads; this person's own shot is the fallback. */}
         <PlacePhoto
-          src={item.images[0]?.url ?? place.cover_image_url}
+          src={
+            place.google_place_id
+              ? googlePhotoSrc(place.id)
+              : item.images[0]?.url ?? place.cover_image_url
+          }
           alt={place.name}
           className="h-44 w-full"
         />

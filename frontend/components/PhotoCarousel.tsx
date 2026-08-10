@@ -17,16 +17,27 @@ import PlacePhoto from "./PlacePhoto";
 export default function PhotoCarousel({
   images,
   alt,
+  leadSrc,
   className = "",
 }: {
   images: Image[];
   alt: string;
+  /** The place's own Google listing photo, shown first. Dropped if it fails. */
+  leadSrc?: string | null;
   className?: string;
 }) {
   const [index, setIndex] = useState(0);
+  const [leadFailed, setLeadFailed] = useState(false);
   const trackRef = useRef<HTMLDivElement>(null);
 
-  if (images.length === 0) {
+  // The lead can 404 — no key, no listing photo — so it's only counted once the
+  // browser has actually loaded it.
+  const slides: { key: string; src: string }[] = [
+    ...(leadSrc && !leadFailed ? [{ key: "google", src: leadSrc }] : []),
+    ...images.map((img) => ({ key: img.id, src: img.url })),
+  ];
+
+  if (slides.length === 0) {
     return <PlacePhoto alt={alt} className={className} />;
   }
 
@@ -36,7 +47,7 @@ export default function PhotoCarousel({
     // Each slide is exactly one viewport wide, so the nearest whole multiple of
     // the track width is the photo currently settled under the snap point.
     const next = Math.round(el.scrollLeft / el.clientWidth);
-    setIndex(Math.max(0, Math.min(images.length - 1, next)));
+    setIndex(Math.max(0, Math.min(slides.length - 1, next)));
   }
 
   function goTo(i: number) {
@@ -51,30 +62,31 @@ export default function PhotoCarousel({
         ref={trackRef}
         onScroll={onScroll}
         className="flex h-full w-full snap-x snap-mandatory overflow-x-auto overflow-y-hidden rounded-card [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        aria-label={`${alt} — ${images.length} photos`}
+        aria-label={`${alt} — ${slides.length} photos`}
       >
-        {images.map((img, i) => (
+        {slides.map((slide, i) => (
           // eslint-disable-next-line @next/next/no-img-element -- uploads, no loader needed
           <img
-            key={img.id}
-            src={img.url}
-            alt={`${alt} — photo ${i + 1} of ${images.length}`}
+            key={slide.key}
+            src={slide.src}
+            alt={`${alt} — photo ${i + 1} of ${slides.length}`}
             className="h-full w-full shrink-0 snap-center object-cover"
             draggable={false}
+            onError={slide.key === "google" ? () => setLeadFailed(true) : undefined}
           />
         ))}
       </div>
 
-      {images.length > 1 && (
+      {slides.length > 1 && (
         <>
           <span className="pointer-events-none absolute right-2.5 top-2.5 rounded-full bg-ink/55 px-2 py-0.5 font-display text-xs font-bold text-white">
-            {index + 1}/{images.length}
+            {index + 1}/{slides.length}
           </span>
 
           <div className="pointer-events-none absolute inset-x-0 bottom-2.5 flex justify-center gap-1.5">
-            {images.map((img, i) => (
+            {slides.map((slide, i) => (
               <button
-                key={img.id}
+                key={slide.key}
                 type="button"
                 onClick={() => goTo(i)}
                 aria-label={`Go to photo ${i + 1}`}

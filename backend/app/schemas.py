@@ -65,6 +65,7 @@ class RestaurantCreate(BaseModel):
     lng: float = Field(ge=-180, le=180)
     # Optional — a place can be added by dropping a pin or searching by name.
     google_maps_url: Optional[str] = None
+    google_place_id: Optional[str] = None
     address: Optional[str] = None
     city: Optional[str] = None
     area: Optional[str] = None
@@ -106,6 +107,9 @@ class RestaurantSummary(BaseModel):
     lng: float
     cover_image_url: Optional[str]
     google_maps_url: Optional[str]
+    # Present when the place came from Google; the client uses it to ask for the
+    # Maps listing photo, which leads the gallery ahead of anyone's own shots.
+    google_place_id: Optional[str] = None
     recommenders: List[UserPublic]
     recommender_count: int
     # Who shamed it — the map pin and the pin sheet show these faces alongside
@@ -187,6 +191,9 @@ class PlaceCandidate(BaseModel):
     postcode: Optional[str] = None
     lat: float
     lng: float
+    # Cacheable under Google's terms, unlike photo names — so this is what gets
+    # stored, and the photo is re-resolved from it on demand.
+    place_id: Optional[str] = None
 
 
 class ParseLinkResponse(BaseModel):
@@ -197,6 +204,7 @@ class ParseLinkResponse(BaseModel):
     postcode: Optional[str] = None
     lat: Optional[float] = None
     lng: Optional[float] = None
+    place_id: Optional[str] = None
     # How much we managed to resolve, so the UI can say what's still needed
     resolved: bool = False
     source: Literal["google_places", "url_parse", "none"] = "none"

@@ -3,10 +3,11 @@
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi.responses import RedirectResponse
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from .. import storage
+from .. import places, storage
 from ..db import get_db
 from ..deps import get_current_user, get_optional_user
 from ..models import Reaction, Restaurant, RestaurantImage, User
@@ -80,6 +81,7 @@ def create_restaurant(
         lat=payload.lat,
         lng=payload.lng,
         google_maps_url=(payload.google_maps_url or "").strip() or None,
+        google_place_id=(payload.google_place_id or "").strip() or None,
         created_by=viewer.id,
     )
     db.add(place)
@@ -104,6 +106,29 @@ def get_restaurant(
     if not place:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such place")
     return restaurant_detail(db, place, viewer)
+
+
+@router.get("/{restaurant_id}/google-photo")
+def google_photo(restaurant_id: str, db: Session = Depends(get_db)):
+    """Redirect to the place's photo on its Google listing.
+
+    Resolved on every request rather than stored: photo names expire and caching
+    them is disallowed (Maps ToS 3.2.3(b)). Unauthenticated on purpose — it's
+    loaded by an <img> tag, and it exposes nothing a Google Maps link wouldn't.
+    404s when there's no key, no place id, or no photo, which is exactly when
+    the client should fall back to its own placeholder.
+    """
+    place = db.get(Restaurant, restaurant_id)
+    if not place or not place.google_place_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No Google photo")
+
+    url = places.google_photo_url(place.google_place_id)
+    if not url:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No Google photo")
+
+    # Short browser cache so a scroll through the feed doesn't re-resolve per
+    # card, without holding the URL long enough to outlive it.
+    return RedirectResponse(url, headers={"Cache-Control": "private, max-age=900"})
 
 
 @router.patch("/{restaurant_id}", response_model=RestaurantDetail)

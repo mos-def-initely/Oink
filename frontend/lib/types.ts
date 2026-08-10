@@ -33,6 +33,7 @@ export type PlaceSummary = {
   lng: number;
   cover_image_url: string | null;
   google_maps_url: string | null;
+  google_place_id: string | null;
   recommenders: User[];
   recommender_count: number;
   shamers: User[];
@@ -81,12 +82,14 @@ export type ParsedLink = {
   postcode: string | null;
   lat: number | null;
   lng: number | null;
+  place_id: string | null;
   resolved: boolean;
   source: "google_places" | "url_parse" | "none";
 };
 
 export type PlaceCandidate = {
   name: string;
+  place_id?: string | null;
   address: string | null;
   city: string | null;
   area: string | null;

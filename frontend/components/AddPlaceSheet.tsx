@@ -48,6 +48,9 @@ export default function AddPlaceSheet({
   const [postcode, setPostcode] = useState("");
   const [link, setLink] = useState("");
   const [showLink, setShowLink] = useState(false);
+  // Google's id for the place, when the pin came from Google. Stored so the
+  // listing photo can be fetched later — photo URLs themselves can't be kept.
+  const [placeId, setPlaceId] = useState<string | null>(null);
 
   // Your write-up, optional — the same fields as the review sheet, so a place
   // can be logged and reviewed in one go rather than two round trips.
@@ -185,6 +188,7 @@ export default function AddPlaceSheet({
 
   function choose(c: PlaceCandidate) {
     setName(c.name);
+    setPlaceId(c.place_id ?? null);
     // These fill the address field programmatically, so clear the typed flag —
     // otherwise the geocode effect fires on our own output.
     setAddressTouched(false);
@@ -229,6 +233,7 @@ export default function AddPlaceSheet({
       }
       setAddressTouched(false);
       setAddressMatch(null);
+      setPlaceId(parsed.place_id ?? null);
       if (parsed.name) setName(parsed.name);
       if (parsed.address) setAddress(parsed.address);
       if (parsed.city) setCity(parsed.city);
@@ -281,6 +286,7 @@ export default function AddPlaceSheet({
           lat: pickedPoint.lat,
           lng: pickedPoint.lng,
           google_maps_url: link.trim() || null,
+          google_place_id: placeId,
           address: address || null,
           city: city || null,
           area: area || null,

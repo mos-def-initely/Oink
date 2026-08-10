@@ -207,6 +207,7 @@ def restaurant_summary(restaurant: Restaurant, ctx: RestaurantContext) -> Restau
         lng=restaurant.lng,
         cover_image_url=restaurant.cover_image_url,
         google_maps_url=restaurant.google_maps_url,
+        google_place_id=restaurant.google_place_id,
         recommenders=recommenders,
         recommender_count=len(recommenders),
         shamers=shamers,

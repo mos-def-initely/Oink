@@ -61,6 +61,17 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return res.json();
 }
 
+/**
+ * The place's photo from its Google listing, served via our own endpoint.
+ *
+ * Resolved server-side on each request because Google's terms forbid storing
+ * photo names. 404s when there's no key or no photo, which is the client's cue
+ * to fall back to a user upload or the generated placeholder.
+ */
+export function googlePhotoSrc(placeId: string): string {
+  return `${BASE}/restaurants/${placeId}/google-photo`;
+}
+
 export const api = {
   // --- auth ---
   signup: (username: string, password: string, display_name: string) =>
@@ -106,6 +117,7 @@ export const api = {
     lat: number;
     lng: number;
     google_maps_url?: string | null;
+    google_place_id?: string | null;
     address?: string | null;
     city?: string | null;
     area?: string | null;

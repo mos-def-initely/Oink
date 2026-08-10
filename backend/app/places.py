@@ -14,6 +14,7 @@ Everything here is best-effort; the add-place form stays editable, so a partial
 result is still useful and a total miss just means the user drops a pin.
 """
 
+import logging
 import re
 from typing import List, Optional, Tuple
 from urllib.parse import parse_qs, unquote, unquote_plus, urlparse
@@ -64,6 +65,22 @@ _MOBILE_UA = (
     "(KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1"
 )
 _OSM_UA = "Oink/1.0 (local dev; friend-group recommendation app)"
+
+logger = logging.getLogger("oink.places")
+
+# Places API (New). The legacy endpoints can no longer be enabled on Cloud
+# projects created after 1 March 2025, so pointing a fresh key at them fails
+# outright rather than degrading.
+_PLACES_BASE = "https://places.googleapis.com/v1"
+_SEARCH_FIELDS = ",".join(
+    (
+        "places.id",
+        "places.displayName",
+        "places.formattedAddress",
+        "places.location",
+        "places.addressComponents",
+    )
+)
 
 
 def _extract_url(text: str) -> str:
@@ -266,23 +283,94 @@ def _search_osm(query: str, limit: int = 6) -> List[dict]:
 def _search_google(query: str, limit: int = 6) -> List[dict]:
     try:
         with httpx.Client(timeout=_TIMEOUT) as client:
-            resp = client.get(
-                "https://maps.googleapis.com/maps/api/place/textsearch/json",
-                params={"query": query, "key": config.GOOGLE_MAPS_API_KEY},
+            resp = client.post(
+                f"{_PLACES_BASE}/places:searchText",
+                headers={
+                    "Content-Type": "application/json",
+                    "X-Goog-Api-Key": config.GOOGLE_MAPS_API_KEY,
+                    "X-Goog-FieldMask": _SEARCH_FIELDS,
+                },
+                json={"textQuery": query, "maxResultCount": min(limit, 20)},
             )
-            return (resp.json().get("results") or [])[:limit]
+            if resp.status_code != 200:
+                # Surface the reason: a key that can't reach this API is the
+                # single most likely cause, and it's silent otherwise.
+                logger.warning("Places search failed (%s): %s", resp.status_code, resp.text[:300])
+                return []
+            return (resp.json().get("places") or [])[:limit]
     except (httpx.HTTPError, ValueError):
         return []
 
 
-def _split_google_address(address: Optional[str]) -> Tuple[Optional[str], Optional[str]]:
-    """Rough city/area from a comma-joined formatted address."""
-    if not address:
-        return None, None
-    parts = [p.strip() for p in address.split(",") if p.strip()]
-    city = parts[-2] if len(parts) >= 2 else None
-    area = parts[-3] if len(parts) >= 3 else None
-    return city, area
+def _google_candidate(place: dict) -> Optional[PlaceCandidate]:
+    """Normalise one Places API (New) result into our own shape.
+
+    Address components beat splitting the formatted address on commas, which is
+    what the legacy path had to do — the position of the city in that string
+    varies by country.
+    """
+    loc = place.get("location") or {}
+    lat, lng = loc.get("latitude"), loc.get("longitude")
+    if lat is None or lng is None:
+        return None
+
+    by_type: dict = {}
+    for component in place.get("addressComponents") or []:
+        for kind in component.get("types") or []:
+            by_type.setdefault(kind, component)
+
+    def component(*kinds: str) -> Optional[str]:
+        for kind in kinds:
+            found = by_type.get(kind)
+            if found:
+                return found.get("longText") or found.get("shortText")
+        return None
+
+    return PlaceCandidate(
+        name=(place.get("displayName") or {}).get("text") or "",
+        address=place.get("formattedAddress"),
+        city=component("postal_town", "locality", "administrative_area_level_2"),
+        area=component("sublocality_level_1", "sublocality", "neighborhood"),
+        postcode=component("postal_code"),
+        lat=float(lat),
+        lng=float(lng),
+        place_id=place.get("id"),
+    )
+
+
+def google_photo_url(place_id: str, max_width: int = 1200) -> Optional[str]:
+    """A fresh photo URL for a place, or None.
+
+    Deliberately re-resolved on every call rather than stored: Google's terms
+    forbid caching photo names (Maps Platform ToS 3.2.3(b)) and the names expire
+    anyway. Place IDs *are* cacheable, which is why the id is what we keep.
+    """
+    if not config.GOOGLE_MAPS_API_KEY or not place_id:
+        return None
+    headers = {"X-Goog-Api-Key": config.GOOGLE_MAPS_API_KEY, "X-Goog-FieldMask": "photos"}
+    try:
+        with httpx.Client(timeout=_TIMEOUT) as client:
+            details = client.get(f"{_PLACES_BASE}/places/{place_id}", headers=headers)
+            if details.status_code != 200:
+                logger.warning("Place details failed (%s)", details.status_code)
+                return None
+            photos = details.json().get("photos") or []
+            if not photos or not photos[0].get("name"):
+                return None
+
+            media = client.get(
+                f"{_PLACES_BASE}/{photos[0]['name']}/media",
+                params={
+                    "key": config.GOOGLE_MAPS_API_KEY,
+                    "maxWidthPx": max_width,
+                    "skipHttpRedirect": "true",
+                },
+            )
+            if media.status_code != 200:
+                return None
+            return media.json().get("photoUri")
+    except (httpx.HTTPError, ValueError):
+        return None
 
 
 def _postcode_score(supplied: Optional[str], found: Optional[str]) -> int:
@@ -326,21 +414,10 @@ def search_places(
 
     if config.GOOGLE_MAPS_API_KEY:
         out = []
-        for r in _search_google(query, limit):
-            loc = (r.get("geometry") or {}).get("location") or {}
-            if loc.get("lat") is None:
-                continue
-            city, area = _split_google_address(r.get("formatted_address"))
-            out.append(
-                PlaceCandidate(
-                    name=r.get("name") or query,
-                    address=r.get("formatted_address"),
-                    city=city,
-                    area=area,
-                    lat=loc["lat"],
-                    lng=loc["lng"],
-                )
-            )
+        for raw in _search_google(query, limit):
+            candidate = _google_candidate(raw)
+            if candidate:
+                out.append(candidate)
         return out
 
     # The postcode has to be in the query text for Nominatim to surface the
@@ -399,18 +476,17 @@ def parse_google_maps_link(url: str) -> ParseLinkResponse:
     # With a key, resolve properly through Places.
     if config.GOOGLE_MAPS_API_KEY and (name or (lat is not None and lng is not None)):
         results = _search_google(name or f"{lat},{lng}", 1)
-        if results:
-            r = results[0]
-            loc = (r.get("geometry") or {}).get("location") or {}
-            address = r.get("formatted_address")
-            city, area = _split_google_address(address)
+        best = _google_candidate(results[0]) if results else None
+        if best:
             return ParseLinkResponse(
-                name=r.get("name") or name,
-                address=address,
-                city=city,
-                area=area,
-                lat=loc.get("lat", lat),
-                lng=loc.get("lng", lng),
+                name=best.name or name,
+                address=best.address,
+                city=best.city,
+                area=best.area,
+                postcode=best.postcode,
+                lat=best.lat,
+                lng=best.lng,
+                place_id=best.place_id,
                 resolved=True,
                 source="google_places",
             )

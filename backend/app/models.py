@@ -77,6 +77,10 @@ class Restaurant(Base):
     lng: Mapped[float] = mapped_column(Float, nullable=False)
     # Optional: a place can be added by dropping a pin or searching by name.
     google_maps_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # Google's own id. Photo names can't be stored (they expire, and caching
+    # them breaks Maps ToS 3.2.3(b)) but place ids can, so photos are resolved
+    # from this each time they're needed.
+    google_place_id: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
     cover_image_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_by: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=_now)
