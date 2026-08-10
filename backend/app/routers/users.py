@@ -12,6 +12,7 @@ from ..models import Reaction, Recommendation, Restaurant, User, WishlistItem
 from ..schemas import RestaurantSummary, UpdateMeRequest, UserPublic
 from ..serializers import (
     last_logged_map,
+    og_oink_counts,
     places_logged_counts,
     restaurant_summaries,
     user_public,
@@ -72,7 +73,8 @@ def get_user(identifier: str, db: Session = Depends(get_db), viewer: User = Depe
     user = _resolve_user(db, identifier, viewer)
     counts = places_logged_counts(db, [user.id])
     last = last_logged_map(db, [user.id])
-    return user_public(user, counts.get(user.id, 0), last.get(user.id))
+    og = og_oink_counts(db, [user.id])
+    return user_public(user, counts.get(user.id, 0), last.get(user.id), og.get(user.id, 0))
 
 
 @router.get("/{identifier}/recommendations", response_model=List[RestaurantSummary])

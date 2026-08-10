@@ -134,14 +134,21 @@ Oinking a place someone already logged is *agreeing*, which isn't news on its ow
 — it folds onto the log it agrees with and shows as one face, a `+n` count, and
 the names.
 
-The anchor is the **first log of that place in the feed**, whichever kind it is,
-so a place introduced by an oink collects agreement on that oink row and a place
-introduced by a review collects it on the review card.
+The anchor is **the review if the place has one**, otherwise the first log of it
+in the feed. A write-up is the thing worth reading, so agreement belongs on that
+card even when somebody oinked the place first — and a place nobody has written
+up keeps the oink row that introduced it. That trades strict chronology for
+readability: an oink from Tuesday can appear under a review written on Thursday.
 
-Two things never fold. A **shame** stays its own row: putting a disagreement on
+Nothing else folds. A **shame** stays its own row: putting a disagreement on
 somebody's own card is a different decision from showing agreement, and one to
-take separately. A **second recommendation** stays its own card: writing your own
-review is a log, not agreement, however many people got there first.
+take separately. A **second recommendation** stays its own card — someone writing
+their own review days later is exactly the kind of thing the feed exists to
+surface, however many people got there first.
+
+Adding a place auto-oinks it, so anyone who adds somewhere and writes it up holds
+both rows; the feed endpoint collapses those to one card per person per place
+with the review winning, so nobody appears to agree with themselves.
 
 The feed is a recent-activity window, so an oink whose original log has scrolled
 out of it has nothing to attach to and becomes its own row — the alternative
@@ -257,6 +264,12 @@ species: pig begins pink, boar umber, hog sand. Species is the only avatar attri
 legible at 24px on a map pin, which is exactly where telling friends apart
 matters. Boar and hog carry their own coats, ears, tusks and darker outlines;
 all three keep the fatness tiers, nostrils and shading.
+
+**OG oinks.** Being first to put a place on the map is counted on the profile as
+*og oinks*, beside the places count. It's kept off the feed cards deliberately:
+review-first anchoring hands the card to whoever wrote the place up, and adding a
+third credit to every card was noise. The profile is where a finder's tally
+belongs, and it's durable in a way a scrolling card never is.
 
 ### 9.2 Price-tier pig
 Budget is **never** bare `$` text. Four fixed pigs, always with the label beside them: `$` peasant (patched smock, straw), `$$` casual (tee), `$$$` smart (collared shirt), `$$$$` posh (top hat, monocle, cigar, tailcoat).

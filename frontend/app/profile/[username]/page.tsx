@@ -123,6 +123,14 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
             <span className="sticker bg-cream text-ink">
               {user.places_logged} {user.places_logged === 1 ? "place" : "places"}
             </span>
+            {/* Being first to put somewhere on the map is its own thing — the
+                feed hands the card to whoever writes the place up, so the
+                credit for finding it lives here instead. */}
+            {!!user.og_oinks && (
+              <span className="sticker bg-lilac text-ink">
+                {user.og_oinks} og {user.og_oinks === 1 ? "oink" : "oinks"}
+              </span>
+            )}
               <span className={`sticker ${dead ? "bg-ink-deep text-oat" : "bg-plum text-oat"}`}>
                 {dead ? "dead pig" : `${tierLabel.toLowerCase()} pig`}
               </span>

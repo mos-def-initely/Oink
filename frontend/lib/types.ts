@@ -9,6 +9,9 @@ export type User = {
   display_name: string;
   pig_avatar_config: PigConfig;
   places_logged: number;
+  /** Places they were first to put on the map. Adding a place auto-oinks it, so
+   *  an OG oink is the moment somewhere entered the group's world. */
+  og_oinks?: number;
   /** ISO timestamp of their last logged place; null if they never have. */
   last_logged_at: string | null;
 };

@@ -18,6 +18,10 @@ class UserPublic(BaseModel):
     display_name: str
     pig_avatar_config: dict
     places_logged: int = 0
+    # Places this person put on the map first. Adding a place auto-oinks it, so
+    # an OG oink is the moment somewhere entered the group's world — worth
+    # counting even when somebody else later writes the place up.
+    og_oinks: int = 0
     # Last time they logged a place. The pig loses a tier per idle week, so the
     # client needs the timestamp rather than just the count (spec §9.1).
     last_logged_at: Optional[datetime] = None

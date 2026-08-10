@@ -9,7 +9,7 @@ from datetime import datetime
 from urllib.parse import quote
 from typing import Dict, List, NamedTuple, Optional, Sequence, Set, Tuple
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from .models import Reaction, Recommendation, Restaurant, RestaurantImage, User, WishlistItem
@@ -76,6 +76,20 @@ def user_activity(db: Session, user_ids: Sequence[str]) -> Dict[str, UserActivit
     return {uid: cache[uid] for uid in ids}
 
 
+def og_oink_counts(db: Session, user_ids: Sequence[str]) -> Dict[str, int]:
+    """Places each user was first to put on the map (spec §6.5)."""
+    if not user_ids:
+        return {}
+    rows = db.execute(
+        select(Restaurant.created_by, func.count(Restaurant.id))
+        .where(Restaurant.created_by.in_(list(user_ids)))
+        .group_by(Restaurant.created_by)
+    ).all()
+    counts = {uid: 0 for uid in user_ids}
+    counts.update({uid: n for uid, n in rows if uid})
+    return counts
+
+
 def places_logged_counts(db: Session, user_ids: Sequence[str]) -> Dict[str, int]:
     """Distinct places each user has logged — drives the pig fatness tier (spec §9.1)."""
     return {uid: a.places_logged for uid, a in user_activity(db, user_ids).items()}
@@ -91,7 +105,10 @@ def last_logged_map(db: Session, user_ids: Sequence[str]) -> Dict[str, datetime]
 
 
 def user_public(
-    user: User, places_logged: int = 0, last_logged_at: Optional[datetime] = None
+    user: User,
+    places_logged: int = 0,
+    last_logged_at: Optional[datetime] = None,
+    og_oinks: int = 0,
 ) -> UserPublic:
     return UserPublic(
         id=user.id,
@@ -99,6 +116,7 @@ def user_public(
         display_name=user.display_name,
         pig_avatar_config=user.pig_avatar_config or {},
         places_logged=places_logged,
+        og_oinks=og_oinks,
         last_logged_at=last_logged_at,
     )
 
@@ -169,6 +187,7 @@ class RestaurantContext:
         for rid, entries in by_place.items():
             entries.sort(key=lambda e: (e[0] != creators.get(rid), naive_dt(e[1]), e[0]))
             self.recommender_ids[rid] = [uid for uid, _ in entries]
+
 
         needed = {uid for uids in self.recommender_ids.values() for uid in uids}
         needed |= {uid for uids in self.shame_ids.values() for uid in uids}
