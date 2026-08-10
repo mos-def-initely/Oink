@@ -50,6 +50,8 @@ export default function DiscoverScreen({ initialPlaces }: { initialPlaces: Place
   const [addOpen, setAddOpen] = useState(false);
   const [pickMode, setPickMode] = useState(false);
   const [pickedPoint, setPickedPoint] = useState<{ lat: number; lng: number } | null>(null);
+  // Bumped when starting a genuinely new place, so the sheet blanks itself.
+  const [addResetKey, setAddResetKey] = useState(0);
   // Where the map is pointed. Biases place search to the area on screen.
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | null>(null);
   // Jump-to-a-city search. Geocoded through the same place lookup the add-place
@@ -254,7 +256,11 @@ export default function DiscoverScreen({ initialPlaces }: { initialPlaces: Place
 
         {/* Add-place FAB — bottom right, in the thumb zone (spec §6.3) */}
         <button
-          onClick={() => setAddOpen(true)}
+          onClick={() => {
+            setPickedPoint(null);
+            setAddResetKey((k) => k + 1);
+            setAddOpen(true);
+          }}
           className="absolute bottom-24 right-4 z-[1000] flex h-16 w-16 items-center justify-center rounded-full bg-plum font-display text-4xl font-extrabold text-white transition-transform active:scale-95"
           aria-label="Add a place"
         >
@@ -411,6 +417,7 @@ export default function DiscoverScreen({ initialPlaces }: { initialPlaces: Place
 
       <AddPlaceSheet
         open={addOpen}
+        resetKey={addResetKey}
         onClose={() => setAddOpen(false)}
         pickedPoint={pickedPoint}
         near={mapCenter}
@@ -420,7 +427,11 @@ export default function DiscoverScreen({ initialPlaces }: { initialPlaces: Place
           setView("map");
         }}
         onPointResolved={(lat, lng) => setPickedPoint({ lat, lng })}
-        onCreated={load}
+        onCreated={() => {
+          load();
+          setPickedPoint(null);
+          setAddResetKey((k) => k + 1);
+        }}
       />
     </div>
   );

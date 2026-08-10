@@ -22,6 +22,8 @@ import type { Kind, PlaceCandidate } from "@/lib/types";
 
 type Props = {
   open: boolean;
+  /** Bumped by the parent to blank the form for a genuinely new place. */
+  resetKey?: number;
   onClose: () => void;
   pickedPoint: { lat: number; lng: number } | null;
   /** The map's current centre, used to bias place search to the visible area. */
@@ -33,6 +35,7 @@ type Props = {
 
 export default function AddPlaceSheet({
   open,
+  resetKey = 0,
   onClose,
   pickedPoint,
   near = null,
@@ -80,6 +83,9 @@ export default function AddPlaceSheet({
   // results write to this field too, and re-geocoding their output would be
   // wasted calls at best and could shunt an already-correct pin at worst.
   const [addressTouched, setAddressTouched] = useState(false);
+  // Prefilled kind/cuisine must never overwrite a choice the user has made.
+  const [kindTouched, setKindTouched] = useState(false);
+  const [categoryTouched, setCategoryTouched] = useState(false);
   const [addressMatch, setAddressMatch] = useState<PlaceCandidate | null>(null);
   const [locating, setLocating] = useState(false);
 
@@ -99,7 +105,39 @@ export default function AddPlaceSheet({
     setError(null);
     setAddressTouched(false);
     setAddressMatch(null);
+    setKindTouched(false);
+    setCategoryTouched(false);
   }, [open]);
+
+  /**
+   * Blank the whole form when the parent signals a new place.
+   *
+   * The sheet's contents unmount when it closes but this component doesn't, so
+   * its state survives — without this, adding a second place starts with the
+   * first one's name, cuisine and address still filled in. Keyed off an
+   * explicit signal rather than `open`, because the drop-a-pin flow closes and
+   * reopens the sheet mid-entry and must keep what's been typed.
+   */
+  useEffect(() => {
+    setName("");
+    setKind("restaurant");
+    setCategory([]);
+    setBudget("$$");
+    setAddress("");
+    setCity("");
+    setArea("");
+    setPostcode("");
+    setLink("");
+    setShowLink(false);
+    setResults([]);
+    setNote(null);
+    setError(null);
+    setLocated(false);
+    setAddressTouched(false);
+    setAddressMatch(null);
+    setKindTouched(false);
+    setCategoryTouched(false);
+  }, [resetKey]);
 
   // A pin dropped on the map counts as locating the place.
   useEffect(() => {
@@ -190,6 +228,19 @@ export default function AddPlaceSheet({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address, city, area, postcode, open, addressTouched]);
 
+  /**
+   * Fill in kind and cuisine from a lookup, but only where the user hasn't
+   * already decided. Someone who picked "bar" shouldn't have it flipped back
+   * to "restaurant" because OSM disagrees.
+   */
+  function applyClassification(k: Kind | null, cats: string[]) {
+    if (k && !kindTouched) setKind(k);
+    if (cats?.length && !categoryTouched) {
+      // A kind change clears categories, so set them after the kind lands.
+      setCategory(cats);
+    }
+  }
+
   function movePinToAddress() {
     if (!addressMatch) return;
     onPointResolved(addressMatch.lat, addressMatch.lng);
@@ -208,6 +259,7 @@ export default function AddPlaceSheet({
     if (c.city) setCity(c.city);
     if (c.area) setArea(c.area);
     if (c.postcode) setPostcode(c.postcode);
+    applyClassification(c.kind, c.category);
     setResults([]);
     setLocated(true);
     onPointResolved(c.lat, c.lng);   // drops the pin automatically
@@ -250,6 +302,7 @@ export default function AddPlaceSheet({
       if (parsed.city) setCity(parsed.city);
       if (parsed.area) setArea(parsed.area);
       if (parsed.postcode) setPostcode(parsed.postcode);
+      applyClassification(parsed.kind, parsed.category);
       if (parsed.lat != null && parsed.lng != null) {
         setLocated(true);
         onPointResolved(parsed.lat, parsed.lng);  // drops the pin automatically
@@ -443,6 +496,7 @@ export default function AddPlaceSheet({
                 type="button"
                 onClick={() => {
                   setKind(k);
+                  setKindTouched(true);
                   setCategory([]);
                 }}
                 className={`btn flex-1 text-xs ${
@@ -458,7 +512,14 @@ export default function AddPlaceSheet({
             <p className="mb-1.5 font-display text-sm font-bold">
               {kind === "bar" ? "What kind of bar?" : "Cuisine"}
             </p>
-            <CategoryPicker kind={kind} value={category} onChange={setCategory} />
+            <CategoryPicker
+              kind={kind}
+              value={category}
+              onChange={(next) => {
+                setCategory(next);
+                setCategoryTouched(true);
+              }}
+            />
           </div>
 
           <div>

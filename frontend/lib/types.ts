@@ -76,6 +76,8 @@ export type FeedItem = {
 
 export type ParsedLink = {
   name: string | null;
+  kind: Kind | null;
+  category: string[];
   address: string | null;
   city: string | null;
   area: string | null;
@@ -90,6 +92,8 @@ export type ParsedLink = {
 export type PlaceCandidate = {
   name: string;
   place_id?: string | null;
+  kind: Kind | null;
+  category: string[];
   address: string | null;
   city: string | null;
   area: string | null;

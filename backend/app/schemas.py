@@ -194,6 +194,9 @@ class PlaceCandidate(BaseModel):
     # Cacheable under Google's terms, unlike photo names — so this is what gets
     # stored, and the photo is re-resolved from it on demand.
     place_id: Optional[str] = None
+    # Derived from OSM tags where available, so the form can prefill.
+    kind: Optional[Kind] = None
+    category: List[str] = []
 
 
 class ParseLinkResponse(BaseModel):
@@ -205,6 +208,8 @@ class ParseLinkResponse(BaseModel):
     lat: Optional[float] = None
     lng: Optional[float] = None
     place_id: Optional[str] = None
+    kind: Optional[Kind] = None
+    category: List[str] = []
     # How much we managed to resolve, so the UI can say what's still needed
     resolved: bool = False
     source: Literal["google_places", "url_parse", "none"] = "none"
