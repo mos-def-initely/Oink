@@ -22,6 +22,18 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [landedOnExisting, setLandedOnExisting] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem("oink_landed_on_existing")) {
+        setLandedOnExisting(true);
+        sessionStorage.removeItem("oink_landed_on_existing");
+      }
+    } catch {
+      /* storage disabled — nothing to show */
+    }
+  }, []);
 
   const load = useCallback(() => {
     api.place(id).then(setPlace).catch((e) => setError(e.message));
@@ -51,6 +63,12 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
       <PageHeader title={place.name} back="/discover" />
 
       <main className="space-y-4 px-3 pb-4">
+        {landedOnExisting && (
+          <p className="rounded-card border-2 border-ink bg-gold px-3 py-2 text-sm font-bold text-ink-deep">
+            Already on the map — oinked it for you instead of adding it twice.
+          </p>
+        )}
+
         <PhotoCarousel
           images={place.images}
           leadSrc={place.google_place_id ? googlePhotoSrc(place.id) : null}

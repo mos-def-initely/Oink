@@ -32,6 +32,9 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
   const [places, setPlaces] = useState<PlaceSummary[] | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  // The place pending removal from this person's log, if any.
+  const [unlogging, setUnlogging] = useState<PlaceSummary | null>(null);
+  const [unlogBusy, setUnlogBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
@@ -150,7 +153,19 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
             />
           )}
           {places?.map((p) => (
-            <PlaceListCard key={p.id} place={p} />
+            <div key={p.id} className="relative">
+              <PlaceListCard place={p} />
+              {isMe && (
+                <button
+                  onClick={() => setUnlogging(p)}
+                  className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full border-2 border-ink bg-cream text-xs font-bold"
+                  aria-label={`Remove ${p.name} from your log`}
+                  title="Remove from your log"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
           ))}
         </section>
       </main>
@@ -169,6 +184,46 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
           }}
         />
       )}
+
+      <Sheet
+        open={!!unlogging}
+        onClose={() => setUnlogging(null)}
+        title="Remove from your log?"
+      >
+        <div className="space-y-3 pb-4">
+          <p className="text-sm text-ink-soft">
+            Your oink, write-up and shame for <strong className="text-ink">{unlogging?.name}</strong>{" "}
+            all go. The place stays on the map — other people may have logged it.
+          </p>
+          <div className="flex gap-2">
+            <button onClick={() => setUnlogging(null)} className="btn-plain flex-1" disabled={unlogBusy}>
+              Keep it
+            </button>
+            <button
+              className="btn flex-1 bg-rust text-oat"
+              disabled={unlogBusy}
+              onClick={async () => {
+                if (!unlogging) return;
+                setUnlogBusy(true);
+                try {
+                  await api.unlog(unlogging.id);
+                  const [refreshedUser, refreshedPlaces] = await Promise.all([
+                    api.user(username),
+                    api.userPlaces(username),
+                  ]);
+                  setUser(refreshedUser);
+                  setPlaces(refreshedPlaces);
+                  setUnlogging(null);
+                } finally {
+                  setUnlogBusy(false);
+                }
+              }}
+            >
+              {unlogBusy ? "Removing…" : "Remove"}
+            </button>
+          </div>
+        </div>
+      </Sheet>
 
       <HowItWorks open={helpOpen} onClose={() => setHelpOpen(false)} />
     </>

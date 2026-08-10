@@ -160,6 +160,10 @@ export const api = {
       body: JSON.stringify({ review_text, recommended_dishes }),
     }),
 
+  /** Removes every signal you've left on a place — oink, write-up or shame. */
+  unlog: (placeId: string) =>
+    request<PlaceDetail>(`/restaurants/${placeId}/log`, { method: "DELETE" }),
+
   deleteRecommendation: (placeId: string) =>
     request<PlaceDetail>(`/restaurants/${placeId}/recommendations`, { method: "DELETE" }),
 

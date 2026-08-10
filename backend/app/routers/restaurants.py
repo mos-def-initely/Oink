@@ -94,6 +94,37 @@ def _attach_photo(restaurant_id: str, name: str, city: Optional[str], lat: float
         session.close()
 
 
+def _find_existing(db: Session, payload: RestaurantCreate) -> Optional[Restaurant]:
+    """A place already on the map that this one would duplicate.
+
+    Google's id is decisive when both sides have one. Failing that, the same
+    name within roughly a couple of hundred metres — near enough that two
+    entries would be the same restaurant, far enough apart that a chain's
+    branches down the road stay separate.
+    """
+    place_id = (payload.google_place_id or "").strip()
+    if place_id:
+        match = db.execute(
+            select(Restaurant).where(Restaurant.google_place_id == place_id)
+        ).scalars().first()
+        if match:
+            return match
+
+    name = payload.name.strip().lower()
+    if not name:
+        return None
+    box = 0.0025  # ~275m of latitude; longitude is tighter still in the UK
+    nearby = db.execute(
+        select(Restaurant).where(
+            Restaurant.lat >= payload.lat - box,
+            Restaurant.lat <= payload.lat + box,
+            Restaurant.lng >= payload.lng - box,
+            Restaurant.lng <= payload.lng + box,
+        )
+    ).scalars().all()
+    return next((r for r in nearby if (r.name or "").strip().lower() == name), None)
+
+
 @router.post("", response_model=RestaurantDetail, status_code=status.HTTP_201_CREATED)
 def create_restaurant(
     payload: RestaurantCreate,
@@ -101,6 +132,20 @@ def create_restaurant(
     db: Session = Depends(get_db),
     viewer: User = Depends(get_current_user),
 ):
+    # Somewhere already on the map: oink it rather than adding a second copy.
+    existing = _find_existing(db, payload)
+    if existing:
+        already = db.execute(
+            select(Reaction).where(
+                Reaction.restaurant_id == existing.id, Reaction.user_id == viewer.id
+            )
+        ).scalar_one_or_none()
+        if not already:
+            db.add(Reaction(restaurant_id=existing.id, user_id=viewer.id, type="oink"))
+            db.commit()
+            db.refresh(existing)
+        return restaurant_detail(db, existing, viewer)
+
     place = Restaurant(
         name=payload.name.strip(),
         kind=payload.kind,
