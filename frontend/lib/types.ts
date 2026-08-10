@@ -9,6 +9,8 @@ export type User = {
   display_name: string;
   pig_avatar_config: PigConfig;
   places_logged: number;
+  /** ISO timestamp of their last logged place; null if they never have. */
+  last_logged_at: string | null;
 };
 
 export type Image = {
@@ -31,8 +33,10 @@ export type PlaceSummary = {
   lng: number;
   cover_image_url: string | null;
   google_maps_url: string | null;
+  google_place_id: string | null;
   recommenders: User[];
   recommender_count: number;
+  shamers: User[];
   shame_count: number;
   shamed_only: boolean;
 };
@@ -80,12 +84,14 @@ export type ParsedLink = {
   postcode: string | null;
   lat: number | null;
   lng: number | null;
+  place_id: string | null;
   resolved: boolean;
   source: "google_places" | "url_parse" | "none";
 };
 
 export type PlaceCandidate = {
   name: string;
+  place_id?: string | null;
   kind: Kind | null;
   category: string[];
   address: string | null;

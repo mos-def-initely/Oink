@@ -18,6 +18,9 @@ class UserPublic(BaseModel):
     display_name: str
     pig_avatar_config: dict
     places_logged: int = 0
+    # Last time they logged a place. The pig loses a tier per idle week, so the
+    # client needs the timestamp rather than just the count (spec §9.1).
+    last_logged_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
 
@@ -62,6 +65,7 @@ class RestaurantCreate(BaseModel):
     lng: float = Field(ge=-180, le=180)
     # Optional — a place can be added by dropping a pin or searching by name.
     google_maps_url: Optional[str] = None
+    google_place_id: Optional[str] = None
     address: Optional[str] = None
     city: Optional[str] = None
     area: Optional[str] = None
@@ -103,8 +107,14 @@ class RestaurantSummary(BaseModel):
     lng: float
     cover_image_url: Optional[str]
     google_maps_url: Optional[str]
+    # Present when the place came from Google; the client uses it to ask for the
+    # Maps listing photo, which leads the gallery ahead of anyone's own shots.
+    google_place_id: Optional[str] = None
     recommenders: List[UserPublic]
     recommender_count: int
+    # Who shamed it — the map pin and the pin sheet show these faces alongside
+    # the endorsers, so a divisive place reads as divisive rather than unanimous.
+    shamers: List[UserPublic] = []
     shame_count: int
     # True when the only signal on this place is shame — pin renders greyed out
     shamed_only: bool
@@ -181,6 +191,9 @@ class PlaceCandidate(BaseModel):
     postcode: Optional[str] = None
     lat: float
     lng: float
+    # Cacheable under Google's terms, unlike photo names — so this is what gets
+    # stored, and the photo is re-resolved from it on demand.
+    place_id: Optional[str] = None
     # Derived from OSM tags where available, so the form can prefill.
     kind: Optional[Kind] = None
     category: List[str] = []
@@ -194,6 +207,7 @@ class ParseLinkResponse(BaseModel):
     postcode: Optional[str] = None
     lat: Optional[float] = None
     lng: Optional[float] = None
+    place_id: Optional[str] = None
     kind: Optional[Kind] = None
     category: List[str] = []
     # How much we managed to resolve, so the UI can say what's still needed

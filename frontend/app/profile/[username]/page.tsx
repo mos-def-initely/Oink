@@ -9,10 +9,13 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import type { PlaceSummary, User } from "@/lib/types";
 import {
-  FATNESS_TIERS,
+  TIER_LABELS,
+  TIER_ORDER,
+  baseTier,
   PIG_ACCESSORIES,
   PIG_BACKGROUNDS,
   PIG_HATS,
+  daysUntilDecay,
   PIG_SPECIES,
   SPECIES_COLORS,
   SPECIES_DEFAULT_COLOR,
@@ -30,6 +33,7 @@ import {
   normalisePig,
 } from "@/lib/pig";
 import PigAvatar from "@/components/pigs/PigAvatar";
+import HowItWorks from "@/components/HowItWorks";
 import PlaceListCard from "@/components/PlaceListCard";
 import BottomTabBar, { TabBarSpacer } from "@/components/BottomTabBar";
 import { EmptyState, PageHeader, Sheet, Spinner } from "@/components/ui";
@@ -40,6 +44,10 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
   const [me, setMe] = useState<User | null>(null);
   const [places, setPlaces] = useState<PlaceSummary[] | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+  // The place pending removal from this person's log, if any.
+  const [unlogging, setUnlogging] = useState<PlaceSummary | null>(null);
+  const [unlogBusy, setUnlogBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
@@ -54,26 +62,44 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
   if (!user) return <Spinner />;
 
   const isMe = me?.id === user.id;
-  const tier = fatnessTier(user.places_logged);
-  const tierLabel = FATNESS_TIERS.find((t) => t.tier === tier)?.label ?? "";
+  const tier = fatnessTier(user.places_logged, user.last_logged_at);
+  const tierLabel = TIER_LABELS[tier];
   const next = nextTier(user.places_logged);
+  const dead = tier === "dead";
+  const decayDays = daysUntilDecay(user.places_logged, user.last_logged_at);
+  // What the place count alone has earned, before any starving is applied.
+  // Tiers are never actually lost — a single log restores the lot — so a
+  // decayed pig must be told that, not handed the count-based target, which
+  // reads as though the whole climb has to be done again.
+  const earned = baseTier(user.places_logged);
+  const hasDecayed = TIER_ORDER.indexOf(tier) < TIER_ORDER.indexOf(earned);
 
   return (
     <>
       <PageHeader
         title={isMe ? "you" : user.display_name}
         right={
-          isMe ? (
+          <div className="flex items-center gap-2">
             <button
-              onClick={async () => {
-                await api.logout();
-                window.location.href = "/sign-in";
-              }}
-              className="btn bg-cream px-3 py-2 text-xs"
+              onClick={() => setHelpOpen(true)}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-cream font-display text-sm font-extrabold italic"
+              aria-label="how oink works"
+              title="how oink works"
             >
-              Sign out
+              i
             </button>
-          ) : undefined
+            {isMe && (
+              <button
+                onClick={async () => {
+                  await api.logout();
+                  window.location.href = "/sign-in";
+                }}
+                className="btn bg-cream px-3 py-2 text-xs"
+              >
+                Sign out
+              </button>
+            )}
+          </div>
         }
       />
 
@@ -84,6 +110,7 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
           <PigAvatar
             config={user.pig_avatar_config}
             placesLogged={user.places_logged}
+            lastLoggedAt={user.last_logged_at}
             size={120}
             variant="full"
           />
@@ -96,13 +123,40 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
             <span className="sticker bg-cream text-ink">
               {user.places_logged} {user.places_logged === 1 ? "place" : "places"}
             </span>
-            <span className="sticker bg-plum text-oat">{tierLabel.toLowerCase()}</span>
-          </div>
+              <span className={`sticker ${dead ? "bg-ink-deep text-oat" : "bg-plum text-oat"}`}>
+                {dead ? "dead pig" : `${tierLabel.toLowerCase()} pig`}
+              </span>
+            </div>
 
-          {next && (
-            <p className="micro text-center">
-              {next.needed} more until {next.label.toLowerCase()}
+            {/* A dead pig needs the way out spelled out; a live one needs to know
+                what it's about to lose, which the place count alone never says. */}
+            {dead ? (
+              <p className="text-center text-xs font-bold text-ink-soft">
+                feed to revive — log anywhere and {isMe ? "your" : "their"} pig comes straight back.
             </p>
+          ) : (
+            <>
+              {hasDecayed ? (
+                <p className="text-center text-xs font-bold text-ink-soft">
+                  gone quiet. log anywhere and {isMe ? "you're" : "they're"} straight back to{" "}
+                  {TIER_LABELS[earned].toLowerCase()} — nothing has to be earned twice.
+                </p>
+              ) : (
+                next && (
+                  <p className="text-center text-xs text-ink-soft">
+                    {next.needed} more {next.needed === 1 ? "place" : "places"} until you're a{" "}
+                    {next.label.toLowerCase()} pig.
+                  </p>
+                )
+              )}
+              {decayDays !== null && decayDays <= 3 && (
+                <p className="text-center text-xs font-bold text-rust">
+                  {decayDays === 0
+                    ? "losing a tier today — log somewhere."
+                    : `drops a tier in ${decayDays} ${decayDays === 1 ? "day" : "days"}.`}
+                </p>
+              )}
+            </>
           )}
 
           {isMe && (
@@ -119,9 +173,9 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
 
         <section className="space-y-3">
           <h3 className="px-1 text-lg">
-            {isMe ? "Places you've logged" : `${user.display_name}'s places`}
+            {isMe ? "places you've logged" : `${user.display_name}'s places`}
           </h3>
-          {!places && <Spinner label="Loading…" />}
+          {!places && <Spinner label="loading…" />}
           {places?.length === 0 && (
             <EmptyState
               title="nothing logged yet"
@@ -129,7 +183,19 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
             />
           )}
           {places?.map((p) => (
-            <PlaceListCard key={p.id} place={p} />
+            <div key={p.id} className="relative">
+              <PlaceListCard place={p} />
+              {isMe && (
+                <button
+                  onClick={() => setUnlogging(p)}
+                  className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full border-2 border-ink bg-cream text-xs font-bold"
+                  aria-label={`Remove ${p.name} from your log`}
+                  title="remove from your log"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
           ))}
         </section>
       </main>
@@ -148,6 +214,48 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
           }}
         />
       )}
+
+      <Sheet
+        open={!!unlogging}
+        onClose={() => setUnlogging(null)}
+        title="remove from your log?"
+      >
+        <div className="space-y-3 pb-4">
+          <p className="text-sm text-ink-soft">
+            Your oink, write-up and shame for <strong className="text-ink">{unlogging?.name}</strong>{" "}
+            all go. The place stays on the map — other people may have logged it.
+          </p>
+          <div className="flex gap-2">
+            <button onClick={() => setUnlogging(null)} className="btn-plain flex-1" disabled={unlogBusy}>
+              Keep it
+            </button>
+            <button
+              className="btn flex-1 bg-rust text-oat"
+              disabled={unlogBusy}
+              onClick={async () => {
+                if (!unlogging) return;
+                setUnlogBusy(true);
+                try {
+                  await api.unlog(unlogging.id);
+                  const [refreshedUser, refreshedPlaces] = await Promise.all([
+                    api.user(username),
+                    api.userPlaces(username),
+                  ]);
+                  setUser(refreshedUser);
+                  setPlaces(refreshedPlaces);
+                  setUnlogging(null);
+                } finally {
+                  setUnlogBusy(false);
+                }
+              }}
+            >
+              {unlogBusy ? "removing…" : "remove"}
+            </button>
+          </div>
+        </div>
+      </Sheet>
+
+      <HowItWorks open={helpOpen} onClose={() => setHelpOpen(false)} />
     </>
   );
 }
@@ -192,7 +300,13 @@ function PigCustomiser({
     <Sheet open={open} onClose={onClose} title="your animal">
       <div className="space-y-4 pb-4">
         <div className="flex justify-center">
-          <PigAvatar config={cfg} placesLogged={user.places_logged} size={130} variant="full" />
+          <PigAvatar
+            config={cfg}
+            placesLogged={user.places_logged}
+            lastLoggedAt={user.last_logged_at}
+            size={130}
+            variant="full"
+          />
         </div>
 
         <label className="block">
@@ -252,7 +366,7 @@ function PigCustomiser({
               hat: cfg.hat === "none" ? COSTUME_HAT[v as Costume] ?? "none" : cfg.hat,
             })
           }
-          render={(v) => COSTUME_LABELS[v as Costume]}
+          format={(v) => COSTUME_LABELS[v as Costume]}
         />
         <Picker
           label="face"
@@ -274,7 +388,7 @@ function PigCustomiser({
             )
           }
           swatch={(v) => (v === "none" ? "transparent" : TRUFFLE_VARIETIES[v].fill)}
-          render={(v) => (v === "none" ? "none" : truffleLabel(v))}
+          format={(v) => (v === "none" ? "none" : truffleLabel(v))}
         />
 
         <Picker
@@ -298,7 +412,7 @@ function PigCustomiser({
         />
 
         <button onClick={save} className="btn-primary w-full text-lg" disabled={saving}>
-          {saving ? "Saving…" : "Save pig"}
+          {saving ? "saving…" : "save pig"}
         </button>
       </div>
     </Sheet>
@@ -311,15 +425,15 @@ function Picker({
   value,
   onChange,
   swatch,
-  render,
+  format,
 }: {
   label: string;
   options: string[];
   value: string;
   onChange: (v: string) => void;
   swatch?: (v: string) => string;
-  /** For options whose key isn't what a person should read — "hotdog". */
-  render?: (v: string) => string;
+  /** For values whose raw key isn't what a person should read. */
+  format?: (v: string) => string;
 }) {
   return (
     <section>
@@ -337,7 +451,7 @@ function Picker({
                 style={{ background: swatch(opt) }}
               />
             )}
-            {render ? render(opt) : opt}
+            {format ? format(opt) : opt}
           </button>
         ))}
       </div>

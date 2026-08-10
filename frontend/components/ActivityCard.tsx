@@ -18,6 +18,7 @@
  * No rating appears anywhere (spec §8).
  */
 import Link from "next/link";
+import { googlePhotoSrc } from "@/lib/api";
 import type { FeedItem } from "@/lib/types";
 import PigAvatar from "@/components/pigs/PigAvatar";
 import { BudgetTag } from "@/components/pigs/PricePig";
@@ -39,7 +40,8 @@ function ReviewCard({ item }: { item: FeedItem }) {
           <PigAvatar
             config={item.user.pig_avatar_config}
             placesLogged={item.user.places_logged}
-            size={32}
+            lastLoggedAt={item.user.last_logged_at}
+            size={34}
             variant="full"
           />
         </Link>
@@ -59,7 +61,11 @@ function ReviewCard({ item }: { item: FeedItem }) {
 
       <Link href={`/restaurant/${place.id}`} className="flex gap-3 p-3">
         <PlacePhoto
-          src={item.images[0]?.url ?? place.cover_image_url}
+          src={
+            place.google_place_id
+              ? googlePhotoSrc(place.id)
+              : item.images[0]?.url ?? place.cover_image_url
+          }
           alt={place.name}
           className="h-[74px] w-[74px] shrink-0 rounded-lg border-2 border-ink"
         />
@@ -127,6 +133,7 @@ function ReactionRow({ item }: { item: FeedItem }) {
           <PigAvatar
             config={item.user.pig_avatar_config}
             placesLogged={item.user.places_logged}
+            lastLoggedAt={item.user.last_logged_at}
             size={24}
             variant="face"
           />

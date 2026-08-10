@@ -4,6 +4,7 @@
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ApiError, api } from "@/lib/api";
+import { queueIntroIfNew } from "@/lib/intro";
 import { ErrorNote } from "@/components/ui";
 import PigAvatar from "@/components/pigs/PigAvatar";
 
@@ -21,11 +22,12 @@ function SignInForm() {
     setError(null);
     setBusy(true);
     try {
-      if (mode === "signup") {
-        await api.signup(username, password, displayName || username);
-      } else {
-        await api.login(username, password);
-      }
+      const { user } =
+        mode === "signup"
+          ? await api.signup(username, password, displayName || username)
+          : await api.login(username, password);
+      // Queue the explainer for anyone who hasn't seen it on this device.
+      queueIntroIfNew(user.id);
       // The session cookie is set by the API; a full navigation lets the Next
       // middleware see it immediately.
       window.location.href = params.get("next") || "/";
@@ -39,7 +41,7 @@ function SignInForm() {
     <main className="flex min-h-screen flex-col items-center justify-center px-5 py-10">
       <div className="mb-5 flex flex-col items-center">
         <PigAvatar size={92} variant="full" placesLogged={18} config={{ color: "pink", hat: "chef" }} />
-        <h1 className="mt-2 text-5xl tracking-tight">Oink</h1>
+        <h1 className="mt-2 text-5xl tracking-tight">oink</h1>
         <p className="mt-1 text-center font-display text-sm text-ink-soft">
           where your friends actually eat
         </p>
@@ -84,7 +86,7 @@ function SignInForm() {
               className="field mt-1 bg-oat"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="What friends call you"
+              placeholder="what friends call you"
             />
           </label>
         )}

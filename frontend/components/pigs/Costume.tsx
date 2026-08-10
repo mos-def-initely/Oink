@@ -26,6 +26,10 @@ import type { ReactNode } from "react";
 export type CostumeParts = {
   sleeve?: string;
   cuff?: string;
+  /** Fill for the garment shell. PigAvatar draws it from the body's own
+   *  silhouette, inset by `k`, so one costume fits every tier — including
+   *  Hunky, whose drawn-in waist an elliptical garment would hang off. */
+  shell?: { fill: string; k?: number };
   under?: ReactNode;
   onBody?: ReactNode;
   overArms?: ReactNode;
@@ -41,31 +45,19 @@ const PLUM = "#914E56";
 const RUST = "#A9503C";
 const INK = "#4D303F";
 
-/**
- * The torso garment. It tracks the body ellipse (cx 65, cy 82, r 30×27) inset by
- * about 2.5, so the coat shows as a rim rather than a bare patch — an earlier
- * version stopped well short of the bottom and read as a crop top.
- */
-const TORSO =
-  "M65 58 q-28.5 2 -28.5 24 q0 24 28.5 25 q28.5 -1 28.5 -25 q0 -22 -28.5 -24 Z";
-
 export function costumeParts(costume: string, outline: string): CostumeParts {
   const s = { stroke: outline, strokeWidth: 2.1, strokeLinejoin: "round" as const };
   const thin = { stroke: outline, strokeWidth: 1.7, fill: "none" };
-
-  const torso = (fill: string, children?: ReactNode) => (
-    <>
-      <path d={TORSO} fill={fill} {...s} />
-      {children}
-    </>
-  );
 
   switch (costume) {
     // --- everyday ---------------------------------------------------------
     case "hoodie":
       return {
         sleeve: "#5E7F98",
-        onBody: torso("#6E8FA8", <rect x="55" y="84" width="20" height="12" rx="4" fill="#5E7F98" {...s} />),
+        shell: { fill: "#6E8FA8" },
+        onBody: (
+          <rect x="55" y="84" width="20" height="12" rx="4" fill="#5E7F98" {...s} />
+        ),
         behindHead: (
           <>
             <path d="M32 62 q0 -44 33 -44 q33 0 33 44 q-14 10 -33 10 q-19 0 -33 -10 Z" fill="#5E7F98" {...s} />
@@ -79,10 +71,11 @@ export function costumeParts(costume: string, outline: string): CostumeParts {
     case "puffer":
       return {
         sleeve: RUST,
+        // Drawn proud of the body rather than inset: the jacket has to change
+        // the silhouette, which is the whole difference between a coat and a bib.
+        shell: { fill: RUST, k: 1.06 },
         onBody: (
           <>
-            {/* Genuinely wider than the body — the jacket has to change the outline. */}
-            <path d="M65 60 q-31 3 -31 22 q0 19 31 20 q31 -1 31 -20 q0 -19 -31 -22 Z" fill={RUST} {...s} />
             {[0, 1, 2].map((i) => (
               <path key={i} d={`M36 ${70 + i * 10} q29 6 58 0`} {...thin} opacity="0.5" />
             ))}
@@ -108,8 +101,8 @@ export function costumeParts(costume: string, outline: string): CostumeParts {
     case "princess":
       return {
         sleeve: "#CFE2F5",
-        onBody: torso(
-          "#CFE2F5",
+        shell: { fill: "#CFE2F5" },
+        onBody: (
           <>
             {/* The gown flares past the trotters, which is the whole silhouette change. */}
             <path d="M26 94 q39 10 78 0 l8 24 q-46 12 -94 0 Z" fill="#AFCEEC" {...s} />
@@ -131,8 +124,8 @@ export function costumeParts(costume: string, outline: string): CostumeParts {
     case "pirate":
       return {
         sleeve: "#3D3A52",
-        onBody: torso(
-          "#3D3A52",
+        shell: { fill: "#3D3A52" },
+        onBody: (
           <>
             <path d="M65 62 v36" {...thin} opacity="0.6" />
             <path d="M38 88 q27 8 54 0 l0 8 q-27 8 -54 0 Z" fill={RUST} {...s} />
@@ -152,8 +145,8 @@ export function costumeParts(costume: string, outline: string): CostumeParts {
     case "raver":
       return {
         sleeve: "#2B2B38",
-        onBody: torso(
-          "#2B2B38",
+        shell: { fill: "#2B2B38" },
+        onBody: (
           <>
             <path d="M46 70 q19 6 38 0" stroke="#39D6A0" strokeWidth="4" fill="none" />
             <path d="M44 80 q21 6 42 0" stroke="#FF5FA8" strokeWidth="4" fill="none" />
@@ -172,8 +165,8 @@ export function costumeParts(costume: string, outline: string): CostumeParts {
       return {
         sleeve: "#E8E4DA",
         cuff: "#B9B3A6",
-        onBody: torso(
-          "#E8E4DA",
+        shell: { fill: "#E8E4DA" },
+        onBody: (
           <>
             <rect x="54" y="74" width="22" height="16" rx="3" fill="#B9B3A6" stroke={outline} strokeWidth="1.8" />
             <circle cx="60" cy="79" r="2" fill="#FF5FA8" />
@@ -191,8 +184,8 @@ export function costumeParts(costume: string, outline: string): CostumeParts {
         sleeve: "#2F5FA8",
         cuff: LEMON,
         under: <path d="M40 60 q25 -8 50 0 q6 34 -8 58 q-17 -12 -34 0 q-14 -24 -8 -58 Z" fill={PLUM} {...s} />,
-        onBody: torso(
-          "#2F5FA8",
+        shell: { fill: "#2F5FA8" },
+        onBody: (
           <>
             <path d="M65 66 L54 78 L65 96 L76 78 Z" fill={LEMON} stroke={outline} strokeWidth="1.8" strokeLinejoin="round" />
             <path d="M60 78 l4 6 8 -12" fill="none" stroke={PLUM} strokeWidth="2.6" strokeLinecap="round" />
@@ -216,8 +209,8 @@ export function costumeParts(costume: string, outline: string): CostumeParts {
     case "ninja":
       return {
         sleeve: "#26262E",
-        onBody: torso(
-          "#26262E",
+        shell: { fill: "#26262E" },
+        onBody: (
           <>
             <path d="M38 84 q27 8 54 0 l0 9 q-27 8 -54 0 Z" fill={RUST} {...s} />
             <path d="M60 93 l-4 14 M70 93 l4 14" stroke={RUST} strokeWidth="3.4" strokeLinecap="round" />
@@ -239,7 +232,7 @@ export function costumeParts(costume: string, outline: string): CostumeParts {
             ))}
           </>
         ),
-        onBody: torso("#5FA85E"),
+        shell: { fill: "#5FA85E" },
         behindHead: (
           <>
             <path d="M32 60 q0 -44 33 -44 q33 0 33 44 q-14 10 -33 10 q-19 0 -33 -10 Z" fill="#5FA85E" {...s} />
@@ -257,8 +250,8 @@ export function costumeParts(costume: string, outline: string): CostumeParts {
     case "rockstar":
       return {
         sleeve: "#2E2A31",
-        onBody: torso(
-          "#2E2A31",
+        shell: { fill: "#2E2A31" },
+        onBody: (
           <>
             <path d="M65 62 v36" {...thin} opacity="0.6" />
             <path d="M52 63 L65 76 L78 63 q-13 -4 -26 0 Z" fill={CREAM} {...s} />
@@ -279,8 +272,8 @@ export function costumeParts(costume: string, outline: string): CostumeParts {
     case "chef":
       return {
         sleeve: CREAM,
-        onBody: torso(
-          CREAM,
+        shell: { fill: CREAM },
+        onBody: (
           <>
             <path d="M65 64 v34" stroke={outline} strokeWidth="1.5" opacity="0.5" />
             <circle cx="59" cy="72" r="1.8" fill={outline} />

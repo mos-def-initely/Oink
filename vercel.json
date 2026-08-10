@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "regions": ["lhr1"],
   "services": {
     "frontend": {
       "root": "frontend/",
@@ -8,7 +9,7 @@
     "backend": {
       "root": "backend/",
       "framework": "fastapi",
-      "entrypoint": "api:app"
+      "entrypoint": "app.main:app"
     }
   },
   "rewrites": [

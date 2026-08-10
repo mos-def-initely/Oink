@@ -4,8 +4,8 @@
  * Discover map — spec §6.3.
  *
  * Pins carry the recommenders' pig **faces** (full bodies are reserved for the
- * feed and profile). Where several people rate a place, the extra faces fan out
- * behind the leader like a hand of cards, capped at three plus a count chip.
+ * feed and profile). Where several people rate a place, one face leads and a
+ * count chip carries the rest.
  * Places with only shame still get a pin, greyed out.
  *
  * Uses Leaflet directly rather than a React wrapper because the pins are custom
@@ -24,9 +24,10 @@ import { ShamePig } from "@/components/pigs/ReactionPigs";
 // with ssr:false.
 import "leaflet/dist/leaflet.css";
 
-// Voyager. Warmed Positron was tried to match the oat palette, but tinting it
-// left the roads too quiet to navigate by — contrast beats colour-matching on
-// a map you actually use.
+// Voyager rather than Positron: Positron is so pale that roads read as
+// white-on-white against the app's warm ground, which looks like a map that
+// failed to load. Voyager keeps the clean, low-clutter styling but with enough
+// contrast to actually navigate by.
 const TILE_URL = "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
 const TILE_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
@@ -35,13 +36,26 @@ const TILE_ATTRIBUTION =
 // into one cluster, so faces stop stacking into an unreadable pile.
 const CLUSTER_RADIUS_PX = 52;
 
+// Pin width. Wide enough that the faces behind the leader stay legible instead
+// of being swallowed by it — they carry real information now that shamers can
+// appear among them.
+const PIN_W = 76;
+
 // Central London — a sensible opening view before any places load.
 const DEFAULT_CENTER: [number, number] = [51.5127, -0.1345];
 const DEFAULT_ZOOM = 13;
 
+// Roughly "the city you're standing in" — close enough to read street names,
+// wide enough to take in the places across town.
+const CITY_ZOOM = 13;
+
 type Props = {
   places: PlaceSummary[];
   onSelect: (place: PlaceSummary) => void;
+  /** Fires as the map settles, so search can be biased to the visible area. */
+  onCenterChange?: (lat: number, lng: number) => void;
+  /** Set to move the map somewhere — a city picked from search. */
+  focusPoint?: { lat: number; lng: number } | null;
   /** Enables tap-to-drop-a-pin while adding a new place. */
   pickMode?: boolean;
   onPick?: (lat: number, lng: number) => void;
@@ -49,41 +63,93 @@ type Props = {
   className?: string;
 };
 
-function faceMarkup(place: PlaceSummary, index: number, size: number): string {
-  const u = place.recommenders[index];
+type Voter = { user: PlaceSummary["recommenders"][number]; shamed: boolean };
+
+function faceMarkup(voter: Voter | undefined, size: number): string {
   return renderToStaticMarkup(
-    <PigAvatar config={u?.pig_avatar_config} placesLogged={u?.places_logged ?? 0} size={size} bare />
+    <PigAvatar
+      config={voter?.user.pig_avatar_config}
+      placesLogged={voter?.user.places_logged ?? 0}
+      lastLoggedAt={voter?.user.last_logged_at}
+      size={size}
+      bare
+    />
   );
 }
 
+/** How many faces a pin will carry — drives which pin wins an overlap. */
+function voterCount(place: PlaceSummary): number {
+  const endorsers = place.recommenders ?? [];
+  return endorsers.length ? endorsers.length + (place.shamers ?? []).length : 0;
+}
+
 function pinHtml(place: PlaceSummary): string {
-  const count = place.recommender_count;
+  // Endorsers first — the leader is whoever backed the place first — then
+  // anyone who shamed it, so a divided place shows both verdicts on one pin
+  // rather than reading as unanimous.
+  // Defaulted rather than assumed: the map is the first screen, and it should
+  // not blank out if an older API build omits either list.
+  const endorsers = place.recommenders ?? [];
+  const shamers = place.shamers ?? [];
+
+  // Shamers join the fan only where somebody also oinked, so a split verdict
+  // shows both sides. With nothing but shame the pin stays the greyed-out angry
+  // pig — the whole pin is desaturated there, which would drain the colour out
+  // of a shame badge and leave it less readable than the pig it replaced.
+  const voters: Voter[] = endorsers.length
+    ? [
+        ...endorsers.map((user) => ({ user, shamed: false })),
+        ...shamers.map((user) => ({ user, shamed: true })),
+      ]
+    : [];
+  const count = voters.length;
   const shamed = place.shamed_only;
   const ring = shamed ? "#8E8478" : "#4D303F";
   const bg = shamed ? "#DCD5C6" : "#FFFDF6";
 
-  const disc = (inner: string, size: number, offset: string) => `
+  // A greyed face alone doesn't say "shamed" at pin size, so a shamer's face
+  // carries the angry pig as a badge — the same mark used on the reaction
+  // buttons and the feed, so the verdict reads without a legend.
+  const shameBadge = (size: number) => `
     <div style="
-      position:absolute; ${offset}
+      position:absolute; right:-3px; bottom:-3px;
       width:${size}px; height:${size}px; border-radius:50%;
-      background:${bg}; border:2.5px solid ${ring};
-      box-shadow:0 2px 6px rgba(77,48,63,.22);
+      background:#A9503C; border:2px solid #FFFDF6;
+      box-shadow:0 2px 6px rgba(77,48,63,.28);
       display:flex; align-items:center; justify-content:center; overflow:hidden;
-    ">${inner}</div>`;
+    ">${renderToStaticMarkup(<ShamePig size={size - 3} active />)}</div>`;
 
-  // One face, plus a chip when others agree. The stacked fan looked good in
-  // isolation but crowded badly where pins sit close together, and the chip
-  // stays legible at any zoom.
+  const disc = (inner: string, size: number, offset: string, dissenter = false) => `
+    <div style="position:absolute; ${offset} width:${size}px; height:${size}px;">
+      <div style="
+        width:100%; height:100%; border-radius:50%;
+        background:${bg}; border:2.5px solid ${dissenter ? "#FF8A00" : ring};
+        box-shadow:0 2px 8px rgba(43,27,61,.28);
+        display:flex; align-items:center; justify-content:center; overflow:hidden;
+        ${dissenter ? "filter:grayscale(1);" : ""}
+      ">${inner}</div>
+      ${dissenter ? shameBadge(Math.max(14, Math.round(size * 0.44))) : ""}
+    </div>`;
+
+  const face = (i: number, size: number, discSize: number, offset: string) =>
+    disc(faceMarkup(voters[i], size), discSize, offset, voters[i]?.shamed ?? false);
+
+  // Fan the extra faces out behind the leader, furthest first so the front one
+  // ends up on top.
+  const fan = Math.min(count, 3);
   let layers = "";
   if (count === 0) {
-    // Logged but unendorsed — the angry pig, not a generic emoji.
+    // Logged but unendorsed — the angry pig, not a generic emoji. Every icon in
+    // the app is a pig.
     layers = disc(renderToStaticMarkup(<ShamePig size={34} active />), 42, "left:9px; top:0;");
   } else {
-    layers = disc(faceMarkup(place, 0, 36), 42, "left:9px; top:0;");
+    if (fan >= 3) layers += face(2, 24, 30, "left:0; top:14px;");
+    if (fan >= 2) layers += face(1, 26, 32, "right:0; top:12px;");
+    layers += face(0, 36, 42, "left:17px; top:0;");
   }
 
   const chip =
-    count > 1
+    count > 3
       ? `<div style="
            position:absolute; right:-4px; top:-4px;
            min-width:20px; height:20px; padding:0 5px; border-radius:10px;
@@ -95,7 +161,7 @@ function pinHtml(place: PlaceSummary): string {
       : "";
 
   return `
-    <div style="position:relative; width:60px; height:54px; ${shamed ? "filter:grayscale(1);opacity:.85;" : ""}">
+    <div style="position:relative; width:${PIN_W}px; height:54px; ${shamed ? "filter:grayscale(1);opacity:.85;" : ""}">
       ${layers}${chip}
       <div style="
         position:absolute; left:50%; bottom:-7px; transform:translateX(-50%);
@@ -117,7 +183,13 @@ function clusterHtml(group: PlaceSummary[]): string {
       (u, i) => `<div style="position:absolute; ${i === 0 ? "left:4px" : "right:4px"}; top:6px;
           width:26px; height:26px; border-radius:50%; overflow:hidden; background:#FFFDF6;">
           ${renderToStaticMarkup(
-            <PigAvatar config={u.pig_avatar_config} placesLogged={u.places_logged} size={26} bare />
+            <PigAvatar
+              config={u.pig_avatar_config}
+              placesLogged={u.places_logged}
+              lastLoggedAt={u.last_logged_at}
+              size={26}
+              bare
+            />
           )}</div>`
     )
     .join("");
@@ -141,6 +213,8 @@ function clusterHtml(group: PlaceSummary[]): string {
 export default function MapView({
   places,
   onSelect,
+  onCenterChange,
+  focusPoint,
   pickMode = false,
   onPick,
   pickedPoint,
@@ -160,7 +234,11 @@ export default function MapView({
   // Clusters depend on the current zoom, so re-run the marker effect when it
   // changes; without this, groups stay welded together as you zoom in.
   const [zoomTick, setZoomTick] = useState(0);
+  // Bumped when locating fails, so the pin-framing fallback gets a chance to run.
+  const [locateTick, setLocateTick] = useState(0);
   // Kept in a ref so the click handler, bound once, always sees current values.
+  const centerCb = useRef(onCenterChange);
+  centerCb.current = onCenterChange;
   const pickHandlers = useRef({ pickMode, onPick });
   pickHandlers.current = { pickMode, onPick };
 
@@ -177,8 +255,9 @@ export default function MapView({
         zoom: DEFAULT_ZOOM,
         zoomControl: false,
       });
+      // No zoom control — pinch and double-tap are the gestures people actually
+      // use on a phone, and the buttons only crowd the corner.
       L.tileLayer(TILE_URL, { attribution: TILE_ATTRIBUTION, maxZoom: 20 }).addTo(map);
-      L.control.zoom({ position: "bottomleft" }).addTo(map);
 
       map.on("click", (e: { latlng: { lat: number; lng: number } }) => {
         const { pickMode: active, onPick: pick } = pickHandlers.current;
@@ -186,6 +265,33 @@ export default function MapView({
       });
 
       map.on("zoomend", () => setZoomTick((t) => t + 1));
+      // Kept in a ref so binding once doesn't freeze a stale callback.
+      const report = () => {
+        const c = map.getCenter();
+        centerCb.current?.(c.lat, c.lng);
+      };
+      map.on("moveend", report);
+      report();
+
+      // Open on the city you're actually in rather than framing every pin —
+      // the pin bounds can span the country and open uselessly zoomed out.
+      // Claimed immediately so the pin-framing below doesn't race the callback;
+      // released again if locating fails, which lets the old behaviour stand in.
+      if (typeof navigator !== "undefined" && navigator.geolocation) {
+        framedRef.current = true;
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            if (cancelled || pickHandlers.current.pickMode) return;
+            map.setView([pos.coords.latitude, pos.coords.longitude], CITY_ZOOM, { animate: false });
+          },
+          () => {
+            if (cancelled) return;
+            framedRef.current = false;
+            setLocateTick((t) => t + 1);
+          },
+          { timeout: 8000, maximumAge: 5 * 60 * 1000 }
+        );
+      }
 
       mapRef.current = map;
       setReady(true);
@@ -278,11 +384,11 @@ export default function MapView({
           const icon = L.divIcon({
             className: "oink-pin",
             html: pinHtml(place),
-            iconSize: [60, 61],
-            iconAnchor: [30, 61],
+            iconSize: [PIN_W, 61],
+            iconAnchor: [PIN_W / 2, 61],
           });
           markersRef.current.push(
-            L.marker([place.lat, place.lng], { icon })
+            L.marker([place.lat, place.lng], { icon, zIndexOffset: voterCount(place) * 1000 })
               .addTo(map)
               .on("click", () => onSelect(place))
           );
@@ -299,20 +405,40 @@ export default function MapView({
         markersRef.current.push(
           L.marker(bounds.getCenter(), { icon })
             .addTo(map)
-            // Zoom into the cluster rather than opening one arbitrary member.
-            .on("click", () => map.fitBounds(bounds, { padding: [70, 70], maxZoom: 18 }))
+            // Zooming in is the right response while it can still separate the
+            // pins. Two places on the same corner never separate, though, and
+            // the cluster then swallowed every tap — so once zooming would gain
+            // nothing, open the first place instead of doing nothing at all.
+            .on("click", () => {
+              const canSeparate = map.getBoundsZoom(bounds, false) > map.getZoom();
+              if (canSeparate) {
+                map.fitBounds(bounds, { padding: [70, 70], maxZoom: 18 });
+              } else {
+                onSelect(group[0]);
+              }
+            })
         );
       });
 
-      // Frame the pins once on first load. Re-framing on every filter change
-      // yanks the view around while the user is browsing.
+      // Fallback when the browser won't share a location: frame the pins once.
+      // Only ever once — re-framing on every filter change yanks the view around
+      // while the user is browsing.
       if (places.length && !framedRef.current && !pickHandlers.current.pickMode) {
         framedRef.current = true;
         const bounds = L.latLngBounds(places.map((p) => [p.lat, p.lng] as [number, number]));
         map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16, animate: false });
       }
     })();
-  }, [places, onSelect, ready, zoomTick]);
+  }, [places, onSelect, ready, zoomTick, locateTick]);
+
+  // Jump to a city picked from search. Claims the framing slot so a late
+  // geolocation fix or the pin-fit fallback can't yank the view back.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready || !focusPoint) return;
+    framedRef.current = true;
+    map.setView([focusPoint.lat, focusPoint.lng], CITY_ZOOM);
+  }, [focusPoint, ready]);
 
   // The dropped pin while adding a place
   useEffect(() => {

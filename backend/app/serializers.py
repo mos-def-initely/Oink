@@ -5,7 +5,9 @@ with a recommendation OR an `oink` reaction. `shame` never counts toward it.
 These helpers batch their lookups so the map endpoint doesn't N+1 across pins.
 """
 
-from typing import Dict, List, Optional, Sequence, Set, Tuple
+from datetime import datetime
+from urllib.parse import quote
+from typing import Dict, List, NamedTuple, Optional, Sequence, Set, Tuple
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -14,44 +16,90 @@ from .models import Reaction, Recommendation, Restaurant, RestaurantImage, User,
 from .schemas import ImageOut, RecommendationOut, RestaurantDetail, RestaurantSummary, UserPublic
 
 
-def places_logged_counts(db: Session, user_ids: Sequence[str]) -> Dict[str, int]:
-    """Distinct places each user has logged — drives the pig fatness tier (spec §9.1).
+def naive_dt(value: datetime) -> datetime:
+    """Drop tzinfo so timestamps stay comparable.
 
-    A place counts once whether the user recommended it, oinked it, or both.
-    Shame is excluded.
+    Values are written timezone-aware but stored in a naive DateTime column, so
+    what comes back depends on the driver. Sorting a mix of the two raises.
     """
-    if not user_ids:
+    return value.replace(tzinfo=None) if value.tzinfo else value
+
+
+class UserActivity(NamedTuple):
+    """What a user's pig is derived from: how much they've logged, and how recently."""
+
+    places_logged: int
+    last_logged_at: Optional[datetime]
+
+
+_ACTIVITY_CACHE_KEY = "oink_user_activity"
+
+
+def user_activity(db: Session, user_ids: Sequence[str]) -> Dict[str, UserActivity]:
+    """Places logged and last-logged time per user.
+
+    Both facts come from the same two tables — a recommendation or an oink; a
+    shame is neither a visit nor a meal — so they're gathered in one union
+    rather than four separate scans.
+
+    Results are memoised on the Session, which lives for exactly one request.
+    Endpoints ask for the same people more than once (the map's recommenders and
+    the feed's actors overlap heavily), and every repeat was another round trip
+    to a database that may be a long way away.
+    """
+    ids = {uid for uid in user_ids if uid}
+    if not ids:
         return {}
-    ids = list(set(user_ids))
 
-    pairs: Set[Tuple[str, str]] = set()
-    rec_rows = db.execute(
-        select(Recommendation.user_id, Recommendation.restaurant_id).where(
-            Recommendation.user_id.in_(ids)
+    cache: Dict[str, UserActivity] = db.info.setdefault(_ACTIVITY_CACHE_KEY, {})
+    missing = [uid for uid in ids if uid not in cache]
+
+    if missing:
+        logged = select(
+            Recommendation.user_id, Recommendation.restaurant_id, Recommendation.created_at
+        ).where(Recommendation.user_id.in_(missing))
+        oinked = select(Reaction.user_id, Reaction.restaurant_id, Reaction.created_at).where(
+            Reaction.user_id.in_(missing), Reaction.type == "oink"
         )
-    ).all()
-    pairs.update((r[0], r[1]) for r in rec_rows)
 
-    oink_rows = db.execute(
-        select(Reaction.user_id, Reaction.restaurant_id).where(
-            Reaction.user_id.in_(ids), Reaction.type == "oink"
-        )
-    ).all()
-    pairs.update((r[0], r[1]) for r in oink_rows)
+        places: Dict[str, Set[str]] = {}
+        latest: Dict[str, datetime] = {}
+        for uid, restaurant_id, at in db.execute(logged.union_all(oinked)).all():
+            places.setdefault(uid, set()).add(restaurant_id)
+            current = latest.get(uid)
+            if current is None or naive_dt(at) > naive_dt(current):
+                latest[uid] = at
 
-    counts = {uid: 0 for uid in ids}
-    for uid, _ in pairs:
-        counts[uid] = counts.get(uid, 0) + 1
-    return counts
+        for uid in missing:
+            cache[uid] = UserActivity(len(places.get(uid, ())), latest.get(uid))
+
+    return {uid: cache[uid] for uid in ids}
 
 
-def user_public(user: User, places_logged: int = 0) -> UserPublic:
+def places_logged_counts(db: Session, user_ids: Sequence[str]) -> Dict[str, int]:
+    """Distinct places each user has logged — drives the pig fatness tier (spec §9.1)."""
+    return {uid: a.places_logged for uid, a in user_activity(db, user_ids).items()}
+
+
+def last_logged_map(db: Session, user_ids: Sequence[str]) -> Dict[str, datetime]:
+    """When each user last logged a place — drives pig decay (spec §9.1)."""
+    return {
+        uid: a.last_logged_at
+        for uid, a in user_activity(db, user_ids).items()
+        if a.last_logged_at is not None
+    }
+
+
+def user_public(
+    user: User, places_logged: int = 0, last_logged_at: Optional[datetime] = None
+) -> UserPublic:
     return UserPublic(
         id=user.id,
         username=user.username,
         display_name=user.display_name,
         pig_avatar_config=user.pig_avatar_config or {},
         places_logged=places_logged,
+        last_logged_at=last_logged_at,
     )
 
 
@@ -69,35 +117,58 @@ class RestaurantContext:
         self.oink_ids: Dict[str, List[str]] = {rid: [] for rid in self.ids}
         self.users: Dict[str, User] = {}
         self.logged_counts: Dict[str, int] = {}
+        self.last_logged: Dict[str, datetime] = {}
 
         if not self.ids:
             return
 
         rec_rows = db.execute(
-            select(Recommendation.restaurant_id, Recommendation.user_id).where(
-                Recommendation.restaurant_id.in_(self.ids)
-            )
+            select(
+                Recommendation.restaurant_id, Recommendation.user_id, Recommendation.created_at
+            ).where(Recommendation.restaurant_id.in_(self.ids))
         ).all()
         reaction_rows = db.execute(
-            select(Reaction.restaurant_id, Reaction.user_id, Reaction.type).where(
-                Reaction.restaurant_id.in_(self.ids)
-            )
+            select(
+                Reaction.restaurant_id, Reaction.user_id, Reaction.type, Reaction.created_at
+            ).where(Reaction.restaurant_id.in_(self.ids))
         ).all()
+        creators = dict(
+            db.execute(
+                select(Restaurant.id, Restaurant.created_by).where(Restaurant.id.in_(self.ids))
+            ).all()
+        )
 
-        seen: Set[Tuple[str, str]] = set()
-        for rid, uid in rec_rows:
-            if (rid, uid) not in seen:
-                seen.add((rid, uid))
-                self.recommender_ids.setdefault(rid, []).append(uid)
+        # When each person first endorsed each place, so the order below is
+        # "who backed this first" rather than whatever order the rows came back in.
+        first_endorsed: Dict[Tuple[str, str], datetime] = {}
 
-        for rid, uid, rtype in reaction_rows:
+        def note(rid: str, uid: str, at: datetime) -> None:
+            key = (rid, uid)
+            existing = first_endorsed.get(key)
+            if existing is None or naive_dt(at) < naive_dt(existing):
+                first_endorsed[key] = at
+
+        for rid, uid, created_at in rec_rows:
+            note(rid, uid, created_at)
+
+        for rid, uid, rtype, created_at in reaction_rows:
             if rtype == "oink":
                 self.oink_ids.setdefault(rid, []).append(uid)
-                if (rid, uid) not in seen:
-                    seen.add((rid, uid))
-                    self.recommender_ids.setdefault(rid, []).append(uid)
+                note(rid, uid, created_at)
             else:
                 self.shame_ids.setdefault(rid, []).append(uid)
+
+        # Whoever added the place leads, then everyone else oldest-first. Adding a
+        # place auto-oinks it, so the creator is normally the earliest anyway —
+        # but pinning them explicitly keeps them in front even if they later
+        # cleared and re-added their oink, which would reset that timestamp.
+        by_place: Dict[str, List[Tuple[str, datetime]]] = {}
+        for (rid, uid), at in first_endorsed.items():
+            by_place.setdefault(rid, []).append((uid, at))
+
+        for rid, entries in by_place.items():
+            entries.sort(key=lambda e: (e[0] != creators.get(rid), naive_dt(e[1]), e[0]))
+            self.recommender_ids[rid] = [uid for uid, _ in entries]
 
         needed = {uid for uids in self.recommender_ids.values() for uid in uids}
         needed |= {uid for uids in self.shame_ids.values() for uid in uids}
@@ -105,13 +176,16 @@ class RestaurantContext:
             users = db.execute(select(User).where(User.id.in_(list(needed)))).scalars().all()
             self.users = {u.id: u for u in users}
             self.logged_counts = places_logged_counts(db, list(needed))
+            self.last_logged = last_logged_map(db, list(needed))
 
     def _people(self, ids: Sequence[str]) -> List[UserPublic]:
         out = []
         for uid in ids:
             user = self.users.get(uid)
             if user:
-                out.append(user_public(user, self.logged_counts.get(uid, 0)))
+                out.append(
+                    user_public(user, self.logged_counts.get(uid, 0), self.last_logged.get(uid))
+                )
         return out
 
     def recommenders(self, restaurant_id: str) -> List[UserPublic]:
@@ -124,8 +198,30 @@ class RestaurantContext:
         return self._people(self.shame_ids.get(restaurant_id, []))
 
 
+def maps_url(restaurant: Restaurant) -> Optional[str]:
+    """A Google Maps link for a place, derived rather than stored.
+
+    Only a link someone actually pasted is kept on the row; everything else is
+    worked out here from the place id or the coordinates. That way every place
+    gets a link — including the ones added before any link was recorded — with
+    no backfill to run and nothing to go stale if the place is renamed.
+    """
+    if restaurant.google_maps_url:
+        return restaurant.google_maps_url
+    place_id = getattr(restaurant, "google_place_id", None)
+    if place_id:
+        return (
+            "https://www.google.com/maps/search/?api=1"
+            f"&query={quote(restaurant.name or '')}&query_place_id={place_id}"
+        )
+    if restaurant.lat is not None and restaurant.lng is not None:
+        return f"https://www.google.com/maps/search/?api=1&query={restaurant.lat},{restaurant.lng}"
+    return None
+
+
 def restaurant_summary(restaurant: Restaurant, ctx: RestaurantContext) -> RestaurantSummary:
     recommenders = ctx.recommenders(restaurant.id)
+    shamers = ctx.shamers(restaurant.id)
     shame_count = len(ctx.shame_ids.get(restaurant.id, []))
     return RestaurantSummary(
         id=restaurant.id,
@@ -140,9 +236,11 @@ def restaurant_summary(restaurant: Restaurant, ctx: RestaurantContext) -> Restau
         lng=restaurant.lng,
         # Uploaded photo wins; the auto-sourced one is the fallback.
         cover_image_url=restaurant.cover_image_url or restaurant.photo_url,
-        google_maps_url=restaurant.google_maps_url,
+        google_maps_url=maps_url(restaurant),
+        google_place_id=restaurant.google_place_id,
         recommenders=recommenders,
         recommender_count=len(recommenders),
+        shamers=shamers,
         shame_count=shame_count,
         shamed_only=bool(shame_count) and not recommenders,
     )
@@ -187,6 +285,7 @@ def restaurant_detail(db: Session, restaurant: Restaurant, viewer: Optional[User
         found = db.execute(select(User).where(User.id.in_(rec_user_ids))).scalars().all()
         rec_users = {u.id: u for u in found}
     rec_counts = places_logged_counts(db, rec_user_ids)
+    rec_last = last_logged_map(db, rec_user_ids)
 
     recommendations: List[RecommendationOut] = []
     my_recommendation = None
@@ -196,7 +295,7 @@ def restaurant_detail(db: Session, restaurant: Restaurant, viewer: Optional[User
             continue
         item = RecommendationOut(
             id=r.id,
-            user=user_public(author, rec_counts.get(r.user_id, 0)),
+            user=user_public(author, rec_counts.get(r.user_id, 0), rec_last.get(r.user_id)),
             review_text=r.review_text,
             recommended_dishes=r.recommended_dishes or [],
             images=images_by_user.get(r.user_id, []),

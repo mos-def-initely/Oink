@@ -19,7 +19,7 @@ export function PageHeader({
         <Link
           href={back}
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-cream text-lg"
-          aria-label="Back"
+          aria-label="back"
         >
           ←
         </Link>
@@ -60,14 +60,14 @@ export function Sheet({
 
   return (
     <div className="fixed inset-0 z-[2000] flex items-end justify-center">
-      <button className="absolute inset-0 bg-ink/40" onClick={onClose} aria-label="Close" tabIndex={-1} />
+      <button className="absolute inset-0 bg-ink/40" onClick={onClose} aria-label="close" tabIndex={-1} />
       <div className="relative max-h-[88vh] w-full max-w-[480px] overflow-y-auto rounded-t-3xl border-t-2 border-x-2 border-ink bg-oat pb-6 shadow-lift">
         <div className="sticky top-0 z-10 flex items-center gap-2 bg-oat px-4 pb-2 pt-4">
           <h2 className="min-w-0 flex-1 truncate text-xl">{title}</h2>
           <button
             onClick={onClose}
             className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-ink bg-cream"
-            aria-label="Close"
+            aria-label="close"
           >
             ✕
           </button>

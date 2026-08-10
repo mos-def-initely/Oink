@@ -7,12 +7,12 @@
  */
 import { use, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ApiError, api } from "@/lib/api";
+import { ApiError, api, googlePhotoSrc } from "@/lib/api";
 import type { PlaceDetail, User } from "@/lib/types";
 import PigAvatar from "@/components/pigs/PigAvatar";
 import { BudgetTag } from "@/components/pigs/PricePig";
 import { OinkPig, ShamePig } from "@/components/pigs/ReactionPigs";
-import PlacePhoto from "@/components/PlacePhoto";
+import PhotoCarousel from "@/components/PhotoCarousel";
 import BottomTabBar, { TabBarSpacer } from "@/components/BottomTabBar";
 import { EmptyState, ErrorNote, KIND_LABELS, PageHeader, Sheet, Spinner, timeAgo } from "@/components/ui";
 
@@ -22,6 +22,18 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [landedOnExisting, setLandedOnExisting] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem("oink_landed_on_existing")) {
+        setLandedOnExisting(true);
+        sessionStorage.removeItem("oink_landed_on_existing");
+      }
+    } catch {
+      /* storage disabled — nothing to show */
+    }
+  }, []);
 
   const load = useCallback(() => {
     api.place(id).then(setPlace).catch((e) => setError(e.message));
@@ -51,7 +63,18 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
       <PageHeader title={place.name} back="/discover" />
 
       <main className="space-y-4 px-3 pb-4">
-        <PlacePhoto src={place.cover_image_url} alt={place.name} className="h-52 w-full rounded-card" />
+        {landedOnExisting && (
+          <p className="rounded-card border-2 border-ink bg-gold px-3 py-2 text-sm font-bold text-ink-deep">
+            Already on the map — oinked it for you instead of adding it twice.
+          </p>
+        )}
+
+        <PhotoCarousel
+          images={place.images}
+          leadSrc={place.google_place_id ? googlePhotoSrc(place.id) : null}
+          alt={place.name}
+          className="h-52 w-full"
+        />
 
         <section className="card space-y-2.5 p-3.5">
           <div className="flex items-start justify-between gap-2">
@@ -132,17 +155,8 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
 
         {error && <ErrorNote message={error} />}
 
-        {place.images.length > 0 && (
-          <section className="space-y-2">
-            <h3 className="px-1 text-base">photos</h3>
-            <div className="grid grid-cols-3 gap-2">
-              {place.images.map((img) => (
-                // eslint-disable-next-line @next/next/no-img-element -- local uploads
-                <img key={img.id} src={img.url} alt="" className="h-24 w-full rounded-xl object-cover" />
-              ))}
-            </div>
-          </section>
-        )}
+{/* The photo grid that used to sit here is gone — the header carousel
+            already shows every photo, and per-review shots stay on their card. */}
 
         {/* Reviews — each person's take is its own card (spec §6.4) */}
         <section className="space-y-3">
@@ -151,7 +165,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
           </h3>
 
           {place.recommendations.length === 0 && (
-            <EmptyState title="no write-ups yet" body="be the first to say something" />
+            <EmptyState title="no write-ups yet" body="be the first to say something." />
           )}
 
           {place.recommendations.map((rec) => (
@@ -161,6 +175,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
                   <PigAvatar
                     config={rec.user.pig_avatar_config}
                     placesLogged={rec.user.places_logged}
+                    lastLoggedAt={rec.user.last_logged_at}
                     size={34}
                     variant="face"
                   />
@@ -247,6 +262,7 @@ function PeopleGroup({
               <PigAvatar
                 config={u.pig_avatar_config}
                 placesLogged={u.places_logged}
+                lastLoggedAt={u.last_logged_at}
                 size={28}
                 variant="face"
               />
@@ -278,6 +294,8 @@ function ReviewSheet({
   const [files, setFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Deleting a write-up is destructive and there's no undo, so it asks first.
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -286,8 +304,20 @@ function ReviewSheet({
       setDishes(existing?.recommended_dishes ?? []);
       setError(null);
       setFiles([]);
+      setConfirmingDelete(false);
     }
   }, [open, existing]);
+
+  async function remove() {
+    setSaving(true);
+    setError(null);
+    try {
+      onSaved(await api.deleteRecommendation(place.id));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't delete that");
+      setSaving(false);
+    }
+  }
 
   function addDish() {
     const value = draft.trim();
@@ -316,13 +346,13 @@ function ReviewSheet({
   }
 
   return (
-    <Sheet open={open} onClose={onClose} title={existing ? "edit your take" : "your take"}>
+    <Sheet open={open} onClose={onClose} title={existing ? "Edit your take" : "Your take"}>
       <form onSubmit={submit} className="space-y-3 pb-4">
         <textarea
           className="field min-h-[120px]"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="What's it like? Who should go?"
+          placeholder="what's it like? who should go?"
           required
         />
 
@@ -379,6 +409,42 @@ function ReviewSheet({
         <button type="submit" className="btn-primary w-full text-lg" disabled={saving}>
           {saving ? "Posting…" : existing ? "Update" : "Post it"}
         </button>
+
+        {existing &&
+          (confirmingDelete ? (
+            <div className="space-y-2 rounded-card border-2 border-rust p-3">
+              <p className="text-sm font-bold text-rust">
+                Delete your write-up? Your oink stays; only the words and dishes go.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirmingDelete(false)}
+                  className="btn-plain flex-1 text-sm"
+                  disabled={saving}
+                >
+                  Keep it
+                </button>
+                <button
+                  type="button"
+                  onClick={remove}
+                  className="btn flex-1 bg-rust text-sm text-oat"
+                  disabled={saving}
+                >
+                  {saving ? "Deleting…" : "Delete"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmingDelete(true)}
+              className="btn-quiet w-full text-sm text-rust"
+              disabled={saving}
+            >
+              Delete this write-up
+            </button>
+          ))}
       </form>
     </Sheet>
   );

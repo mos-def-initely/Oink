@@ -10,7 +10,12 @@ from ..db import get_db
 from ..deps import get_current_user
 from ..models import Reaction, Recommendation, Restaurant, User, WishlistItem
 from ..schemas import RestaurantSummary, UpdateMeRequest, UserPublic
-from ..serializers import places_logged_counts, restaurant_summaries, user_public
+from ..serializers import (
+    last_logged_map,
+    places_logged_counts,
+    restaurant_summaries,
+    user_public,
+)
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -43,7 +48,8 @@ def update_me(
     db.commit()
     db.refresh(viewer)
     counts = places_logged_counts(db, [viewer.id])
-    return user_public(viewer, counts.get(viewer.id, 0))
+    last = last_logged_map(db, [viewer.id])
+    return user_public(viewer, counts.get(viewer.id, 0), last.get(viewer.id))
 
 
 @router.get("/me/wishlist", response_model=List[RestaurantSummary])
@@ -65,7 +71,8 @@ def my_wishlist(db: Session = Depends(get_db), viewer: User = Depends(get_curren
 def get_user(identifier: str, db: Session = Depends(get_db), viewer: User = Depends(get_current_user)):
     user = _resolve_user(db, identifier, viewer)
     counts = places_logged_counts(db, [user.id])
-    return user_public(user, counts.get(user.id, 0))
+    last = last_logged_map(db, [user.id])
+    return user_public(user, counts.get(user.id, 0), last.get(user.id))
 
 
 @router.get("/{identifier}/recommendations", response_model=List[RestaurantSummary])
@@ -80,14 +87,16 @@ def user_recommendations(
         .scalars()
         .all()
     )
-    oink_ids = (
-        db.execute(
-            select(Reaction.restaurant_id).where(Reaction.user_id == user.id, Reaction.type == "oink")
-        )
+    # Any reaction, not just an oink: a shame is a log too, and a place you
+    # can't see is a place you can't remove. The fatness count still ignores
+    # shame — your log is everywhere you've been, your pig only fattens on the
+    # places you'd send someone to.
+    reaction_ids = (
+        db.execute(select(Reaction.restaurant_id).where(Reaction.user_id == user.id))
         .scalars()
         .all()
     )
-    place_ids = list({*rec_ids, *oink_ids})
+    place_ids = list({*rec_ids, *reaction_ids})
     if not place_ids:
         return []
 

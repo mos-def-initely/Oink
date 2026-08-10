@@ -1,13 +1,18 @@
 """Oink API — FastAPI app, local-only in v1 (spec §0)."""
 
 import logging
+from typing import Optional
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from sqlalchemy import text
+
 from . import config
-from .db import init_db
+# Aliased: `routers.places` below would otherwise shadow the lookup module.
+from . import places as place_lookup
+from .db import engine, init_db
 from .routers import auth, feed, places, restaurants, social, users
 
 logger = logging.getLogger("oink")
@@ -52,9 +57,21 @@ def _ensure_upload_dir() -> bool:
         return False
 
 
+# Set when schema setup fails, so /health can report *why* instead of the app
+# refusing to boot. A failed startup event takes down every route in the ASGI
+# app — including the health check you'd use to diagnose it — so this must not
+# be allowed to raise on a serverless host.
+DB_INIT_ERROR: Optional[str] = None
+
+
 @app.on_event("startup")
 def on_startup() -> None:
-    init_db()
+    global DB_INIT_ERROR
+    try:
+        init_db()
+    except Exception as exc:  # noqa: BLE001 — any failure here must stay non-fatal
+        DB_INIT_ERROR = f"{type(exc).__name__}: {exc}"
+        logger.exception("Database initialisation failed — the API will start but DB routes will 503.")
     _ensure_upload_dir()
 
     if config.JWT_SECRET == "dev-only-insecure-secret-change-me":
@@ -82,9 +99,30 @@ else:
 
 @app.get("/api/v1/health", tags=["health"])
 def health():
+    """Reports configuration *and* whether the database actually answers.
+
+    This deliberately reports a failure rather than raising: a health check that
+    500s when the database is down tells you nothing you didn't already know.
+    """
+    db_connected = False
+    db_error: Optional[str] = DB_INIT_ERROR
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        db_connected = True
+    except Exception as exc:  # noqa: BLE001 — reporting the fault is the point
+        db_error = f"{type(exc).__name__}: {exc}"
+
     return {
-        "status": "ok",
+        "status": "ok" if db_connected else "degraded",
         "database": "sqlite" if config.USING_SQLITE else "postgres",
+        "database_connected": db_connected,
+        # Present only when something is wrong. Names the host but never the
+        # password — SQLAlchemy masks credentials in its connection errors.
+        "database_error": db_error,
         "storage": "supabase" if config.USING_SUPABASE_STORAGE else "local",
         "google_maps_key": bool(config.GOOGLE_MAPS_API_KEY),
+        # Non-null when a key is set but Google rejected the last search — the
+        # difference between "no key" and "key that doesn't work".
+        "google_maps_error": place_lookup.LAST_GOOGLE_ERROR,
     }

@@ -61,6 +61,17 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return res.json();
 }
 
+/**
+ * The place's photo from its Google listing, served via our own endpoint.
+ *
+ * Resolved server-side on each request because Google's terms forbid storing
+ * photo names. 404s when there's no key or no photo, which is the client's cue
+ * to fall back to a user upload or the generated placeholder.
+ */
+export function googlePhotoSrc(placeId: string): string {
+  return `${BASE}/restaurants/${placeId}/google-photo`;
+}
+
 export const api = {
   // --- auth ---
   signup: (username: string, password: string, display_name: string) =>
@@ -106,6 +117,7 @@ export const api = {
     lat: number;
     lng: number;
     google_maps_url?: string | null;
+    google_place_id?: string | null;
     address?: string | null;
     city?: string | null;
     area?: string | null;
@@ -118,11 +130,17 @@ export const api = {
       body: JSON.stringify({ url }),
     }),
 
-  searchPlaces: (q: string, postcode?: string) => {
+  searchPlaces: (q: string, postcode?: string, near?: { lat: number; lng: number } | null) => {
     const params = new URLSearchParams({ q });
     // Re-ranks results onto the right district — Nominatim returns the correct
     // one but doesn't prefer it.
     if (postcode?.trim()) params.set("postcode", postcode.trim());
+    // Where the map is pointed, so Google prefers the nearby branch of a chain
+    // over its most famous one.
+    if (near) {
+      params.set("lat", String(near.lat));
+      params.set("lng", String(near.lng));
+    }
     return request<PlaceCandidate[]>(`/places/search?${params.toString()}`);
   },
 
@@ -141,6 +159,10 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ review_text, recommended_dishes }),
     }),
+
+  /** Removes every signal you've left on a place — oink, write-up or shame. */
+  unlog: (placeId: string) =>
+    request<PlaceDetail>(`/restaurants/${placeId}/log`, { method: "DELETE" }),
 
   deleteRecommendation: (placeId: string) =>
     request<PlaceDetail>(`/restaurants/${placeId}/recommendations`, { method: "DELETE" }),

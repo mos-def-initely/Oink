@@ -14,6 +14,8 @@
  * the same colourway rather than flickering between renders, and it's drawn
  * from the app palette so a place without a photo still belongs to the page.
  */
+"use client";
+
 import { useEffect, useState } from "react";
 
 const PLACEHOLDERS = [
@@ -39,6 +41,9 @@ export default function PlacePhoto({
   alt: string;
   className?: string;
 }) {
+  // A src can fail: the Google listing photo 404s whenever there's no API key
+  // or the place has no photo. Falling through to the placeholder beats leaving
+  // a broken image in the feed.
   const [failed, setFailed] = useState(false);
 
   // A new place may arrive with a different src; give it a fresh chance.

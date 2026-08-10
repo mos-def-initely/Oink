@@ -5,7 +5,7 @@
  *
  * Reference style: warm brown outline (never black), blush cheeks, wide-set dot
  * eyes with a highlight, snub snout with nostrils, small upright ears, tiny
- * trotters, curly tail.
+ * trotters. No tail — it read as a stray hair at avatar size.
  *
  * **Modelling, not just outline.** A flat fill inside a uniform stroke reads as
  * a die-cut sticker. Volume comes from three soft passes clipped inside each
@@ -27,9 +27,9 @@
 import { useId } from "react";
 import {
   PIG_BACKGROUNDS,
-  PigConfig,
   SPECIES_COLORS,
   Species,
+  PigConfig,
   TIER_SHAPE,
   fatnessTier,
   normalisePig,
@@ -40,6 +40,8 @@ import { companion, companionTransform } from "./Companion";
 type Props = {
   config?: PigConfig | null;
   placesLogged?: number;
+  /** Last logged place; the pig drops a tier per idle fortnight from here. */
+  lastLoggedAt?: string | null;
   size?: number;
   variant?: "face" | "full";
   /** Drops the circular background — used inside map pins. */
@@ -54,6 +56,7 @@ const STROKE = 2.1;
 export default function PigAvatar({
   config,
   placesLogged = 0,
+  lastLoggedAt = null,
   size = 44,
   variant = "face",
   bare = false,
@@ -62,27 +65,35 @@ export default function PigAvatar({
   const uid = useId().replace(/:/g, "");
   const cfg = normalisePig(config);
   const species = cfg.species as Species;
-  // Every species is customisable; each has its own set of coats, and each coat
-  // carries its own outline so a charcoal boar isn't drawn in pink-brown.
   const p = SPECIES_COLORS[species][cfg.color];
   const OUTLINE = p.outline;
   const bg = PIG_BACKGROUNDS[cfg.background];
-  const shape = TIER_SHAPE[fatnessTier(placesLogged)];
+  const tier = fatnessTier(placesLogged, lastLoggedAt);
+  // Starved out: her modelling is kept intact and simply drained of colour,
+  // so a dead pig still reads as the same animal rather than a different one.
+  const dead = tier === "dead";
+  const shape = TIER_SHAPE[tier];
+  // Washed out rather than greyed: the colour someone picked is still theirs,
+  // just drained of life. Full greyscale threw the choice away entirely.
+  const drained = dead
+    ? { filter: "saturate(0.32) brightness(1.12)", opacity: 0.7 }
+    : undefined;
   // Every pig has a soft blush already; the accessory turns it up, so picking
   // it reads as a decision rather than a barely-there tweak.
   const rosy = cfg.accessory === "blush";
-  const blushScale = rosy ? 1.4 : 1;
-  const blushAlpha = rosy ? 0.82 : 0.5;
-
-  // Costume parts are drawn in normalised space (waist 30, head radius 27.5) and
-  // scaled about the matching centre, so one set of paths fits every tier.
+  // Costume parts are drawn in normalised space and scaled about the body or
+  // head centre; the garment shell comes off the real silhouette (below).
   const dress = costumeParts(cfg.costume, OUTLINE);
   const specs = faceItem(cfg.face, OUTLINE);
+  const blushScale = rosy ? 1.35 : 1;
+  const blushAlpha = rosy ? 0.82 : 0.5;
 
   const grad = `g-${uid}`;
   const blur = `b-${uid}`;
   const headClip = `hc-${uid}`;
   const bodyClip = `bc-${uid}`;
+  const chestGrad = `cg-${uid}`;
+  const bellyGrad = `bg-${uid}`;
 
   const defs = (
     <defs>
@@ -111,16 +122,6 @@ export default function PigAvatar({
           <Ears species={species} fill={p.ear} />
           <ellipse cx="60" cy="62" rx="35" ry="31" fill={`url(#${grad})`} />
         </g>
-        {species === "boar" && (
-          <path
-            d="M44 34 l5 -11 4 10 5 -13 4 12 5 -11 4 10 5 -9"
-            fill="none"
-            stroke={OUTLINE}
-            strokeWidth="2.4"
-            strokeLinejoin="round"
-            strokeLinecap="round"
-          />
-        )}
 
         {/* Soft modelling, clipped inside the head */}
         <g clipPath={`url(#${headClip})`}>
@@ -128,29 +129,34 @@ export default function PigAvatar({
           <ellipse cx="42" cy="42" rx="22" ry="16" fill="#fff" opacity="0.34" filter={`url(#${blur})`} />
         </g>
 
-        <ellipse cx="34" cy="69" rx={8 * blushScale} ry={5 * blushScale} fill={p.blush} opacity={blushAlpha} filter={`url(#${blur})`} />
-        <ellipse cx="86" cy="69" rx={8 * blushScale} ry={5 * blushScale} fill={p.blush} opacity={blushAlpha} filter={`url(#${blur})`} />
+        <ellipse cx="34" cy="69" rx={5.4 * blushScale} ry={3.4 * blushScale} fill={p.blush} opacity={blushAlpha} filter={`url(#${blur})`} />
+        <ellipse cx="86" cy="69" rx={5.4 * blushScale} ry={3.4 * blushScale} fill={p.blush} opacity={blushAlpha} filter={`url(#${blur})`} />
 
         {/* Snout sits proud of the face — shadow above it, highlight on top */}
         <ellipse cx="60" cy="66" rx="14" ry="8" fill={p.dark} opacity="0.4" filter={`url(#${blur})`} />
         <ellipse cx="60" cy="71" rx="14" ry="10.5" fill={p.snout} stroke={OUTLINE} strokeWidth={STROKE} />
-        <Tusks species={species} outline={OUTLINE} />
         <ellipse cx="57" cy="67" rx="7" ry="3" fill="#fff" opacity="0.28" filter={`url(#${blur})`} />
 
-        <ellipse cx="46" cy="55" rx="3.8" ry="4.6" fill={EYE} />
-        <ellipse cx="74" cy="55" rx="3.8" ry="4.6" fill={EYE} />
-        <circle cx="47.4" cy="53.4" r="1.4" fill="#fff" />
-        <circle cx="75.4" cy="53.4" r="1.4" fill="#fff" />
+{dead ? (
+          <g stroke={EYE} strokeWidth="2.4" strokeLinecap="round">
+            <line x1={46 - 4} y1={55 - 4} x2={46 + 4} y2={55 + 4} />
+            <line x1={46 + 4} y1={55 - 4} x2={46 - 4} y2={55 + 4} />
+            <line x1={74 - 4} y1={55 - 4} x2={74 + 4} y2={55 + 4} />
+            <line x1={74 + 4} y1={55 - 4} x2={74 - 4} y2={55 + 4} />
+          </g>
+        ) : (
+          <>
+            <ellipse cx="46" cy="55" rx="3.8" ry="4.6" fill={EYE} />
+            <ellipse cx="74" cy="55" rx="3.8" ry="4.6" fill={EYE} />
+            <circle cx="47.4" cy="53.4" r="1.4" fill="#fff" />
+            <circle cx="75.4" cy="53.4" r="1.4" fill="#fff" />
+          </>
+        )}
         {/* nostrils — always drawn */}
         <ellipse cx="55" cy="71" rx="2.3" ry="3.2" fill={p.nostril} />
         <ellipse cx="65" cy="71" rx="2.3" ry="3.2" fill={p.nostril} />
 
-        {/* Face items scale from the same head geometry as the hat. The costume
-            and companion slots have nothing to attach to here — this variant
-            draws no body — so they're simply absent on pins and dense lists. */}
-        {specs && (
-          <g transform="translate(60 55) scale(1.27) translate(-65 -48)">{specs}</g>
-        )}
+        {specs && <g transform="translate(60 55) scale(1.27) translate(-65 -48)">{specs}</g>}
         <Hat hat={cfg.hat} cx={60} topY={24} w={35} outline={OUTLINE} />
       </svg>
     );
@@ -160,9 +166,54 @@ export default function PigAvatar({
   const w = shape.waist;
   const headRx = shape.head;
   const headRy = headRx * 0.9;
-  // Body-anchored costume parts scale about the torso centre, head-anchored ones
-  // about the head centre — the two grow at different rates between tiers.
-  const bodyT = `translate(65 82) scale(${w / 30}) translate(-65 -82)`;
+
+  // Hunky is built, not ball-shaped: wide across the shoulders and drawn in
+  // to the waist. Everything that hangs off the torso — the clip, the fill,
+  // the arms, the legs — has to follow the same silhouette or the limbs end up
+  // floating beside a shape that no longer reaches them.
+  const lean = !!shape.muscle;
+  const topY = 82 - w * 0.9;
+  const botY = 82 + w * 0.9;
+  const hgt = botY - topY;
+  const shoulder = lean ? w * 1.08 : w;   // half-width at the shoulders
+  const waist = lean ? w * 0.64 : w;      // half-width at the hips
+  const armX = shoulder;                  // arms hang off the shoulders
+  const legX = lean ? waist * 0.72 : w * 0.55;
+
+  // The lean torso is a function now, not a one-off string: a costume needs the
+  // same silhouette at a smaller inset, and Hunky's drawn-in waist means an
+  // ellipse-shaped garment would hang off a body that isn't there.
+  const leanTorso = (sh: number, wa: number, ty: number, h: number) =>
+    `M ${65 - sh} ${ty + h * 0.2}
+     Q ${65 - sh} ${ty} ${65 - sh * 0.5} ${ty}
+     L ${65 + sh * 0.5} ${ty}
+     Q ${65 + sh} ${ty} ${65 + sh} ${ty + h * 0.2}
+     C ${65 + sh} ${ty + h * 0.62} ${65 + wa} ${ty + h * 0.6} ${65 + wa} ${ty + h - h * 0.16}
+     Q ${65 + wa} ${ty + h} ${65 + wa * 0.52} ${ty + h}
+     L ${65 - wa * 0.52} ${ty + h}
+     Q ${65 - wa} ${ty + h} ${65 - wa} ${ty + h - h * 0.16}
+     C ${65 - wa} ${ty + h * 0.6} ${65 - sh} ${ty + h * 0.62} ${65 - sh} ${ty + h * 0.2} Z`;
+
+  const torso = lean ? leanTorso(shoulder, waist, topY, hgt) : "";
+
+  /** The garment shell: the body's own outline, pulled in so a rim of coat shows. */
+  const Shell = ({ fill, k = 0.95 }: { fill: string; k?: number }) =>
+    lean ? (
+      <path
+        d={leanTorso(shoulder * k, waist * k, 82 - (hgt / 2) * k, hgt * k)}
+        fill={fill}
+        stroke={OUTLINE}
+        strokeWidth={STROKE}
+        strokeLinejoin="round"
+      />
+    ) : (
+      <ellipse cx={65} cy={82} rx={w * k} ry={w * 0.9 * k} fill={fill}
+        stroke={OUTLINE} strokeWidth={STROKE} strokeLinejoin="round" />
+    );
+
+  // Interior detail stays in normalised space. X follows the shoulders so a
+  // costume still reaches the edges on Hunky; Y follows the waist as before.
+  const bodyT = `translate(65 82) scale(${(shoulder * 0.95) / 28.5} ${w / 30}) translate(-65 -82)`;
   const headT = `translate(65 48) scale(${headRx / 27.5}) translate(-65 -48)`;
 
   return (
@@ -171,36 +222,31 @@ export default function PigAvatar({
       height={(size * 134) / 130}
       viewBox="0 0 130 134"
       className={className}
+      style={drained}
       role="img"
-      aria-label={SPECIES_LABELS_ARIA[species]}
+      aria-label={dead ? "Dead pig" : "Pig"}
     >
       {defs}
       <clipPath id={bodyClip}>
-        <ellipse cx="65" cy="82" rx={w} ry={w * 0.9} />
+        {lean ? <path d={torso} /> : <ellipse cx="65" cy="82" rx={w} ry={w * 0.9} />}
       </clipPath>
       <clipPath id={headClip}>
         <ellipse cx="65" cy="48" rx={headRx} ry={headRy} />
       </clipPath>
 
-      {dress.under && <g transform={bodyT}>{dress.under}</g>}
 
-      {/* Tail starts outside the right arm's outer edge, so it comes off the
-          rump rather than out of the arm. */}
-      <path
-        d={`M ${65 + w + 5} 88 q 12 -3 10 -14`}
-        fill="none"
-        stroke={OUTLINE}
-        strokeWidth={STROKE + 0.4}
-        strokeLinecap="round"
-      />
 
       {/* ground shadow */}
       <ellipse cx="65" cy="122" rx={w * 0.8} ry="5" fill={p.dark} opacity="0.28" filter={`url(#${blur})`} />
 
       <g stroke={OUTLINE} strokeWidth={STROKE} strokeLinejoin="round">
-        <rect x={65 - w * 0.55} y="100" width="14" height="19" rx="6.5" fill={p.snout} />
-        <rect x={65 + w * 0.55 - 14} y="100" width="14" height="19" rx="6.5" fill={p.snout} />
-        <ellipse cx="65" cy="82" rx={w} ry={w * 0.9} fill={`url(#${grad})`} />
+        <rect x={65 - legX} y="100" width="14" height="19" rx="6.5" fill={p.snout} />
+        <rect x={65 + legX - 14} y="100" width="14" height="19" rx="6.5" fill={p.snout} />
+        {lean ? (
+          <path d={torso} fill={`url(#${grad})`} />
+        ) : (
+          <ellipse cx="65" cy="82" rx={w} ry={w * 0.9} fill={`url(#${grad})`} />
+        )}
       </g>
 
       {/* Body modelling */}
@@ -228,24 +274,115 @@ export default function PigAvatar({
         );
       })}
 
+      {/* Fat as volume rather than stripes: chest fat above, one big gut below,
+          each lit from above and creased underneath so it hangs instead of
+          floating. Clipped to the body so nothing escapes the silhouette. */}
+      {(shape.moobs || shape.belly) && (
+        <g clipPath={`url(#${bodyClip})`}>
+          <defs>
+            <linearGradient id={chestGrad} gradientUnits="userSpaceOnUse"
+              x1="0" y1={82 - w * 0.6} x2="0" y2={82 + w * 0.02}>
+              <stop offset="0%" stopColor="#fff" stopOpacity="0.26" />
+              <stop offset="45%" stopColor="#fff" stopOpacity="0" />
+              <stop offset="62%" stopColor={p.dark} stopOpacity="0" />
+              <stop offset="100%" stopColor={p.dark} stopOpacity={0.34 + 0.34 * (shape.moobs ?? 0)} />
+            </linearGradient>
+            <linearGradient id={bellyGrad} gradientUnits="userSpaceOnUse"
+              x1="0" y1={82 - w * 0.05} x2="0" y2={82 + w * 0.95}>
+              <stop offset="0%" stopColor="#fff" stopOpacity={0.22 * (shape.belly ?? 0)} />
+              <stop offset="34%" stopColor="#fff" stopOpacity="0" />
+              <stop offset="56%" stopColor={p.dark} stopOpacity="0" />
+              <stop offset="100%" stopColor={p.dark} stopOpacity={0.5 * (shape.belly ?? 0)} />
+            </linearGradient>
+          </defs>
+
+          {!!shape.moobs &&
+            [-1, 1].map((side) => (
+              <ellipse
+                key={side}
+                cx={65 + side * w * 0.42}
+                cy={82 - w * 0.3}
+                rx={w * 0.5 * shape.moobs!}
+                ry={w * 0.28 * shape.moobs!}
+                fill={`url(#${chestGrad})`}
+              />
+            ))}
+
+          {!!shape.belly && (
+            <ellipse
+              cx="65"
+              cy={82 + w * 0.34}
+              rx={w * 1.02}
+              ry={w * 0.56 * (0.7 + shape.belly * 0.3)}
+              fill={`url(#${bellyGrad})`}
+            />
+          )}
+        </g>
+      )}
+
+      {/* Hunky: the width sits in the chest, not the gut. Pecs and a two-column
+          stack of abs, drawn in the same stroke language as the rolls. */}
+      {shape.muscle && (
+        <g
+          clipPath={`url(#${bodyClip})`}
+          fill="none"
+          stroke={p.dark}
+          strokeWidth="2"
+          strokeLinecap="round"
+          opacity="0.5"
+        >
+          <path d={`M ${65 - w * 0.55} 72 q ${w * 0.28} 9 ${w * 0.52} 0`} />
+          <path d={`M ${65 + w * 0.03} 72 q ${w * 0.28} 9 ${w * 0.52} 0`} />
+          <line x1="65" y1="78" x2="65" y2="98" />
+          <line x1={65 - w * 0.42} y1="85" x2={65 + w * 0.42} y2="85" />
+          <line x1={65 - w * 0.38} y1="92" x2={65 + w * 0.38} y2="92" />
+        </g>
+      )}
+
+      {dress.under && <g transform={bodyT}>{dress.under}</g>}
+      {dress.shell && <Shell fill={dress.shell.fill} k={dress.shell.k} />}
       {dress.onBody && <g transform={bodyT}>{dress.onBody}</g>}
 
       {/* Arms sit ON TOP of the body edges in the darker ear tone, which is what
           makes them read as arms in front rather than limbs beside a ball.
-          A sleeved costume recolours them — arms left in the coat colour are
-          what made an outfit read as a bib stuck on the front. */}
+          A sleeved costume recolours them, which is what stops a garment
+          reading as a bib stuck on the front. */}
       <g stroke={OUTLINE} strokeWidth={STROKE} strokeLinejoin="round">
-        <rect x={65 - w - 4} y="74" width="13" height="24" rx="6.5" fill={dress.sleeve ?? p.ear} />
-        <rect x={65 + w - 9} y="74" width="13" height="24" rx="6.5" fill={dress.sleeve ?? p.ear} />
+        {[-1, 1].map((side) => {
+          // The wider the body, the further the arms are shoved off vertical: a
+          // slim pig's hang straight down, a fat one's can't. Taken from the
+          // waist so it scales with the tier rather than being set per tier.
+          const splay = Math.max(0, (w - TIER_SHAPE.slim.waist) * 0.9);
+          // Pivot is the shoulder, so a negative angle swings the hand away
+          // from the body — which is what a belly does to the forearms. Hunky
+          // goes the other way: the lats flare the shoulders and the forearms
+          // come back in.
+          const angle = (lean ? 1 : -1) * side * splay;
+          const cx = 65 + side * (armX - 2.5);
+          return (
+            <g key={side} transform={`rotate(${angle} ${cx} 77)`}>
+              <rect
+                x={side < 0 ? 65 - armX - 4 : 65 + armX - 9}
+                y="74"
+                width="13"
+                height="24"
+                rx="6.5"
+                fill={dress.sleeve ?? p.ear}
+              />
+              {dress.cuff && (
+                <rect
+                  x={side < 0 ? 65 - armX - 4 : 65 + armX - 9}
+                  y="91"
+                  width="13"
+                  height="7"
+                  rx="3.2"
+                  fill={dress.cuff}
+                />
+              )}
+            </g>
+          );
+        })}
       </g>
-      {/* Cuffs come off real arm geometry rather than the scaled group, so they
-          stay on the ends of the arms at every tier. */}
-      {dress.cuff && (
-        <g stroke={OUTLINE} strokeWidth={STROKE - 0.3} strokeLinejoin="round">
-          <rect x={65 - w - 4} y="91" width="13" height="7" rx="3.2" fill={dress.cuff} />
-          <rect x={65 + w - 9} y="91" width="13" height="7" rx="3.2" fill={dress.cuff} />
-        </g>
-      )}
 
       {dress.overArms && <g transform={bodyT}>{dress.overArms}</g>}
       {dress.behindHead && <g transform={headT}>{dress.behindHead}</g>}
@@ -261,18 +398,29 @@ export default function PigAvatar({
         <ellipse cx={65 - headRx * 0.42} cy="34" rx={headRx * 0.6} ry={headRy * 0.45} fill="#fff" opacity="0.32" filter={`url(#${blur})`} />
       </g>
 
-      <ellipse cx={65 - headRx * 0.72} cy="56" rx={6.4 * blushScale} ry={4 * blushScale} fill={p.blush} opacity={blushAlpha} filter={`url(#${blur})`} />
-      <ellipse cx={65 + headRx * 0.72} cy="56" rx={6.4 * blushScale} ry={4 * blushScale} fill={p.blush} opacity={blushAlpha} filter={`url(#${blur})`} />
+      <ellipse cx={65 - headRx * 0.72} cy="56" rx={4.4 * blushScale} ry={2.8 * blushScale} fill={p.blush} opacity={blushAlpha} filter={`url(#${blur})`} />
+      <ellipse cx={65 + headRx * 0.72} cy="56" rx={4.4 * blushScale} ry={2.8 * blushScale} fill={p.blush} opacity={blushAlpha} filter={`url(#${blur})`} />
 
       <ellipse cx="65" cy="53" rx="12" ry="6.5" fill={p.dark} opacity="0.38" filter={`url(#${blur})`} />
       <ellipse cx="65" cy="57" rx="12" ry="8.6" fill={p.snout} stroke={OUTLINE} strokeWidth={STROKE} />
       <Tusks species={species} outline={OUTLINE} cx={65} cy={57} scale={0.85} />
       <ellipse cx="62.5" cy="54" rx="6" ry="2.4" fill="#fff" opacity="0.26" filter={`url(#${blur})`} />
 
-      <ellipse cx="54" cy="44" rx="3.2" ry="3.9" fill={EYE} />
-      <ellipse cx="76" cy="44" rx="3.2" ry="3.9" fill={EYE} />
-      <circle cx="55.2" cy="42.6" r="1.2" fill="#fff" />
-      <circle cx="77.2" cy="42.6" r="1.2" fill="#fff" />
+{dead ? (
+        <g stroke={EYE} strokeWidth="2.4" strokeLinecap="round">
+          <line x1={54 - 3.4} y1={44 - 3.4} x2={54 + 3.4} y2={44 + 3.4} />
+          <line x1={54 + 3.4} y1={44 - 3.4} x2={54 - 3.4} y2={44 + 3.4} />
+          <line x1={76 - 3.4} y1={44 - 3.4} x2={76 + 3.4} y2={44 + 3.4} />
+          <line x1={76 + 3.4} y1={44 - 3.4} x2={76 - 3.4} y2={44 + 3.4} />
+        </g>
+      ) : (
+        <>
+          <ellipse cx="54" cy="44" rx="3.2" ry="3.9" fill={EYE} />
+          <ellipse cx="76" cy="44" rx="3.2" ry="3.9" fill={EYE} />
+          <circle cx="55.2" cy="42.6" r="1.2" fill="#fff" />
+          <circle cx="77.2" cy="42.6" r="1.2" fill="#fff" />
+        </>
+      )}
       {/* nostrils — always drawn */}
       <ellipse cx="61" cy="57" rx="2" ry="2.8" fill={p.nostril} />
       <ellipse cx="69" cy="57" rx="2" ry="2.8" fill={p.nostril} />
@@ -286,6 +434,53 @@ export default function PigAvatar({
           strokeLinejoin="round"
         />
       )}
+      {/* A second chin is a fold, so it's drawn as the shadow one jaw casts on
+          the next — never a lighter shape laid over the face, which reads as a
+          panel stuck on rather than flesh. Clipped to the head so the soft edge
+          can't bleed past the jawline. */}
+      {shape.chin && (
+        <g clipPath={`url(#${headClip})`}>
+          <ellipse
+            cx="65"
+            cy={48 + headRy * 0.52}
+            rx={headRx * 0.66}
+            ry={headRy * 0.17}
+            fill={p.dark}
+            opacity="0.3"
+            filter={`url(#${blur})`}
+          />
+          <ellipse
+            cx="65"
+            cy={48 + headRy * 0.78}
+            rx={headRx * 0.5}
+            ry={headRy * 0.16}
+            fill="#fff"
+            opacity="0.16"
+            filter={`url(#${blur})`}
+          />
+        </g>
+      )}
+
+      {/* Cheekbones: a shadow under each, so the jaw looks cut rather than soft.
+          Only on the built tier, and clipped to the head. */}
+      {lean && (
+        <g clipPath={`url(#${headClip})`}>
+          {[-1, 1].map((side) => (
+            <ellipse
+              key={side}
+              cx={65 + side * headRx * 0.56}
+              cy={48 + headRy * 0.3}
+              rx={headRx * 0.3}
+              ry={headRy * 0.14}
+              fill={p.dark}
+              opacity="0.34"
+              filter={`url(#${blur})`}
+              transform={`rotate(${side * 14} ${65 + side * headRx * 0.56} ${48 + headRy * 0.3})`}
+            />
+          ))}
+        </g>
+      )}
+
       {dress.headExtra && <g transform={headT}>{dress.headExtra}</g>}
       {specs && <g transform={headT}>{specs}</g>}
       <Hat hat={cfg.hat} cx={65} topY={48 - headRy - 4} w={headRx} outline={OUTLINE} />
@@ -298,8 +493,7 @@ export default function PigAvatar({
   );
 }
 
-/** Ears carry most of the species read: pig folds forward, boar points up,
- *  hog flops down over the face. */
+/** Two rounded lenses and a bridge, in her outline rather than a hard black. */
 function Ears({ species, fill }: { species: Species; fill: string }) {
   if (species === "boar") {
     return (

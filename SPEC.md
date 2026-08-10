@@ -197,16 +197,31 @@ rather than appearing to grow out of the arm.
 recognisably pig feature, and dropping them at small sizes makes the avatar read
 as a generic animal blob.
 
-Fattening adds **belly rolls**, not just width:
+Fat is drawn as **volume**, not stripes — chest fat above, one gut below, each
+lit from above and creased underneath so it hangs rather than floats:
 
 | Places logged | Tier | Build |
 |---|---|---|
+| — | Dead Pig | gaunt, drained of colour, X'd eyes |
 | 0–4 | Slim | narrow body, no rolls |
-| 5–14 | Regular | wider, one fold |
-| 15–29 | Chubby | two folds |
-| 30+ | Round | three folds |
+| 5–9 | Regular | wider, some gut |
+| 10–14 | Chubby | chest and gut, second chin |
+| 15–19 | Fat | both full, widest silhouette |
+| 20+ | Hunky | the ladder turns a corner — pecs and abs, not bulk |
 
-Thresholds live only in `lib/pig.ts`.
+**Pigs starve.** The tier you get is the tier you earned minus one step for every
+**fortnight** without logging anywhere, floored at the Dead Pig. A fortnight, not
+a week: a friend group can easily go a month without eating out, and weekly decay
+killed a maxed-out pig in four. Somebody who has never logged doesn't rot — they
+sit at Slim until the first log starts the clock. Nothing has to be earned twice:
+one log anywhere restores the earned tier.
+
+Hunky is the only tier that isn't an ellipse — wide across the shoulders and
+drawn in at the waist. Everything hanging off the torso follows the same
+silhouette, **costumes included**: a garment takes the body's own outline inset
+rather than assuming a fixed shape, or it hangs off a body that isn't there.
+
+Thresholds and decay live only in `lib/pig.ts`.
 
 **Face variant** is used on map pins and in dense lists; the **full body**
 appears only on the feed and the profile.

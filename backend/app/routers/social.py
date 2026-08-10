@@ -146,6 +146,60 @@ def delete_reaction(
     return restaurant_detail(db, place, viewer)
 
 
+# --- Un-logging -----------------------------------------------------------
+
+@router.delete("/{restaurant_id}/log", response_model=RestaurantDetail)
+def delete_log(
+    restaurant_id: str, db: Session = Depends(get_db), viewer: User = Depends(get_current_user)
+):
+    """Remove everything this person has said about a place.
+
+    A log is any signal — an oink, a write-up, or a shame — so removing one
+    clears all three in a single request rather than leaving the client to fire
+    two and risk stopping half way. The place itself stays: other people may
+    have logged it, and it isn't ours to delete.
+    """
+    place = _require_place(db, restaurant_id)
+
+    recommendation = db.execute(
+        select(Recommendation).where(
+            Recommendation.restaurant_id == place.id, Recommendation.user_id == viewer.id
+        )
+    ).scalar_one_or_none()
+    if recommendation:
+        db.delete(recommendation)
+
+    reaction = db.execute(
+        select(Reaction).where(Reaction.restaurant_id == place.id, Reaction.user_id == viewer.id)
+    ).scalar_one_or_none()
+    if reaction:
+        db.delete(reaction)
+
+    db.flush()
+
+    # If that was the last word anyone had said about the place, it shouldn't
+    # linger on the map as a pin nobody has endorsed. A wishlist entry counts as
+    # someone still caring, so the place survives that.
+    orphaned = (
+        db.execute(
+            select(Recommendation).where(Recommendation.restaurant_id == place.id)
+        ).first()
+        is None
+        and db.execute(select(Reaction).where(Reaction.restaurant_id == place.id)).first() is None
+        and db.execute(select(WishlistItem).where(WishlistItem.restaurant_id == place.id)).first()
+        is None
+    )
+    if orphaned:
+        detail = restaurant_detail(db, place, viewer)
+        db.delete(place)
+        db.commit()
+        return detail
+
+    db.commit()
+    db.refresh(place)
+    return restaurant_detail(db, place, viewer)
+
+
 # --- Wishlist -------------------------------------------------------------
 
 @router.post("/{restaurant_id}/wishlist", response_model=RestaurantDetail)

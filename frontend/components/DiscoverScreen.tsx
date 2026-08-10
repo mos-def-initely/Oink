@@ -1,0 +1,474 @@
+"use client";
+
+/** Discover — map/list toggle, filters, add-place FAB (spec §6.3). */
+import { useCallback, useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
+import Link from "next/link";
+import { api } from "@/lib/api";
+import type { Kind, PlaceSummary, User } from "@/lib/types";
+import { BUDGETS, Budget } from "@/lib/pig";
+import { categoriesFor } from "@/lib/categories";
+import BottomTabBar from "@/components/BottomTabBar";
+import PlaceListCard from "@/components/PlaceListCard";
+import PigAvatar from "@/components/pigs/PigAvatar";
+import { BudgetTag } from "@/components/pigs/PricePig";
+import AddPlaceSheet from "@/components/AddPlaceSheet";
+import { EmptyState, KIND_LABELS, Sheet, Spinner } from "@/components/ui";
+
+// Leaflet touches `window` at import time, so it can't be server-rendered.
+const MapView = dynamic(() => import("@/components/MapView"), {
+  ssr: false,
+  loading: () => <div className="h-full w-full animate-pulse bg-oat-deep" />,
+});
+
+/** A row of pig faces with names — used for both sides of the pin sheet. */
+function FaceRow({ people, muted = false }: { people: User[]; muted?: boolean }) {
+  if (people.length === 0) return null;
+  return (
+    <div className={`mt-1.5 flex flex-wrap items-center gap-2 ${muted ? "opacity-70 grayscale" : ""}`}>
+      {people.map((u) => (
+        <span key={u.id} className="flex items-center gap-1">
+          <PigAvatar
+            config={u.pig_avatar_config}
+            placesLogged={u.places_logged}
+            lastLoggedAt={u.last_logged_at}
+            size={28}
+            variant="face"
+          />
+          <span className="text-xs">{u.display_name}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+export default function DiscoverScreen({ initialPlaces }: { initialPlaces: PlaceSummary[] | null }) {
+  const [places, setPlaces] = useState<PlaceSummary[] | null>(initialPlaces);
+  const [view, setView] = useState<"map" | "list">("map");
+  const [selected, setSelected] = useState<PlaceSummary | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [pickMode, setPickMode] = useState(false);
+  const [pickedPoint, setPickedPoint] = useState<{ lat: number; lng: number } | null>(null);
+  // Bumped when starting a genuinely new place, so the sheet blanks itself.
+  const [addResetKey, setAddResetKey] = useState(0);
+  // Where the map is pointed. Biases place search to the area on screen.
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | null>(null);
+  // Jump-to-a-city search. Geocoded through the same place lookup the add-place
+  // flow uses, so it needs no extra backend.
+  const [cityQuery, setCityQuery] = useState("");
+  const [cityBusy, setCityBusy] = useState(false);
+  const [cityError, setCityError] = useState<string | null>(null);
+  const [focusPoint, setFocusPoint] = useState<{ lat: number; lng: number } | null>(null);
+
+  const [kinds, setKinds] = useState<Kind[]>([]);
+  const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+
+  const load = useCallback(() => {
+    api.places().then(setPlaces).catch(() => setPlaces([]));
+  }, []);
+
+  useEffect(() => {
+    // The server payload paints instantly, but it's a snapshot: anything
+    // changed since — a place un-logged, someone else's oink — would sit here
+    // stale forever if this returned early. Refresh in the background instead,
+    // which costs a request and never blanks what's already on screen.
+    load();
+  }, [load]);
+
+  // Filtering happens client-side so toggling a filter doesn't refetch. The API
+  // supports the same filters for when the dataset outgrows this.
+  const filtered = useMemo(() => {
+    if (!places) return [];
+    return places.filter((p) => {
+      if (kinds.length && !kinds.includes(p.kind)) return false;
+      if (budgets.length && !budgets.includes(p.budget)) return false;
+      if (categories.length) {
+        const own = p.category.map((c) => c.toLowerCase());
+        if (!categories.some((c) => own.includes(c.toLowerCase()))) return false;
+      }
+      return true;
+    });
+  }, [places, kinds, budgets, categories]);
+
+  const ALL_KINDS: Kind[] = useMemo(() => ["restaurant", "bar", "cafe"], []);
+
+  // Subtypes belong to a type: cuisines under restaurants, drinking-institution
+  // types under bars. The curated vocabulary comes first so its capitalisation
+  // wins over whatever casing a place happens to be tagged with.
+  const categoriesByKind = useMemo(() => {
+    const map = new Map<Kind, Map<string, string>>();
+    ALL_KINDS.forEach((k) => {
+      const entries = new Map<string, string>();
+      categoriesFor(k).options.forEach((o) => entries.set(o.toLowerCase(), o));
+      map.set(k, entries);
+    });
+    places?.forEach((p) => {
+      const entries = map.get(p.kind);
+      if (!entries) return;
+      p.category.forEach((c) => {
+        if (!entries.has(c.toLowerCase())) entries.set(c.toLowerCase(), c);
+      });
+    });
+    return map;
+  }, [places, ALL_KINDS]);
+
+  // With no type chosen, every subtype is on the table.
+  const categoryOptions = useMemo(() => {
+    const active = kinds.length ? kinds : ALL_KINDS;
+    const merged = new Map<string, string>();
+    active.forEach((k) =>
+      categoriesByKind.get(k)?.forEach((label, key) => {
+        if (!merged.has(key)) merged.set(key, label);
+      })
+    );
+    return [...merged.values()].sort((a, b) => a.localeCompare(b));
+  }, [categoriesByKind, kinds, ALL_KINDS]);
+
+  const activeFilters = kinds.length + budgets.length + categories.length;
+
+  function toggle<T>(list: T[], setList: (v: T[]) => void, value: T) {
+    setList(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
+  }
+
+  /** Re-ask for the location. The open-on-your-city prompt only appears once,
+   *  and a dismissed or denied one silently leaves you looking at the pins with
+   *  no way back — this is that way back. */
+  function locateMe() {
+    if (!navigator.geolocation) {
+      setCityError("This browser won't share a location.");
+      return;
+    }
+    setCityBusy(true);
+    setCityError(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setFocusPoint({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setView("map");
+        setCityBusy(false);
+      },
+      () => {
+        setCityError("Couldn't get your location — allow it in your browser, or search a city.");
+        setCityBusy(false);
+      },
+      { timeout: 8000, maximumAge: 60000 }
+    );
+  }
+
+  async function goToCity(e: React.FormEvent) {
+    e.preventDefault();
+    const q = cityQuery.trim();
+    if (q.length < 3) return;
+    setCityBusy(true);
+    setCityError(null);
+    try {
+      const [best] = await api.searchPlaces(q);
+      if (!best) {
+        setCityError("Couldn't find that place.");
+        return;
+      }
+      // A new object each time, so searching the same city twice still moves
+      // the map back if you've panned away since.
+      setFocusPoint({ lat: best.lat, lng: best.lng });
+      setView("map");
+    } catch {
+      setCityError("Couldn't look that up.");
+    } finally {
+      setCityBusy(false);
+    }
+  }
+
+  /** Changing the type prunes subtypes that no longer belong to it — otherwise a
+   *  leftover cuisine silently filters every bar away. */
+  function toggleKind(k: Kind) {
+    const next = kinds.includes(k) ? kinds.filter((v) => v !== k) : [...kinds, k];
+    setKinds(next);
+    const allowed = new Set<string>();
+    (next.length ? next : ALL_KINDS).forEach((kk) =>
+      categoriesByKind.get(kk)?.forEach((_, key) => allowed.add(key))
+    );
+    setCategories((prev) => prev.filter((c) => allowed.has(c.toLowerCase())));
+  }
+
+  return (
+    <div className="relative flex h-[100dvh] flex-col">
+      <header className="z-[900] bg-oat px-3 py-2.5">
+        <div className="flex items-center gap-2">
+          <h1 className="flex-1 text-2xl">discover</h1>
+          <button
+            onClick={() => setFiltersOpen(true)}
+            className={`btn px-3 py-2 text-sm ${
+              activeFilters ? "bg-plum text-oat" : "bg-cream"
+            }`}
+          >
+            Filters{activeFilters ? ` (${activeFilters})` : ""}
+          </button>
+          <div className="flex overflow-hidden rounded-xl border-2 border-ink bg-cream">
+            {(["map", "list"] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                className={`px-3 py-2 font-display text-sm font-bold ${
+                  view === v ? "bg-plum text-oat" : "text-ink"
+                }`}
+              >
+                {v === "map" ? "Map" : "List"}
+              </button>
+            ))}
+          </div>
+        </div>
+        <form onSubmit={goToCity} className="mt-2 flex gap-2">
+          <input
+            className="field flex-1 py-2 text-sm"
+            value={cityQuery}
+            onChange={(e) => {
+              setCityQuery(e.target.value);
+              setCityError(null);
+            }}
+            placeholder="jump to a city or area…"
+            aria-label="search for a city"
+            enterKeyHint="search"
+          />
+          <button
+            type="submit"
+            className="btn-plain px-4 text-sm"
+            disabled={cityBusy || cityQuery.trim().length < 3}
+          >
+            {cityBusy ? "…" : "Go"}
+          </button>
+          <button
+            type="button"
+            onClick={locateMe}
+            className="btn-plain px-3 text-base"
+            aria-label="centre the map on my location"
+            title="centre on my location"
+            disabled={cityBusy}
+          >
+            ◎
+          </button>
+        </form>
+        {cityError && <p className="mt-1 px-1 text-xs font-bold text-rust">{cityError}</p>}
+
+        {pickMode && (
+          <p className="mt-2 rounded-lg border-2 border-ink bg-gold px-3 py-2 text-center font-display text-xs font-bold text-ink-deep">
+            Tap the map to drop your pin
+          </p>
+        )}
+      </header>
+
+      <div className="relative flex-1 overflow-hidden">
+        {!places && <Spinner label="finding the good stuff…" />}
+
+        {places && (
+          <div className={view === "map" ? "h-full w-full" : "hidden"}>
+            <MapView
+              places={filtered}
+              onSelect={setSelected}
+              onCenterChange={(lat, lng) => setMapCenter({ lat, lng })}
+              focusPoint={focusPoint}
+              pickMode={pickMode}
+              pickedPoint={pickedPoint}
+              onPick={(lat, lng) => {
+                setPickedPoint({ lat, lng });
+                setPickMode(false);
+                setAddOpen(true);
+              }}
+              className="h-full w-full"
+            />
+          </div>
+        )}
+
+        {places && view === "list" && (
+          <div className="h-full space-y-3 overflow-y-auto px-3 py-1 pb-24">
+            {filtered.length === 0 && (
+              <EmptyState title="nothing matches" body="loosen the filters a bit." />
+            )}
+            {filtered.map((p) => (
+              <PlaceListCard key={p.id} place={p} />
+            ))}
+          </div>
+        )}
+
+        {/* Add-place FAB — bottom right, in the thumb zone (spec §6.3) */}
+        <button
+          onClick={() => {
+            setPickedPoint(null);
+            setAddResetKey((k) => k + 1);
+            setAddOpen(true);
+          }}
+          className="absolute bottom-24 right-4 z-[1000] flex h-16 w-16 items-center justify-center rounded-full bg-plum font-display text-4xl font-extrabold text-white transition-transform active:scale-95"
+          aria-label="add a place"
+        >
+          +
+        </button>
+      </div>
+
+      <BottomTabBar />
+
+      {/* Pin tap → bottom sheet (spec §6.3) */}
+      <Sheet open={!!selected} onClose={() => setSelected(null)} title={selected?.name ?? ""}>
+        {selected && (
+          <div className="space-y-3 pb-4">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm text-ink-soft">
+                {[KIND_LABELS[selected.kind], ...selected.category].filter(Boolean).join(" · ")}
+              </p>
+              <BudgetTag budget={selected.budget} />
+            </div>
+
+            {selected.city && (
+              <p className="text-sm">{[selected.area, selected.city].filter(Boolean).join(", ")}</p>
+            )}
+
+            {/* Both sides of the verdict, each with its own faces — a place can
+                be oinked by some and shamed by others. */}
+            <div className="space-y-2.5">
+              {selected.recommender_count === 0 && selected.shame_count === 0 && (
+                <p className="font-display text-sm font-bold">nobody's weighed in yet</p>
+              )}
+
+              {selected.recommender_count > 0 && (
+                <div>
+                  <p className="font-display text-sm font-bold">
+                    Oinked by {selected.recommender_count}
+                  </p>
+                  <FaceRow people={selected.recommenders} />
+                </div>
+              )}
+
+              {selected.shame_count > 0 && (
+                <div>
+                  <p className="font-display text-sm font-bold text-rust">
+                    Shamed by {selected.shame_count}
+                  </p>
+                  <FaceRow people={selected.shamers} muted />
+                </div>
+              )}
+            </div>
+
+            <Link href={`/restaurant/${selected.id}`} className="btn-primary block text-center">
+              View details
+            </Link>
+          </div>
+        )}
+      </Sheet>
+
+      {/* Filters */}
+      <Sheet open={filtersOpen} onClose={() => setFiltersOpen(false)} title="filters">
+        <div className="space-y-4 pb-4">
+          <section>
+            <p className="mb-1.5 font-display text-sm font-bold">type</p>
+            <div className="flex gap-2">
+              {(["restaurant", "bar", "cafe"] as Kind[]).map((k) => (
+                <button
+                  key={k}
+                  onClick={() => toggleKind(k)}
+                  className={`btn flex-1 text-xs ${
+                    kinds.includes(k) ? "bg-plum text-oat" : "bg-cream"
+                  }`}
+                >
+                  {KIND_LABELS[k]}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section>
+            <p className="mb-1.5 font-display text-sm font-bold">budget</p>
+            <div className="grid grid-cols-4 gap-1.5">
+              {BUDGETS.map((b) => (
+                <button
+                  key={b}
+                  onClick={() => toggle(budgets, setBudgets, b)}
+                  className={`btn flex items-center justify-center px-1 py-2 ${
+                    budgets.includes(b) ? "bg-lemon" : "bg-cream"
+                  }`}
+                >
+                  <BudgetTag budget={b} size={30} />
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section>
+            <p className="mb-1.5 font-display text-sm font-bold">
+              {kinds.length === 1 && kinds[0] === "bar" ? "What kind of bar?" : "Cuisine"}
+            </p>
+            <select
+              className="field"
+              // Stays on the placeholder: picking is an "add one" action, and
+              // what's chosen is shown as chips below rather than in the box.
+              value=""
+              onChange={(e) => {
+                if (e.target.value) toggle(categories, setCategories, e.target.value);
+              }}
+            >
+              <option value="">
+                {kinds.length === 1
+                  ? `Any ${KIND_LABELS[kinds[0]].toLowerCase()} subtype`
+                  : "Any subtype"}
+              </option>
+              {categoryOptions
+                .filter((c) => !categories.includes(c))
+                .map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+            </select>
+
+            {categories.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {categories.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => toggle(categories, setCategories, c)}
+                    className="tag tag-active"
+                  >
+                    {c} ✕
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                setKinds([]);
+                setBudgets([]);
+                setCategories([]);
+              }}
+              className="btn-plain flex-1"
+            >
+              Clear
+            </button>
+            <button onClick={() => setFiltersOpen(false)} className="btn-primary flex-1">
+              Show {filtered.length}
+            </button>
+          </div>
+        </div>
+      </Sheet>
+
+      <AddPlaceSheet
+        open={addOpen}
+        resetKey={addResetKey}
+        onClose={() => setAddOpen(false)}
+        pickedPoint={pickedPoint}
+        near={mapCenter}
+        onRequestPick={() => {
+          setAddOpen(false);
+          setPickMode(true);
+          setView("map");
+        }}
+        onPointResolved={(lat, lng) => setPickedPoint({ lat, lng })}
+        onCreated={() => {
+          load();
+          setPickedPoint(null);
+          setAddResetKey((k) => k + 1);
+        }}
+      />
+    </div>
+  );
+}

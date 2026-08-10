@@ -12,10 +12,11 @@ from fastapi import (
     UploadFile,
     status,
 )
+from fastapi.responses import RedirectResponse
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from .. import storage
+from .. import places, storage
 from ..places import find_place_photo
 from ..db import SessionLocal
 from ..db import get_db
@@ -93,6 +94,37 @@ def _attach_photo(restaurant_id: str, name: str, city: Optional[str], lat: float
         session.close()
 
 
+def _find_existing(db: Session, payload: RestaurantCreate) -> Optional[Restaurant]:
+    """A place already on the map that this one would duplicate.
+
+    Google's id is decisive when both sides have one. Failing that, the same
+    name within roughly a couple of hundred metres — near enough that two
+    entries would be the same restaurant, far enough apart that a chain's
+    branches down the road stay separate.
+    """
+    place_id = (payload.google_place_id or "").strip()
+    if place_id:
+        match = db.execute(
+            select(Restaurant).where(Restaurant.google_place_id == place_id)
+        ).scalars().first()
+        if match:
+            return match
+
+    name = payload.name.strip().lower()
+    if not name:
+        return None
+    box = 0.0025  # ~275m of latitude; longitude is tighter still in the UK
+    nearby = db.execute(
+        select(Restaurant).where(
+            Restaurant.lat >= payload.lat - box,
+            Restaurant.lat <= payload.lat + box,
+            Restaurant.lng >= payload.lng - box,
+            Restaurant.lng <= payload.lng + box,
+        )
+    ).scalars().all()
+    return next((r for r in nearby if (r.name or "").strip().lower() == name), None)
+
+
 @router.post("", response_model=RestaurantDetail, status_code=status.HTTP_201_CREATED)
 def create_restaurant(
     payload: RestaurantCreate,
@@ -100,6 +132,20 @@ def create_restaurant(
     db: Session = Depends(get_db),
     viewer: User = Depends(get_current_user),
 ):
+    # Somewhere already on the map: oink it rather than adding a second copy.
+    existing = _find_existing(db, payload)
+    if existing:
+        already = db.execute(
+            select(Reaction).where(
+                Reaction.restaurant_id == existing.id, Reaction.user_id == viewer.id
+            )
+        ).scalar_one_or_none()
+        if not already:
+            db.add(Reaction(restaurant_id=existing.id, user_id=viewer.id, type="oink"))
+            db.commit()
+            db.refresh(existing)
+        return restaurant_detail(db, existing, viewer)
+
     place = Restaurant(
         name=payload.name.strip(),
         kind=payload.kind,
@@ -112,6 +158,7 @@ def create_restaurant(
         lat=payload.lat,
         lng=payload.lng,
         google_maps_url=(payload.google_maps_url or "").strip() or None,
+        google_place_id=(payload.google_place_id or "").strip() or None,
         created_by=viewer.id,
     )
     db.add(place)
@@ -138,6 +185,29 @@ def get_restaurant(
     if not place:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such place")
     return restaurant_detail(db, place, viewer)
+
+
+@router.get("/{restaurant_id}/google-photo")
+def google_photo(restaurant_id: str, db: Session = Depends(get_db)):
+    """Redirect to the place's photo on its Google listing.
+
+    Resolved on every request rather than stored: photo names expire and caching
+    them is disallowed (Maps ToS 3.2.3(b)). Unauthenticated on purpose — it's
+    loaded by an <img> tag, and it exposes nothing a Google Maps link wouldn't.
+    404s when there's no key, no place id, or no photo, which is exactly when
+    the client should fall back to its own placeholder.
+    """
+    place = db.get(Restaurant, restaurant_id)
+    if not place or not place.google_place_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No Google photo")
+
+    url = places.google_photo_url(place.google_place_id)
+    if not url:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No Google photo")
+
+    # Short browser cache so a scroll through the feed doesn't re-resolve per
+    # card, without holding the URL long enough to outlive it.
+    return RedirectResponse(url, headers={"Cache-Control": "private, max-age=900"})
 
 
 @router.patch("/{restaurant_id}", response_model=RestaurantDetail)

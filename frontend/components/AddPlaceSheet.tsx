@@ -26,6 +26,8 @@ type Props = {
   resetKey?: number;
   onClose: () => void;
   pickedPoint: { lat: number; lng: number } | null;
+  /** The map's current centre, used to bias place search to the visible area. */
+  near?: { lat: number; lng: number } | null;
   onRequestPick: () => void;
   onPointResolved: (lat: number, lng: number) => void;
   onCreated: () => void;
@@ -36,6 +38,7 @@ export default function AddPlaceSheet({
   resetKey = 0,
   onClose,
   pickedPoint,
+  near = null,
   onRequestPick,
   onPointResolved,
   onCreated,
@@ -51,9 +54,25 @@ export default function AddPlaceSheet({
   const [postcode, setPostcode] = useState("");
   const [link, setLink] = useState("");
   const [showLink, setShowLink] = useState(false);
+  // Google's id for the place, when the pin came from Google. Stored so the
+  // listing photo can be fetched later — photo URLs themselves can't be kept.
+  const [googlePlaceId, setGooglePlaceId] = useState<string | null>(null);
+
+  // Your write-up, optional — the same fields as the review sheet, so a place
+  // can be logged and reviewed in one go rather than two round trips.
+  const [review, setReview] = useState("");
+  const [dishes, setDishes] = useState<string[]>([]);
+  const [dishDraft, setDishDraft] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
+  const fileInput = useRef<HTMLInputElement>(null);
+  // Survives a failed review step so retrying doesn't add the place twice.
+  const createdIdRef = useRef<string | null>(null);
 
   const [results, setResults] = useState<PlaceCandidate[]>([]);
   const [searching, setSearching] = useState(false);
+  // Swallowing this was the reason a broken search looked identical to a search
+  // that simply found nothing: "Searching…", then silence.
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [parsing, setParsing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -77,6 +96,9 @@ export default function AddPlaceSheet({
   // instant the pin lands).
   const pinRef = useRef(pickedPoint);
   pinRef.current = pickedPoint;
+  // A dropped pin is a sharper hint than the map centre; fall back to the map.
+  const biasRef = useRef(pickedPoint ?? near);
+  biasRef.current = pickedPoint ?? near;
 
   useEffect(() => {
     if (!open) return;
@@ -132,9 +154,11 @@ export default function AddPlaceSheet({
     debounce.current = setTimeout(async () => {
       setSearching(true);
       try {
-        setResults(await api.searchPlaces(name.trim()));
-      } catch {
+        setResults(await api.searchPlaces(name.trim(), undefined, biasRef.current));
+        setSearchError(null);
+      } catch (e) {
         setResults([]);
+        setSearchError(e instanceof ApiError ? e.message : "Couldn't reach the search service");
       } finally {
         setSearching(false);
       }
@@ -167,7 +191,7 @@ export default function AddPlaceSheet({
         .join(", ");
       setLocating(true);
       try {
-        const [best] = await api.searchPlaces(query, postcode.trim());
+        const [best] = await api.searchPlaces(query, postcode.trim(), biasRef.current);
         if (!best) {
           setAddressMatch(null);
           return;
@@ -226,6 +250,7 @@ export default function AddPlaceSheet({
 
   function choose(c: PlaceCandidate) {
     setName(c.name);
+    setGooglePlaceId(c.place_id ?? null);
     // These fill the address field programmatically, so clear the typed flag —
     // otherwise the geocode effect fires on our own output.
     setAddressTouched(false);
@@ -271,6 +296,7 @@ export default function AddPlaceSheet({
       }
       setAddressTouched(false);
       setAddressMatch(null);
+      setGooglePlaceId(parsed.place_id ?? null);
       if (parsed.name) setName(parsed.name);
       if (parsed.address) setAddress(parsed.address);
       if (parsed.city) setCity(parsed.city);
@@ -291,6 +317,12 @@ export default function AddPlaceSheet({
     }
   }
 
+  function addDish() {
+    const value = dishDraft.trim();
+    if (value && !dishes.includes(value)) setDishes((d) => [...d, value]);
+    setDishDraft("");
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -306,23 +338,47 @@ export default function AddPlaceSheet({
 
     setSaving(true);
     try {
-      const place = await api.createPlace({
-        name: name.trim(),
-        kind,
-        category,
-        budget,
-        lat: pickedPoint.lat,
-        lng: pickedPoint.lng,
-        google_maps_url: link.trim() || null,
-        address: address || null,
-        city: city || null,
-        area: area || null,
-        postcode: postcode.trim().toUpperCase() || null,
-      });
+      // A retry after the review step failed must not create the place twice,
+      // so reuse the id from the first attempt if there was one.
+      let createdId = createdIdRef.current;
+      if (!createdId) {
+        const place = await api.createPlace({
+          name: name.trim(),
+          kind,
+          category,
+          budget,
+          lat: pickedPoint.lat,
+          lng: pickedPoint.lng,
+          // Only a hand-pasted link is stored; the API derives one otherwise.
+          google_maps_url: link.trim() || null,
+          google_place_id: googlePlaceId,
+          address: address || null,
+          city: city || null,
+          area: area || null,
+          postcode: postcode.trim().toUpperCase() || null,
+        });
+        createdId = place.id;
+        createdIdRef.current = place.id;
+      }
+
+      for (const file of files) {
+        await api.uploadImage(createdId, file);
+      }
+      // The review is optional — adding a place already counts as an oink.
+      if (review.trim()) {
+        await api.recommend(createdId, review.trim(), dishes);
+      }
+
+      createdIdRef.current = null;
       onCreated();
-      router.push(`/restaurant/${place.id}`);
+      router.push(`/restaurant/${createdId}`);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Couldn't save that");
+      const message = e instanceof ApiError ? e.message : "Couldn't save that";
+      setError(
+        createdIdRef.current
+          ? `The place was added, but your write-up wasn't saved: ${message}`
+          : message
+      );
       setSaving(false);
     }
   }
@@ -340,10 +396,20 @@ export default function AddPlaceSheet({
               setName(e.target.value);
               setLocated(false);   // typing again means re-searching
             }}
-            placeholder="Start typing to search…"
+            placeholder="start typing to search…"
             required
           />
           {searching && <p className="text-xs text-ink-soft">searching…</p>}
+          {!searching && searchError && (
+            <p className="rounded-lg bg-rust/15 px-3 py-2 text-xs font-bold text-rust">
+              Search failed: {searchError}
+            </p>
+          )}
+          {!searching && !searchError && !located && name.trim().length >= 3 && results.length === 0 && (
+            <p className="text-xs text-ink-soft">
+              No matches. Type an address or postcode below, or drop a pin.
+            </p>
+          )}
           {results.length > 0 && (
             <ul className="overflow-hidden rounded-xl bg-cream shadow-lift">
               {results.map((c, i) => (
@@ -395,19 +461,19 @@ export default function AddPlaceSheet({
               onClick={() => setShowLink(true)}
               className="text-sm font-bold text-plum underline underline-offset-2"
             >
-              or paste a google maps link (optional)
+              Or paste a Google Maps link (optional)
             </button>
           ) : (
             <>
               <label className="block font-display text-sm font-bold">
-                google maps link <span className="font-normal text-ink-soft">— optional</span>
+                Google Maps link <span className="font-normal text-ink-soft">— optional</span>
               </label>
               <input
                 className="field"
                 value={link}
                 onChange={(e) => setLink(e.target.value)}
                 onBlur={autofillFromLink}
-                placeholder="Paste a Google Maps link…"
+                placeholder="paste a Google Maps link…"
                 inputMode="url"
               />
               <button
@@ -445,7 +511,7 @@ export default function AddPlaceSheet({
 
           <div>
             <p className="mb-1.5 font-display text-sm font-bold">
-              {kind === "bar" ? "what kind of bar?" : "cuisine"}
+              {kind === "bar" ? "What kind of bar?" : "Cuisine"}
             </p>
             <CategoryPicker
               kind={kind}
@@ -483,7 +549,7 @@ export default function AddPlaceSheet({
                 setAddress(e.target.value);
                 setAddressTouched(true);
               }}
-              placeholder="Street address"
+              placeholder="street address"
             />
             {locating && <p className="text-xs text-ink-soft">looking up that address…</p>}
             {addressMatch && (
@@ -505,7 +571,7 @@ export default function AddPlaceSheet({
                 setPostcode(e.target.value);
                 setAddressTouched(true);
               }}
-              placeholder="Postcode"
+              placeholder="postcode"
               autoCapitalize="characters"
               autoCorrect="off"
               spellCheck={false}
@@ -514,21 +580,91 @@ export default function AddPlaceSheet({
               className="field flex-1"
               value={city}
               onChange={(e) => setCity(e.target.value)}
-              placeholder="City"
+              placeholder="city"
             />
           </div>
           <input
             className="field"
             value={area}
             onChange={(e) => setArea(e.target.value)}
-            placeholder="Area (optional)"
+            placeholder="area (optional)"
           />
+        </section>
+
+        {/* Your take — optional. Adding a place already counts as an oink, so
+            nobody is forced to write something to log somewhere. */}
+        <section className="space-y-3 border-t border-oat-deep pt-4">
+          <div>
+            <p className="font-display text-sm font-bold">
+              Your take <span className="font-normal text-ink-soft">— optional</span>
+            </p>
+            <p className="text-xs text-ink-soft">say it now, or add it later from the place page.</p>
+          </div>
+
+          <textarea
+            className="field min-h-[90px]"
+            value={review}
+            onChange={(e) => setReview(e.target.value)}
+            placeholder="what's it like? who should go?"
+          />
+
+          <div className="space-y-2">
+            <p className="font-display text-sm font-bold">dishes worth ordering</p>
+            <div className="flex gap-2">
+              <input
+                className="field flex-1"
+                value={dishDraft}
+                onChange={(e) => setDishDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addDish();
+                  }
+                }}
+                placeholder="e.g. monkfish curry"
+              />
+              <button type="button" onClick={addDish} className="btn-plain px-4">+</button>
+            </div>
+            {dishes.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {dishes.map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setDishes((prev) => prev.filter((x) => x !== d))}
+                    className="dish-tag"
+                  >
+                    {d} ✕
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <p className="font-display text-sm font-bold">photos</p>
+            <input
+              ref={fileInput}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
+            />
+            <button
+              type="button"
+              onClick={() => fileInput.current?.click()}
+              className="btn-plain w-full text-sm"
+            >
+              {files.length ? `${files.length} photo${files.length > 1 ? "s" : ""} ready` : "Add photos"}
+            </button>
+          </div>
         </section>
 
         {error && <ErrorNote message={error} />}
 
         <button type="submit" className="btn-primary w-full text-lg" disabled={saving}>
-          {saving ? "Saving…" : "Add it"}
+          {saving ? "Saving…" : review.trim() ? "Add it & post your take" : "Add it"}
         </button>
       </form>
     </Sheet>
