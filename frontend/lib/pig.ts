@@ -182,7 +182,17 @@ export const PIG_BACKGROUNDS: Record<string, string> = {
   cream: "#FFF6EE",
 };
 
-export const PIG_HATS = ["none", "cap", "beret", "bucket", "party", "crown", "chef"] as const;
+export const PIG_HATS = ["none", "cap", "beret", "bucket", "party", "crown", "chef", "tophat"] as const;
+
+/**
+ * Hats that sit down over the ears. A party cone and a crown perch between
+ * them, so those two leave the ears showing.
+ */
+export const EAR_COVERING_HATS = new Set(["cap", "beret", "bucket", "chef", "tophat"]);
+
+export function hidesEars(hat: string | undefined): boolean {
+  return !!hat && EAR_COVERING_HATS.has(hat);
+}
 export const PIG_ACCESSORIES = ["none", "sunglasses", "scarf", "blush", "tote"] as const;
 
 export type PigConfig = {

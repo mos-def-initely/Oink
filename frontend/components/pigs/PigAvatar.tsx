@@ -19,6 +19,7 @@ import {
   PigConfig,
   TIER_SHAPE,
   fatnessTier,
+  hidesEars,
   normalisePig,
   palePalette,
 } from "@/lib/pig";
@@ -84,11 +85,11 @@ export default function PigAvatar({
       >
         {gradient(33, 34, 54)}
         {!bare && <circle cx="50" cy="50" r="50" fill={bg} />}
-        <Ears p={p} cx={50} cy={40} rx={33} />
+        {!hidesEars(cfg.hat) && <Ears p={p} cx={50} cy={40} rx={33} />}
         <ellipse cx="50" cy="53" rx="33" ry="30" fill={`url(#${grad})`} />
         <Face p={p} cx={50} cy={53} s={1} accessory={cfg.accessory} dead={dead} lean={shape.muscle} />
         <ellipse cx="33" cy="34" rx="9" ry="6" fill="#fff" opacity="0.34" transform="rotate(-24 33 34)" />
-        <Hat hat={cfg.hat} cx={50} topY={24} w={33} />
+        <Hat hat={cfg.hat} cx={50} topY={18} w={33} />
       </svg>
     );
   }
@@ -311,7 +312,7 @@ export default function PigAvatar({
       )}
 
       {/* head — overlaps the torso top, so there's no floating gap */}
-      <Ears p={p} cx={50} cy={headCy - 6} rx={headRx} />
+      {!hidesEars(cfg.hat) && <Ears p={p} cx={50} cy={headCy - 6} rx={headRx} />}
       <ellipse cx="50" cy={headCy} rx={headRx} ry={headRy} fill={`url(#${grad})`} />
       {shape.chin && (
         <path
@@ -339,7 +340,7 @@ export default function PigAvatar({
           fill="#00B39F"
         />
       )}
-      <Hat hat={cfg.hat} cx={50} topY={headCy - headRy - 2} w={headRx} />
+      <Hat hat={cfg.hat} cx={50} topY={headCy - headRy - 8} w={headRx} />
     </svg>
   );
 }
@@ -540,13 +541,62 @@ function Hat({ hat, cx, topY, w }: { hat: string; cx: number; topY: number; w: n
           <circle cx={cx} cy={topY + 3} r={w * 0.09} fill="#FF4D6D" />
         </g>
       );
+    case "tophat":
+      return (
+        <g>
+          {/* Brim first, crown over it, so the join needs no outline — the same
+              rule the body follows. */}
+          <ellipse cx={cx} cy={topY + 11} rx={w * 0.92} ry={w * 0.17} fill="#2B1B3D" />
+          <rect
+            x={cx - w * 0.52}
+            y={topY - 17}
+            width={w * 1.04}
+            height={w * 0.86}
+            rx={w * 0.06}
+            fill="#2B1B3D"
+          />
+          <ellipse cx={cx} cy={topY - 17} rx={w * 0.52} ry={w * 0.12} fill="#3D2A52" />
+          {/* Band, sitting just above the brim. */}
+          <rect x={cx - w * 0.52} y={topY + 1} width={w * 1.04} height={w * 0.2} fill="#FF4D6D" />
+        </g>
+      );
     case "chef":
       return (
         <g>
-          <rect x={cx - w * 0.5} y={topY + 4} width={w} height={w * 0.3} rx={w * 0.06} fill="#FFFDFB" />
-          <ellipse cx={cx - w * 0.28} cy={topY - 2} rx={w * 0.3} ry={w * 0.26} fill="#FFFDFB" />
-          <ellipse cx={cx + w * 0.28} cy={topY - 2} rx={w * 0.3} ry={w * 0.26} fill="#FFFDFB" />
-          <ellipse cx={cx} cy={topY - 7} rx={w * 0.34} ry={w * 0.3} fill="#FFFDFB" />
+          {/* Toque: a narrow band, a short stem, and a puff that mushrooms out
+              well past both. The puff has to be clearly wider than the band or
+              it reads as a folded paper hat — which is what the first two
+              attempts at this did. */}
+          <rect
+            x={cx - w * 0.34}
+            y={topY - 14}
+            width={w * 0.68}
+            height={w * 0.62}
+            fill="#FFFDFB"
+          />
+          <ellipse cx={cx - w * 0.46} cy={topY - 18} rx={w * 0.4} ry={w * 0.34} fill="#FFFDFB" />
+          <ellipse cx={cx + w * 0.46} cy={topY - 18} rx={w * 0.4} ry={w * 0.34} fill="#FFFDFB" />
+          <ellipse cx={cx} cy={topY - 27} rx={w * 0.46} ry={w * 0.38} fill="#FFFDFB" />
+          <ellipse cx={cx} cy={topY - 17} rx={w * 0.62} ry={w * 0.34} fill="#FFFDFB" />
+          {/* Creases where the puff gathers into the band. */}
+          {[-1, 1].map((side) => (
+            <path
+              key={side}
+              d={`M ${cx + side * w * 0.16} ${topY + 2} L ${cx + side * w * 0.2} ${topY - 12}`}
+              stroke="#E8E0DA"
+              strokeWidth={w * 0.04}
+              strokeLinecap="round"
+            />
+          ))}
+          <rect
+            x={cx - w * 0.42}
+            y={topY + 1}
+            width={w * 0.84}
+            height={w * 0.3}
+            rx={w * 0.05}
+            fill="#FFFDFB"
+          />
+          <rect x={cx - w * 0.42} y={topY + 1} width={w * 0.84} height={w * 0.055} fill="#E8E0DA" />
         </g>
       );
     default:

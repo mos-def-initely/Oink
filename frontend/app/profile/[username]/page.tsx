@@ -234,6 +234,7 @@ function PigCustomiser({
           options={[...PIG_HATS]}
           value={cfg.hat}
           onChange={(v) => setCfg({ ...cfg, hat: v })}
+          format={(v) => (v === "tophat" ? "Top hat" : v)}
         />
         <Picker
           label="Accessory"
@@ -256,12 +257,15 @@ function Picker({
   value,
   onChange,
   swatch,
+  format,
 }: {
   label: string;
   options: string[];
   value: string;
   onChange: (v: string) => void;
   swatch?: (v: string) => string;
+  /** For values whose raw name doesn't read well capitalised on its own. */
+  format?: (v: string) => string;
 }) {
   return (
     <section>
@@ -279,7 +283,7 @@ function Picker({
                 style={{ background: swatch(opt) }}
               />
             )}
-            {opt}
+            {format ? format(opt) : opt}
           </button>
         ))}
       </div>
