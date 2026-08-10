@@ -6,7 +6,7 @@ These helpers batch their lookups so the map endpoint doesn't N+1 across pins.
 """
 
 from datetime import datetime
-from typing import Dict, List, Optional, Sequence, Set, Tuple
+from typing import Dict, List, NamedTuple, Optional, Sequence, Set, Tuple
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -24,62 +24,69 @@ def naive_dt(value: datetime) -> datetime:
     return value.replace(tzinfo=None) if value.tzinfo else value
 
 
-def places_logged_counts(db: Session, user_ids: Sequence[str]) -> Dict[str, int]:
-    """Distinct places each user has logged — drives the pig fatness tier (spec §9.1).
+class UserActivity(NamedTuple):
+    """What a user's pig is derived from: how much they've logged, and how recently."""
 
-    A place counts once whether the user recommended it, oinked it, or both.
-    Shame is excluded.
+    places_logged: int
+    last_logged_at: Optional[datetime]
+
+
+_ACTIVITY_CACHE_KEY = "oink_user_activity"
+
+
+def user_activity(db: Session, user_ids: Sequence[str]) -> Dict[str, UserActivity]:
+    """Places logged and last-logged time per user.
+
+    Both facts come from the same two tables — a recommendation or an oink; a
+    shame is neither a visit nor a meal — so they're gathered in one union
+    rather than four separate scans.
+
+    Results are memoised on the Session, which lives for exactly one request.
+    Endpoints ask for the same people more than once (the map's recommenders and
+    the feed's actors overlap heavily), and every repeat was another round trip
+    to a database that may be a long way away.
     """
-    if not user_ids:
+    ids = {uid for uid in user_ids if uid}
+    if not ids:
         return {}
-    ids = list(set(user_ids))
 
-    pairs: Set[Tuple[str, str]] = set()
-    rec_rows = db.execute(
-        select(Recommendation.user_id, Recommendation.restaurant_id).where(
-            Recommendation.user_id.in_(ids)
+    cache: Dict[str, UserActivity] = db.info.setdefault(_ACTIVITY_CACHE_KEY, {})
+    missing = [uid for uid in ids if uid not in cache]
+
+    if missing:
+        logged = select(
+            Recommendation.user_id, Recommendation.restaurant_id, Recommendation.created_at
+        ).where(Recommendation.user_id.in_(missing))
+        oinked = select(Reaction.user_id, Reaction.restaurant_id, Reaction.created_at).where(
+            Reaction.user_id.in_(missing), Reaction.type == "oink"
         )
-    ).all()
-    pairs.update((r[0], r[1]) for r in rec_rows)
 
-    oink_rows = db.execute(
-        select(Reaction.user_id, Reaction.restaurant_id).where(
-            Reaction.user_id.in_(ids), Reaction.type == "oink"
-        )
-    ).all()
-    pairs.update((r[0], r[1]) for r in oink_rows)
+        places: Dict[str, Set[str]] = {}
+        latest: Dict[str, datetime] = {}
+        for uid, restaurant_id, at in db.execute(logged.union_all(oinked)).all():
+            places.setdefault(uid, set()).add(restaurant_id)
+            current = latest.get(uid)
+            if current is None or naive_dt(at) > naive_dt(current):
+                latest[uid] = at
 
-    counts = {uid: 0 for uid in ids}
-    for uid, _ in pairs:
-        counts[uid] = counts.get(uid, 0) + 1
-    return counts
+        for uid in missing:
+            cache[uid] = UserActivity(len(places.get(uid, ())), latest.get(uid))
+
+    return {uid: cache[uid] for uid in ids}
+
+
+def places_logged_counts(db: Session, user_ids: Sequence[str]) -> Dict[str, int]:
+    """Distinct places each user has logged — drives the pig fatness tier (spec §9.1)."""
+    return {uid: a.places_logged for uid, a in user_activity(db, user_ids).items()}
 
 
 def last_logged_map(db: Session, user_ids: Sequence[str]) -> Dict[str, datetime]:
-    """When each user last logged a place — drives pig decay (spec §9.1).
-
-    Same definition of "logged" as places_logged_counts: a recommendation or an
-    oink. Shame doesn't count; being rude about somewhere isn't a meal.
-    """
-    if not user_ids:
-        return {}
-    ids = list(set(user_ids))
-
-    out: Dict[str, datetime] = {}
-    statements = (
-        select(Recommendation.user_id, Recommendation.created_at).where(
-            Recommendation.user_id.in_(ids)
-        ),
-        select(Reaction.user_id, Reaction.created_at).where(
-            Reaction.user_id.in_(ids), Reaction.type == "oink"
-        ),
-    )
-    for stmt in statements:
-        for uid, at in db.execute(stmt).all():
-            current = out.get(uid)
-            if current is None or naive_dt(at) > naive_dt(current):
-                out[uid] = at
-    return out
+    """When each user last logged a place — drives pig decay (spec §9.1)."""
+    return {
+        uid: a.last_logged_at
+        for uid, a in user_activity(db, user_ids).items()
+        if a.last_logged_at is not None
+    }
 
 
 def user_public(
