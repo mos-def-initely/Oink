@@ -44,12 +44,20 @@ export type PlaceSummary = {
   shamed_only: boolean;
 };
 
+export type Reply = {
+  id: string;
+  user: User;
+  body: string;
+  created_at: string;
+};
+
 export type Recommendation = {
   id: string;
   user: User;
   review_text: string;
   recommended_dishes: string[];
   images: Image[];
+  replies: Reply[];
   created_at: string;
   updated_at: string;
 };
@@ -74,6 +82,9 @@ export type FeedItem = {
   review_text: string | null;
   recommended_dishes: string[];
   images: Image[];
+  /** Who replied to this review, distinct and in first-reply order. */
+  repliers: User[];
+  reply_count: number;
   created_at: string;
 };
 

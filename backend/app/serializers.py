@@ -12,8 +12,15 @@ from typing import Dict, List, NamedTuple, Optional, Sequence, Set, Tuple
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from .models import Reaction, Recommendation, Restaurant, RestaurantImage, User, WishlistItem
-from .schemas import ImageOut, RecommendationOut, RestaurantDetail, RestaurantSummary, UserPublic
+from .models import Reaction, Recommendation, Reply, Restaurant, RestaurantImage, User, WishlistItem
+from .schemas import (
+    ImageOut,
+    RecommendationOut,
+    ReplyOut,
+    RestaurantDetail,
+    RestaurantSummary,
+    UserPublic,
+)
 
 
 def naive_dt(value: datetime) -> datetime:
@@ -306,6 +313,34 @@ def restaurant_detail(db: Session, restaurant: Restaurant, viewer: Optional[User
     rec_counts = places_logged_counts(db, rec_user_ids)
     rec_last = last_logged_map(db, rec_user_ids)
 
+    # One query for every reply on this place's reviews, then grouped — the
+    # alternative is a query per review.
+    replies_by_rec: Dict[str, List[ReplyOut]] = {}
+    rec_ids = [r.id for r in recs]
+    if rec_ids:
+        reply_rows = db.execute(
+            select(Reply).where(Reply.recommendation_id.in_(rec_ids)).order_by(Reply.created_at)
+        ).scalars().all()
+        reply_user_ids = list({r.user_id for r in reply_rows})
+        reply_users = {
+            u.id: u
+            for u in db.execute(select(User).where(User.id.in_(reply_user_ids))).scalars().all()
+        } if reply_user_ids else {}
+        reply_counts = places_logged_counts(db, reply_user_ids)
+        reply_last = last_logged_map(db, reply_user_ids)
+        for row in reply_rows:
+            author = reply_users.get(row.user_id)
+            if not author:
+                continue
+            replies_by_rec.setdefault(row.recommendation_id, []).append(
+                ReplyOut(
+                    id=row.id,
+                    user=user_public(author, reply_counts.get(row.user_id, 0), reply_last.get(row.user_id)),
+                    body=row.body,
+                    created_at=row.created_at,
+                )
+            )
+
     recommendations: List[RecommendationOut] = []
     my_recommendation = None
     for r in recs:
@@ -318,6 +353,7 @@ def restaurant_detail(db: Session, restaurant: Restaurant, viewer: Optional[User
             review_text=r.review_text,
             recommended_dishes=r.recommended_dishes or [],
             images=images_by_user.get(r.user_id, []),
+            replies=replies_by_rec.get(r.id, []),
             created_at=r.created_at,
             updated_at=r.updated_at,
         )

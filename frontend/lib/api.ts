@@ -93,6 +93,18 @@ export const api = {
   // --- people ---
   users: () => request<User[]>("/users"),
 
+  // --- replies ---
+  addReply: (placeId: string, recommendationId: string, body: string) =>
+    request<PlaceDetail>(`/restaurants/${placeId}/recommendations/${recommendationId}/replies`, {
+      method: "POST",
+      body: JSON.stringify({ body }),
+    }),
+  deleteReply: (placeId: string, recommendationId: string, replyId: string) =>
+    request<PlaceDetail>(
+      `/restaurants/${placeId}/recommendations/${recommendationId}/replies/${replyId}`,
+      { method: "DELETE" }
+    ),
+
   // --- feed ---
   feed: (limit = 30, offset = 0) => request<FeedItem[]>(`/feed?limit=${limit}&offset=${offset}`),
 

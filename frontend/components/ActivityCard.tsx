@@ -17,6 +17,11 @@
  * people have oinked the same place, they appear as a face and a count at the
  * foot of the log they agreed with, instead of each getting a row of their own.
  *
+ * Replies show as **faces and a count only** — never their text. The thread
+ * lives on the place page. Putting bodies here would grow cards without limit
+ * and undo the work of making this feed quiet, and bumping a review when someone
+ * replies would break the ordering for the sake of one chatty thread.
+ *
  * No rating appears anywhere (spec §8).
  */
 import Link from "next/link";
@@ -133,7 +138,39 @@ function ReviewCard({ item, agreed }: { item: FeedItem; agreed: User[] }) {
       </Link>
 
       <Agreement agreed={agreed} />
+      <Replies item={item} />
     </article>
+  );
+}
+
+/**
+ * Who is talking about this review, not what they said. Tapping goes to the
+ * place, where the thread actually is.
+ */
+function Replies({ item }: { item: FeedItem }) {
+  if (!item.reply_count) return null;
+  return (
+    <>
+      <div className="rule-dashed mx-3" />
+      <Link
+        href={`/restaurant/${item.restaurant.id}`}
+        className="flex items-center gap-1.5 px-3 py-2"
+      >
+        {item.repliers.slice(0, 3).map((u) => (
+          <PigAvatar
+            key={u.id}
+            config={u.pig_avatar_config}
+            placesLogged={u.places_logged}
+            lastLoggedAt={u.last_logged_at}
+            size={20}
+            variant="face"
+          />
+        ))}
+        <span className="micro">
+          {item.reply_count} {item.reply_count === 1 ? "reply" : "replies"}
+        </span>
+      </Link>
+    </>
   );
 }
 

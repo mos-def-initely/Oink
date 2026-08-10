@@ -10,8 +10,13 @@ from sqlalchemy.orm import Session
 
 from ..db import get_db
 from ..deps import get_current_user
-from ..models import Reaction, Recommendation, Restaurant, User, WishlistItem
-from ..schemas import ReactionCreate, RecommendationCreate, RestaurantDetail
+from ..models import Reaction, Recommendation, Reply, Restaurant, User, WishlistItem
+from ..schemas import (
+    CreateReplyRequest,
+    ReactionCreate,
+    RecommendationCreate,
+    RestaurantDetail,
+)
 from ..serializers import restaurant_detail
 
 router = APIRouter(prefix="/restaurants", tags=["social"])
@@ -100,6 +105,61 @@ def delete_recommendation(
 
 
 # --- Reactions (oink / shame) --------------------------------------------
+
+@router.post(
+    "/{restaurant_id}/recommendations/{recommendation_id}/replies",
+    response_model=RestaurantDetail,
+)
+def add_reply(
+    restaurant_id: str,
+    recommendation_id: str,
+    payload: CreateReplyRequest,
+    db: Session = Depends(get_db),
+    viewer: User = Depends(get_current_user),
+):
+    """Reply to somebody's review (spec §6.4).
+
+    Returns the whole place rather than the reply, so the client re-renders the
+    thread from one source of truth instead of splicing a row in by hand.
+    """
+    place = _require_place(db, restaurant_id)
+    rec = db.get(Recommendation, recommendation_id)
+    if not rec or rec.restaurant_id != place.id:
+        raise HTTPException(status_code=404, detail="No such review")
+
+    body = payload.body.strip()
+    if not body:
+        raise HTTPException(status_code=422, detail="Say something")
+
+    db.add(Reply(recommendation_id=rec.id, user_id=viewer.id, body=body))
+    db.commit()
+    return restaurant_detail(db, place, viewer)
+
+
+@router.delete(
+    "/{restaurant_id}/recommendations/{recommendation_id}/replies/{reply_id}",
+    response_model=RestaurantDetail,
+)
+def delete_reply(
+    restaurant_id: str,
+    recommendation_id: str,
+    reply_id: str,
+    db: Session = Depends(get_db),
+    viewer: User = Depends(get_current_user),
+):
+    """Delete your own reply. Only the author can — not the review's author, who
+    would otherwise be able to quietly remove disagreement from their own card."""
+    place = _require_place(db, restaurant_id)
+    reply = db.get(Reply, reply_id)
+    if not reply or reply.recommendation_id != recommendation_id:
+        raise HTTPException(status_code=404, detail="No such reply")
+    if reply.user_id != viewer.id:
+        raise HTTPException(status_code=403, detail="Not yours to delete")
+
+    db.delete(reply)
+    db.commit()
+    return restaurant_detail(db, place, viewer)
+
 
 @router.post("/{restaurant_id}/reactions", response_model=RestaurantDetail)
 def upsert_reaction(

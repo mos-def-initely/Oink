@@ -126,6 +126,26 @@ class Recommendation(Base):
     restaurant = relationship("Restaurant", back_populates="recommendations")
 
 
+class Reply(Base):
+    """A reply to somebody's review — spec §6.4.
+
+    Replies hang off a *recommendation*, not a place: an oink carries no text to
+    reply to, and letting every row start a thread turns the feed into a chat.
+    Flat, with no parent_id — twenty-odd friends arguing about a restaurant don't
+    need a tree, and threading doubles the layout work for nothing.
+    """
+
+    __tablename__ = "replies"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    recommendation_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("recommendations.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=_now)
+
+
 class Reaction(Base):
     """One 'oink' or 'shame' per user per place — spec §8."""
 

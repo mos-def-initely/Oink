@@ -10,6 +10,7 @@ import Link from "next/link";
 import { ApiError, api, googlePhotoSrc } from "@/lib/api";
 import type { PlaceDetail, User } from "@/lib/types";
 import PigAvatar from "@/components/pigs/PigAvatar";
+import ReplyThread from "@/components/ReplyThread";
 import { BudgetTag } from "@/components/pigs/PricePig";
 import { OinkPig, ShamePig } from "@/components/pigs/ReactionPigs";
 import PhotoCarousel from "@/components/PhotoCarousel";
@@ -19,6 +20,8 @@ import { EmptyState, ErrorNote, KIND_LABELS, PageHeader, Sheet, Spinner, timeAgo
 export default function PlacePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [place, setPlace] = useState<PlaceDetail | null>(null);
+  // Needed only to know whose replies carry a delete button.
+  const [viewer, setViewer] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
@@ -37,6 +40,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
 
   const load = useCallback(() => {
     api.place(id).then(setPlace).catch((e) => setError(e.message));
+    api.me().then(setViewer).catch(() => {});
   }, [id]);
 
   useEffect(load, [load]);
@@ -212,6 +216,8 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
                   ))}
                 </div>
               )}
+
+              <ReplyThread placeId={place.id} rec={rec} viewer={viewer} onChange={setPlace} />
             </article>
           ))}
         </section>

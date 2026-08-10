@@ -156,6 +156,49 @@ loses the event entirely.
 
 No rating anywhere.
 
+### 6.3 Discover
+- Map default, framed on the logged places once on load.
+- **Pins show one pig face**, plus a count chip when more than one person rates
+  the place. A stacked fan was tried and crowded badly where pins sit close
+  together. Shame-only places get a greyed-out pin with the angry pig.
+- **Basemap** is CARTO Voyager at full contrast. Warming Positron into aged
+  paper was tried so the map would sit in the oat palette, but it left roads too
+  quiet to navigate by — on a map you actually use, contrast beats
+  colour-matching.
+- Tap pin → bottom sheet → View details.
+- Filters: kind, budget (as price pigs), category.
+- **Kind and cuisine prefill themselves.** OSM's `type` maps to kind
+  (restaurant / bar / cafe) and its `cuisine` tag to category tags — Monmouth
+  Coffee resolves to Cafe · Specialty Coffee, The Harp to Bar · Pub, Padella to
+  Restaurant · Italian. Bars take their category from the type rather than the
+  cuisine tag, since their vocabulary is fixed. A prefill never overwrites a
+  choice the user has already made, and reverse-geocoded results are only
+  trusted when the matched object is the venue itself rather than a neighbour.
+- **Add-place flow — a Google Maps link is optional.** Four ways in: search by name (type-ahead), use current location, drop a pin, or paste a Maps link. Whenever a link or search result resolves, **the pin drops automatically**. Category is a **searchable dropdown** that filters remaining options as you type; bars use a fixed vocabulary, restaurants/cafes allow custom tags.
+- Adding a place **auto-oinks it**, so it appears on your profile and as an endorsed pin straight away.
+
+### 6.4 Place detail
+Cover, name, kind, category, budget pig, address, Maps link (when present). Oink and Shame buttons (toggle, mutually exclusive). **Two labelled groups — "Oinked" and "Shamed" — listing each person's pig face and name underneath.** Wishlist toggle (hidden once you've been). Then the reviews list: each person's recommendation as its own card with their review, dish tags, photos and timestamp.
+
+### 6.4a Replies
+You can reply to a **review**, and only a review. An oink carries no text to
+reply to, and letting every row start a thread turns the feed into a chat.
+
+Threads are **flat** — no nesting. Twenty-odd friends arguing about one
+restaurant don't need a tree, and threading doubles the layout work for nothing.
+
+**The full thread lives on the place page**; the feed shows only faces and a
+count. Reply bodies in the feed would grow cards without limit and undo the work
+of making that page quiet, and **a reply never bumps a review** — re-ordering the
+feed for one chatty thread breaks it for everything else. If replies should be
+noticeable, that wants an unread marker on the tab, not a re-sort.
+
+Only the reply's own author can delete it — not the review's author, who could
+otherwise quietly clear disagreement off their own card.
+
+### 6.5 Profile
+**Full-body pig** at current fatness tier, display name, places-logged count, tier label and progress to the next one. Pig customiser (colour/hat/accessory/background). Places logged. Wishlist link.
+
 ### 6.6 Pigsty
 The fourth tab: everyone on Oink, out on a field of grass you drag around and
 zoom, rather than a scrolling list. The point is being able to pull back and see
@@ -184,33 +227,6 @@ entirely under `prefers-reduced-motion`.
 Search pans to the first match and dims the rest rather than filtering the field
 down — the sty should stay a place you're looking around, not collapse into a
 list.
-
-### 6.3 Discover
-- Map default, framed on the logged places once on load.
-- **Pins show one pig face**, plus a count chip when more than one person rates
-  the place. A stacked fan was tried and crowded badly where pins sit close
-  together. Shame-only places get a greyed-out pin with the angry pig.
-- **Basemap** is CARTO Voyager at full contrast. Warming Positron into aged
-  paper was tried so the map would sit in the oat palette, but it left roads too
-  quiet to navigate by — on a map you actually use, contrast beats
-  colour-matching.
-- Tap pin → bottom sheet → View details.
-- Filters: kind, budget (as price pigs), category.
-- **Kind and cuisine prefill themselves.** OSM's `type` maps to kind
-  (restaurant / bar / cafe) and its `cuisine` tag to category tags — Monmouth
-  Coffee resolves to Cafe · Specialty Coffee, The Harp to Bar · Pub, Padella to
-  Restaurant · Italian. Bars take their category from the type rather than the
-  cuisine tag, since their vocabulary is fixed. A prefill never overwrites a
-  choice the user has already made, and reverse-geocoded results are only
-  trusted when the matched object is the venue itself rather than a neighbour.
-- **Add-place flow — a Google Maps link is optional.** Four ways in: search by name (type-ahead), use current location, drop a pin, or paste a Maps link. Whenever a link or search result resolves, **the pin drops automatically**. Category is a **searchable dropdown** that filters remaining options as you type; bars use a fixed vocabulary, restaurants/cafes allow custom tags.
-- Adding a place **auto-oinks it**, so it appears on your profile and as an endorsed pin straight away.
-
-### 6.4 Place detail
-Cover, name, kind, category, budget pig, address, Maps link (when present). Oink and Shame buttons (toggle, mutually exclusive). **Two labelled groups — "Oinked" and "Shamed" — listing each person's pig face and name underneath.** Wishlist toggle (hidden once you've been). Then the reviews list: each person's recommendation as its own card with their review, dish tags, photos and timestamp.
-
-### 6.5 Profile
-**Full-body pig** at current fatness tier, display name, places-logged count, tier label and progress to the next one. Pig customiser (colour/hat/accessory/background). Places logged. Wishlist link.
 
 ## 7. Auth
 

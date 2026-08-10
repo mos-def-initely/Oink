@@ -4,7 +4,7 @@ Everyone with an account is in one shared friend circle (spec §15), so the feed
 is all activity from all users, newest first.
 """
 
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from ..db import get_db
 from ..deps import get_current_user
-from ..models import Reaction, Recommendation, Restaurant, RestaurantImage, User
+from ..models import Reaction, Recommendation, Reply, Restaurant, RestaurantImage, User
 from ..schemas import FeedItem, ImageOut
 from ..serializers import (
     RestaurantContext,
@@ -100,6 +100,32 @@ def get_feed(
             ImageOut(id=img.id, url=img.url, uploaded_by=img.uploaded_by, created_at=img.created_at)
         )
 
+    # One query for the replies on this page's reviews, then grouped by review.
+    rec_ids = [row.id for _, activity, row in page if activity == "recommendation"]
+    replies_by_rec: Dict[str, List[str]] = {}
+    reply_users: Dict[str, User] = {}
+    if rec_ids:
+        reply_rows = (
+            db.execute(
+                select(Reply).where(Reply.recommendation_id.in_(rec_ids)).order_by(Reply.created_at)
+            )
+            .scalars()
+            .all()
+        )
+        for r in reply_rows:
+            replies_by_rec.setdefault(r.recommendation_id, []).append(r.user_id)
+        extra = {uid for uid in {r.user_id for r in reply_rows} if uid not in users}
+        if extra:
+            reply_users = {
+                u.id: u
+                for u in db.execute(select(User).where(User.id.in_(list(extra)))).scalars().all()
+            }
+        reply_users.update({uid: u for uid, u in users.items()})
+        missing = [uid for uid in reply_users if uid not in logged_counts]
+        if missing:
+            logged_counts.update(places_logged_counts(db, missing))
+            last_logged.update(last_logged_map(db, missing))
+
     items: List[FeedItem] = []
     for timestamp, activity, row in page:
         place = places.get(row.restaurant_id)
@@ -110,10 +136,21 @@ def get_feed(
         review_text: Optional[str] = None
         dishes: List[str] = []
         item_images: List[ImageOut] = []
+        repliers: List[str] = []
+        reply_count = 0
         if activity == "recommendation":
             review_text = row.review_text
             dishes = row.recommended_dishes or []
             item_images = images_by_place_user.get((place.id, actor.id), [])
+            thread = replies_by_rec.get(row.id, [])
+            reply_count = len(thread)
+            # Distinct people, first-reply order — three faces is all the strip
+            # shows, and the same person twice tells you nothing.
+            seen: set = set()
+            for uid in thread:
+                if uid not in seen:
+                    seen.add(uid)
+                    repliers.append(uid)
 
         items.append(
             FeedItem(
@@ -124,6 +161,12 @@ def get_feed(
                 review_text=review_text,
                 recommended_dishes=dishes,
                 images=item_images,
+                repliers=[
+                    user_public(reply_users[uid], logged_counts.get(uid, 0), last_logged.get(uid))
+                    for uid in repliers
+                    if uid in reply_users
+                ],
+                reply_count=reply_count,
                 created_at=timestamp,
             )
         )

@@ -96,6 +96,19 @@ class ImageOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ReplyOut(BaseModel):
+    id: str
+    user: UserPublic
+    body: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class CreateReplyRequest(BaseModel):
+    body: str = Field(min_length=1, max_length=600)
+
+
 class RestaurantSummary(BaseModel):
     """Shape used by map pins and the discover list (spec §6.3)."""
 
@@ -130,6 +143,10 @@ class RecommendationOut(BaseModel):
     review_text: str
     recommended_dishes: List[str]
     images: List[ImageOut] = []
+    # The whole thread, oldest first. Small by nature — a friend group arguing
+    # about one restaurant, not a comment section — so it ships with the review
+    # rather than behind another request.
+    replies: List[ReplyOut] = []
     created_at: datetime
     updated_at: datetime
 
@@ -176,6 +193,11 @@ class FeedItem(BaseModel):
     review_text: Optional[str] = None
     recommended_dishes: List[str] = []
     images: List[ImageOut] = []
+    # Who replied and how many, for the feed's reply strip. The bodies stay off
+    # the feed on purpose — the thread lives on the place page, and putting it
+    # here would undo the work of making the feed quiet.
+    repliers: List[UserPublic] = []
+    reply_count: int = 0
     created_at: datetime
 
 
