@@ -61,6 +61,11 @@ export default function PigAvatar({
   const p = PIG_COLORS[cfg.color];
   const bg = PIG_BACKGROUNDS[cfg.background];
   const shape = TIER_SHAPE[fatnessTier(placesLogged)];
+  // Every pig has a soft blush already; the accessory turns it up, so picking
+  // it reads as a decision rather than a barely-there tweak.
+  const rosy = cfg.accessory === "blush";
+  const blushScale = rosy ? 1.4 : 1;
+  const blushAlpha = rosy ? 0.82 : 0.5;
 
   const grad = `g-${uid}`;
   const blur = `b-${uid}`;
@@ -102,8 +107,8 @@ export default function PigAvatar({
           <ellipse cx="42" cy="42" rx="22" ry="16" fill="#fff" opacity="0.34" filter={`url(#${blur})`} />
         </g>
 
-        <ellipse cx="34" cy="69" rx="8" ry="5" fill={p.blush} opacity="0.5" filter={`url(#${blur})`} />
-        <ellipse cx="86" cy="69" rx="8" ry="5" fill={p.blush} opacity="0.5" filter={`url(#${blur})`} />
+        <ellipse cx="34" cy="69" rx={8 * blushScale} ry={5 * blushScale} fill={p.blush} opacity={blushAlpha} filter={`url(#${blur})`} />
+        <ellipse cx="86" cy="69" rx={8 * blushScale} ry={5 * blushScale} fill={p.blush} opacity={blushAlpha} filter={`url(#${blur})`} />
 
         {/* Snout sits proud of the face — shadow above it, highlight on top */}
         <ellipse cx="60" cy="66" rx="14" ry="8" fill={p.dark} opacity="0.4" filter={`url(#${blur})`} />
@@ -208,8 +213,8 @@ export default function PigAvatar({
         <ellipse cx={65 - headRx * 0.42} cy="34" rx={headRx * 0.6} ry={headRy * 0.45} fill="#fff" opacity="0.32" filter={`url(#${blur})`} />
       </g>
 
-      <ellipse cx={65 - headRx * 0.72} cy="56" rx="6.4" ry="4" fill={p.blush} opacity="0.5" filter={`url(#${blur})`} />
-      <ellipse cx={65 + headRx * 0.72} cy="56" rx="6.4" ry="4" fill={p.blush} opacity="0.5" filter={`url(#${blur})`} />
+      <ellipse cx={65 - headRx * 0.72} cy="56" rx={6.4 * blushScale} ry={4 * blushScale} fill={p.blush} opacity={blushAlpha} filter={`url(#${blur})`} />
+      <ellipse cx={65 + headRx * 0.72} cy="56" rx={6.4 * blushScale} ry={4 * blushScale} fill={p.blush} opacity={blushAlpha} filter={`url(#${blur})`} />
 
       <ellipse cx="65" cy="53" rx="12" ry="6.5" fill={p.dark} opacity="0.38" filter={`url(#${blur})`} />
       <ellipse cx="65" cy="57" rx="12" ry="8.6" fill={p.snout} stroke={OUTLINE} strokeWidth={STROKE} />

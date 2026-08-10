@@ -82,7 +82,7 @@ export const PIG_BACKGROUNDS: Record<string, string> = {
 };
 
 export const PIG_HATS = ["none", "cap", "beret", "bucket", "party", "crown", "chef"] as const;
-export const PIG_ACCESSORIES = ["none", "scarf"] as const;
+export const PIG_ACCESSORIES = ["none", "blush", "scarf"] as const;
 
 export type PigConfig = {
   color?: string;

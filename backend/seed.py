@@ -17,7 +17,7 @@ PASSWORD = "oink123"
 USERS = [
     ("defne", "Defne", {"color": "pink", "hat": "beret", "accessory": "none", "background": "oat"}),
     ("mert", "Mert", {"color": "peach", "hat": "cap", "accessory": "none", "background": "gold"}),
-    ("zeynep", "Zeynep", {"color": "rose", "hat": "none", "accessory": "scarf", "background": "lemon"}),
+    ("zeynep", "Zeynep", {"color": "rose", "hat": "none", "accessory": "blush", "background": "lemon"}),
     ("ali", "Ali", {"color": "cocoa", "hat": "bucket", "accessory": "none", "background": "lilac"}),
 ]
 
