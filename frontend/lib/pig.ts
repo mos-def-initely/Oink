@@ -132,7 +132,7 @@ export const PIG_ACCESSORIES = ["none", "blush", "scarf"] as const;
 
 /**
  * Costumes (spec §9.3). Club Penguin's memorable items were never garments, they
- * were characters — so three everyday tops sit alongside eleven costumes.
+ * were characters — so three everyday tops sit alongside nine costumes.
  *
  * `hat` is the headwear each costume implies. Picking a costume fills an empty
  * hat slot with it but never overrides a hat already chosen: the slots stay
@@ -142,35 +142,33 @@ export const PIG_COSTUMES = [
   "none",
   "hoodie", "puffer", "dungarees",
   "princess", "pirate", "raver", "astronaut", "superhero", "ninja",
-  "dinosaur", "wizard", "rockstar", "chef", "hotdog",
+  "dinosaur", "rockstar", "chef",
 ] as const;
 export type Costume = (typeof PIG_COSTUMES)[number];
 
 export const COSTUME_LABELS: Record<Costume, string> = {
   none: "none", hoodie: "hoodie", puffer: "puffer", dungarees: "dungarees",
   princess: "princess", pirate: "pirate", raver: "raver", astronaut: "astronaut",
-  superhero: "superhero", ninja: "ninja", dinosaur: "dinosaur", wizard: "wizard",
-  rockstar: "rockstar", chef: "chef", hotdog: "hot dog",
+  superhero: "superhero", ninja: "ninja", dinosaur: "dinosaur",
+  rockstar: "rockstar", chef: "chef",
 };
 
 /** The hat each costume suggests, applied only when the hat slot is empty. */
 export const COSTUME_HAT: Partial<Record<Costume, string>> = {
   princess: "crown", pirate: "pirate", raver: "headphones", astronaut: "helmet",
-  wizard: "wizard", rockstar: "bandana", chef: "chef", dinosaur: "none",
+  rockstar: "bandana", chef: "chef", dinosaur: "none",
 };
 
 /** Face items are their own slot so they stack with a hat. */
 export const PIG_FACES = ["none", "shades", "specs", "monocle", "eyepatch", "moustache"] as const;
 
 /**
- * Companions (spec §9.4) — the puffle role. The truffle leads because it's the
- * one a pig would actually be hunting, and it's the only companion with its own
- * colour set: real truffles already come in varieties.
+ * Companions (spec §9.4) — the puffle role, and deliberately just the one. A
+ * menagerie of pets dilutes the joke; the truffle is the thing a pig is actually
+ * hunting, so it carries the slot alone. Its varieties are the real ones, which
+ * means the variety picker doubles as the companion picker.
  */
-export const PIG_COMPANIONS = [
-  "none", "truffle", "piglet", "duckling", "parrot", "cat", "fox",
-  "hedgehog", "bunny", "frog", "mouse", "tortoise", "snail",
-] as const;
+export const PIG_COMPANIONS = ["none", "truffle"] as const;
 export type Companion = (typeof PIG_COMPANIONS)[number];
 
 export type TrufflePalette = { fill: string; dark: string; line: string; blush: string };

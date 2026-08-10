@@ -231,9 +231,13 @@ and the point is that they **stack**. Club Penguin's memorable items were never
 garments, they were characters, and a few dozen items produced hundreds of
 visibly distinct penguins only because several could be worn at once.
 
-Three everyday tops (hoodie, puffer, dungarees) sit alongside eleven costumes:
-princess, pirate, raver, astronaut, superhero, ninja, dinosaur, wizard,
-rockstar, chef, hot dog.
+Three everyday tops (hoodie, puffer, dungarees) sit alongside nine costumes:
+princess, pirate, raver, astronaut, superhero, ninja, dinosaur, rockstar, chef.
+
+A wizard and a hot dog were built and cut. Neither drew well: the robe was a flat
+field the stars sat on rather than in, and the bun halves fought the body's
+outline instead of wrapping it. The wizard *hat* survives as headwear, which is
+where it was working anyway.
 
 Two rules make a costume read as worn rather than stuck on:
 
@@ -259,19 +263,21 @@ Costumes and companions need a body, so they appear only where the full-body
 variant does — the feed and the profile. Map pins draw the head alone and are
 unaffected.
 
-### 9.4 Companions
-The puffle role: a second creature standing beside the animal, rather than a
-prop it has to hold — the pig has no hand to hold anything with.
+### 9.4 The truffle
+The puffle role: a creature standing beside the animal rather than a prop it has
+to hold, since the pig has no hand to hold anything with.
 
-Twelve, led by the **truffle**, which is the one a pig would actually be hunting.
-It is the only companion with its own colour set, and those are the real
-varieties — burgundy, black périgord, white alba, summer — which is a better
-colour story than arbitrary tints and keeps the joke intact.
+There is **exactly one**, and that's the point. A dozen pets were drawn — piglet,
+duckling, parrot, fox, bunny and the rest — and cut, because a menagerie dilutes
+the joke instead of extending it. The truffle is the thing a pig is actually
+hunting, so it carries the slot alone.
 
-The rest are animals: piglet, duckling, parrot, cat, fox, hedgehog, bunny, frog,
-mouse, tortoise, snail.
+Its colours are the real varieties — burgundy, black périgord, white alba,
+summer — which beats arbitrary tints and keeps the joke intact. Since it is the
+only companion, the variety picker doubles as the on/off control: one row in the
+customiser rather than two stacked ones.
 
-The companion stands to the animal's **left**, since the tail comes off the right
+It stands to the animal's **left**, since the tail comes off the right
 hip. Its position is offset from the body but clamped to the frame edge — a round
 animal leaves no clear space beside it, so the companion may stand slightly in
 front rather than shrinking to fit. A companion that shrank would read as further

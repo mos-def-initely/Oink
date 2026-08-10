@@ -107,12 +107,12 @@ export function costumeParts(costume: string, outline: string): CostumeParts {
     // --- characters -------------------------------------------------------
     case "princess":
       return {
-        sleeve: "#E9C8F6",
+        sleeve: "#CFE2F5",
         onBody: torso(
-          "#E9C8F6",
+          "#CFE2F5",
           <>
             {/* The gown flares past the trotters, which is the whole silhouette change. */}
-            <path d="M26 94 q39 10 78 0 l8 24 q-46 12 -94 0 Z" fill="#DDB0F2" {...s} />
+            <path d="M26 94 q39 10 78 0 l8 24 q-46 12 -94 0 Z" fill="#AFCEEC" {...s} />
             {[0, 1, 2, 3, 4, 5].map((i) => (
               <path key={i} d={`M${33 + i * 13} 98 l-2 20`} stroke={outline} strokeWidth="1.4" opacity="0.45" />
             ))}
@@ -121,8 +121,8 @@ export function costumeParts(costume: string, outline: string): CostumeParts {
         ),
         overArms: (
           <>
-            <circle cx="40" cy="76" r="9" fill="#E9C8F6" {...s} />
-            <circle cx="90" cy="76" r="9" fill="#E9C8F6" {...s} />
+            <circle cx="40" cy="76" r="9" fill="#CFE2F5" {...s} />
+            <circle cx="90" cy="76" r="9" fill="#CFE2F5" {...s} />
             <path d="M52 63 q13 8 26 0 q-13 7 -26 0 Z" fill={CREAM} {...s} />
           </>
         ),
@@ -254,34 +254,6 @@ export function costumeParts(costume: string, outline: string): CostumeParts {
         ),
       };
 
-    case "wizard":
-      return {
-        sleeve: "#4A3E7A",
-        onBody: torso(
-          "#4A3E7A",
-          <>
-            {[0, 1, 2, 3, 4].map((i) => {
-              const x = 50 + ((i * 11) % 30);
-              const y = 70 + (i % 3) * 10;
-              return (
-                <path
-                  key={i}
-                  d={`M${x} ${y} l1.4 3.6 3.6-.9 -2.6 2.7 2.6 2.7 -3.6-.9 -1.4 3.6 -1.4-3.6 -3.6 .9 2.6-2.7 -2.6-2.7 3.6 .9 Z`}
-                  fill={LEMON}
-                />
-              );
-            })}
-          </>
-        ),
-        overArms: (
-          <>
-            <path d="M31 74 q-8 16 2 26 q10 -4 11 -22 Z" fill="#4A3E7A" {...s} />
-            <path d="M99 74 q8 16 -2 26 q-10 -4 -11 -22 Z" fill="#4A3E7A" {...s} />
-            <path d="M44 63 q21 9 42 0 q-8 9 -21 9 q-13 0 -21 -9 Z" fill="#3B3163" {...s} />
-          </>
-        ),
-      };
-
     case "rockstar":
       return {
         sleeve: "#2E2A31",
@@ -321,21 +293,6 @@ export function costumeParts(costume: string, outline: string): CostumeParts {
           <>
             <path d="M52 62 L65 74 L78 62 q-13 -4 -26 0 Z" fill={RUST} {...s} />
             <path d="M56 90 q9 -4 18 0 l2 10 q-11 4 -22 0 Z" fill="#E2DCCB" {...s} />
-          </>
-        ),
-      };
-
-    case "hotdog":
-      return {
-        sleeve: "#F0C878",
-        onBody: (
-          <>
-            {/* Bun halves either side — the animal is the sausage. */}
-            <path d="M34 66 q-10 18 0 34 q9 4 12 -2 q-6 -15 0 -30 q-4 -6 -12 -2 Z" fill="#F0C878" {...s} />
-            <path d="M96 66 q10 18 0 34 q-9 4 -12 -2 q6 -15 0 -30 q4 -6 12 -2 Z" fill="#F0C878" {...s} />
-            <path d="M65 64 q-18 2 -18 18 q0 16 18 17 q18 -1 18 -17 q0 -16 -18 -18 Z" fill={RUST} {...s} />
-            <path d="M52 72 q7 6 13 0 q7 6 13 0" fill="none" stroke={LEMON} strokeWidth="3.4" strokeLinecap="round" />
-            <path d="M52 84 q7 6 13 0 q7 6 13 0" fill="none" stroke={LEMON} strokeWidth="3.4" strokeLinecap="round" />
           </>
         ),
       };

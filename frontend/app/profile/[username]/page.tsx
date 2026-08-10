@@ -18,7 +18,6 @@ import {
   SPECIES_DEFAULT_COLOR,
   PIG_COSTUMES,
   PIG_FACES,
-  PIG_COMPANIONS,
   COSTUME_LABELS,
   COSTUME_HAT,
   TRUFFLE_VARIETIES,
@@ -261,22 +260,22 @@ function PigCustomiser({
           value={cfg.face}
           onChange={(v) => setCfg({ ...cfg, face: v })}
         />
+        {/* The truffle is the only companion, so its varieties and the on/off
+            choice are one control rather than two stacked pickers. */}
         <Picker
-          label="companion"
-          options={[...PIG_COMPANIONS]}
-          value={cfg.companion}
-          onChange={(v) => setCfg({ ...cfg, companion: v })}
+          label="truffle"
+          options={["none", ...Object.keys(TRUFFLE_VARIETIES)]}
+          value={cfg.companion === "truffle" ? cfg.truffle : "none"}
+          onChange={(v) =>
+            setCfg(
+              v === "none"
+                ? { ...cfg, companion: "none" }
+                : { ...cfg, companion: "truffle", truffle: v }
+            )
+          }
+          swatch={(v) => (v === "none" ? "transparent" : TRUFFLE_VARIETIES[v].fill)}
+          render={(v) => (v === "none" ? "none" : TRUFFLE_LABELS[v])}
         />
-        {cfg.companion === "truffle" && (
-          <Picker
-            label="truffle"
-            options={Object.keys(TRUFFLE_VARIETIES)}
-            value={cfg.truffle}
-            onChange={(v) => setCfg({ ...cfg, truffle: v })}
-            swatch={(v) => TRUFFLE_VARIETIES[v].fill}
-            render={(v) => TRUFFLE_LABELS[v]}
-          />
-        )}
 
         <Picker
           label="background"
