@@ -152,6 +152,8 @@ export default function PigstyScreen({ initialUsers }: { initialUsers: User[] | 
   const drag = useRef<{ x: number; y: number; moved: boolean } | null>(null);
   /** Pinch: the two-finger span and the field point pinned under their midpoint. */
   const pinch = useRef<{ dist: number; scale: number; fx: number; fy: number } | null>(null);
+  /** Pointers we've captured. Capture is taken late — see onPointerMove. */
+  const captured = useRef(new Set<number>());
 
   useEffect(() => {
     api.users().then(setUsers).catch(() => {});
@@ -216,13 +218,25 @@ export default function PigstyScreen({ initialUsers }: { initialUsers: User[] | 
     };
   }
 
+  /**
+   * Capture is deliberately *not* taken on pointerdown. A captured pointer
+   * retargets the following `click` to the capturing element, so grabbing it up
+   * front sends every tap to the field instead of the pig that was tapped. It's
+   * taken once a gesture is genuinely under way, by which point the tap is moot.
+   */
+  function capture(id: number) {
+    if (captured.current.has(id)) return;
+    viewport.current?.setPointerCapture(id);
+    captured.current.add(id);
+  }
+
   function onPointerDown(e: React.PointerEvent) {
-    viewport.current?.setPointerCapture(e.pointerId);
     const p = local(e);
     pointers.current.set(e.pointerId, p);
 
     if (pointers.current.size === 2) {
       startPinch();
+      pointers.current.forEach((_, id) => capture(id));
       drag.current = null;
       return;
     }
@@ -252,12 +266,20 @@ export default function PigstyScreen({ initialUsers }: { initialUsers: User[] | 
 
     if (!drag.current) return;
     const next = { x: p.x - drag.current.x, y: p.y - drag.current.y };
-    if (Math.abs(next.x - pan.x) + Math.abs(next.y - pan.y) > 3) drag.current.moved = true;
+    // Past the slop threshold this is a drag, not a tap — take the pointer then.
+    if (Math.abs(next.x - pan.x) + Math.abs(next.y - pan.y) > 3) {
+      drag.current.moved = true;
+      capture(e.pointerId);
+    }
+    if (!drag.current.moved) return;
     setPan(next);
   }
 
   function onPointerUp(e: React.PointerEvent) {
     pointers.current.delete(e.pointerId);
+    if (captured.current.delete(e.pointerId)) {
+      viewport.current?.releasePointerCapture?.(e.pointerId);
+    }
 
     if (pointers.current.size === 1) {
       // Coming out of a pinch: re-anchor to the finger still down, or the field

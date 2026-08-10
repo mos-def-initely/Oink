@@ -248,6 +248,11 @@ fingers rather than a corner — the field holds still under whatever you're
 looking at. Coming out of a pinch re-anchors to the finger still down, or the
 field jumps by however far apart the two were.
 
+Pointer capture is taken **late** — once a drag passes the slop threshold or a
+second finger lands — never on the first touch. A captured pointer retargets the
+following `click` to the capturing element, so grabbing it up front sends every
+tap to the field instead of the pig that was tapped.
+
 **The grass never runs out.** Scenery used to be positioned nodes inside the
 field, so pulling back ran past its edge into bare green. It's now one repeating
 tile laid far beyond the pigs, which keeps going however far out you go and
