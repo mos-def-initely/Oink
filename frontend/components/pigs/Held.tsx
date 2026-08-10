@@ -33,6 +33,7 @@ const RUST = "#A9503C";
 const STEEL = "#B9AFA0";
 const BLADE = "#EDE7DA";
 const LILAC = "#D8B5F7";
+const BLACK = "#000000";
 
 export default function Held({ item, armX }: { item: string; armX: number }) {
   const s = { stroke: OUTLINE, strokeWidth: STROKE, strokeLinejoin: "round" as const };
@@ -82,8 +83,8 @@ export default function Held({ item, armX }: { item: string; armX: number }) {
       return (
         <g {...s}>
           <path d={`M ${gx - 11} ${gy + 5} q 4 -9 9 -1`} fill="none" />
-          <rect x={gx - 20} y={gy + 4} width="26" height="18" rx="2.5" fill={RUST} />
-          <rect x={gx - 20} y={gy + 10} width="26" height="3" fill={INK} stroke="none" />
+          <rect x={gx - 20} y={gy + 4} width="26" height="18" rx="2.5" fill={BLACK} />
+          <rect x={gx - 20} y={gy + 10} width="26" height="3" fill={BLACK} stroke="none" />
           <rect x={gx - 6} y={gy + 9} width="6" height="5" rx="1.5" fill={GOLD} strokeWidth="1.5" />
         </g>
       );
@@ -112,7 +113,8 @@ export default function Held({ item, armX }: { item: string; armX: number }) {
         <g {...s}>
           <path
             d={`M ${ix - 8} ${gy - 18} L ${ix + 8} ${gy - 18} L ${ix + 4.5} ${gy - 3} L ${ix - 4.5} ${gy - 3} Z`}
-            fill={PLUM}
+            fill={CREAM}
+            }
           />
           <rect x={ix - 1.4} y={gy - 3} width="3" height="12" fill={CREAM} />
           <rect x={ix - 6} y={gy + 9} width="12" height="3.5" rx="1.7" fill={CREAM} />
