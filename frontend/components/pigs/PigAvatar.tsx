@@ -291,40 +291,15 @@ export default function PigAvatar({
       {/* head — overlaps the torso top, so there's no floating gap */}
       <Ears p={p} cx={50} cy={headCy - 6} rx={headRx} />
       <ellipse cx="50" cy={headCy} rx={headRx} ry={headRy} fill={`url(#${grad})`} />
-      {/* Double chin — a jowl that hangs, not a line drawn on the jaw. Filled
-          with the body's own colour and shaded underneath, so it reads as
-          weight rather than as a wrinkle. */}
       {shape.chin && (
-        <g>
-          <defs>
-            <linearGradient
-              id={`${fold}-chin`}
-              gradientUnits="userSpaceOnUse"
-              x1="0"
-              y1={headCy + headRy * 0.5}
-              x2="0"
-              y2={headCy + headRy * 1.12}
-            >
-              <stop offset="0%" stopColor="#fff" stopOpacity="0.16" />
-              <stop offset="45%" stopColor="#fff" stopOpacity="0" />
-              <stop offset="100%" stopColor={p.dark} stopOpacity="0.5" />
-            </linearGradient>
-          </defs>
-          <ellipse
-            cx="50"
-            cy={headCy + headRy * 0.72}
-            rx={headRx * 0.72}
-            ry={headRy * 0.34}
-            fill={`url(#${grad})`}
-          />
-          <ellipse
-            cx="50"
-            cy={headCy + headRy * 0.72}
-            rx={headRx * 0.72}
-            ry={headRy * 0.34}
-            fill={`url(#${fold}-chin)`}
-          />
-        </g>
+        <path
+          d={`M ${50 - headRx * 0.58} ${headCy + headRy * 0.66} q ${headRx * 0.58} 8 ${headRx * 1.16} 0`}
+          fill="none"
+          stroke={p.dark}
+          strokeWidth="2.3"
+          strokeLinecap="round"
+          opacity="0.5"
+        />
       )}
       <Face p={p} cx={50} cy={headCy} s={headRx / 33} accessory={cfg.accessory} dead={dead} lean={shape.muscle} />
       <ellipse
