@@ -27,10 +27,8 @@
 import { useId } from "react";
 import {
   PIG_BACKGROUNDS,
-  PIG_COLORS,
   PigConfig,
-  SPECIES_OUTLINE,
-  SPECIES_PALETTE,
+  SPECIES_COLORS,
   Species,
   TIER_SHAPE,
   fatnessTier,
@@ -62,9 +60,10 @@ export default function PigAvatar({
   const uid = useId().replace(/:/g, "");
   const cfg = normalisePig(config);
   const species = cfg.species as Species;
-  // Boar and hog carry their own coats; the pig uses the customisable ones.
-  const p = species === "pig" ? PIG_COLORS[cfg.color] : SPECIES_PALETTE[species];
-  const OUTLINE = SPECIES_OUTLINE[species];
+  // Every species is customisable; each has its own set of coats, and each coat
+  // carries its own outline so a charcoal boar isn't drawn in pink-brown.
+  const p = SPECIES_COLORS[species][cfg.color];
+  const OUTLINE = p.outline;
   const bg = PIG_BACKGROUNDS[cfg.background];
   const shape = TIER_SHAPE[fatnessTier(placesLogged)];
   // Every pig has a soft blush already; the accessory turns it up, so picking

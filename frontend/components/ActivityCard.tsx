@@ -64,9 +64,15 @@ function ReviewCard({ item }: { item: FeedItem }) {
           className="h-[74px] w-[74px] shrink-0 rounded-lg border-2 border-ink"
         />
         <div className="min-w-0 flex-1">
-          <h2 className="truncate font-display text-lg font-bold leading-tight">{place.name}</h2>
+          <div className="flex items-start justify-between gap-2">
+            <h2 className="min-w-0 truncate font-display text-lg font-bold leading-tight">
+              {place.name}
+            </h2>
+            {/* Budget is never bare `$` text — it always travels with its pig. */}
+            <BudgetTag budget={place.budget} size={26} />
+          </div>
           <p className="micro mt-0.5">
-            {[place.city, KIND_LABELS[place.kind], place.budget].filter(Boolean).join(" · ")}
+            {[place.city, KIND_LABELS[place.kind]].filter(Boolean).join(" · ")}
           </p>
           {item.review_text && (
             <p className="mt-1.5 line-clamp-3 text-sm leading-snug">{item.review_text}</p>
@@ -109,9 +115,12 @@ function ReactionRow({ item }: { item: FeedItem }) {
               {shamed ? "shamed" : "oinked"}
             </span>
           </div>
-          <p className="micro mt-0.5 truncate">
-            {[place.city, KIND_LABELS[place.kind], place.budget].filter(Boolean).join(" · ")}
-          </p>
+          <div className="mt-0.5 flex items-center gap-1.5">
+            <p className="micro min-w-0 truncate">
+              {[place.city, KIND_LABELS[place.kind]].filter(Boolean).join(" · ")}
+            </p>
+            <BudgetTag budget={place.budget} size={20} />
+          </div>
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5">

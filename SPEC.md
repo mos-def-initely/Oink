@@ -212,7 +212,11 @@ Thresholds live only in `lib/pig.ts`.
 appears only on the feed and the profile.
 
 **Species** — pig, boar or hog, chosen in the customiser with **pig as the
-default** so nobody has to decide. Species is the only avatar attribute still
+default** so nobody has to decide. Each species has **its own set of coats**
+(pig: pink, rose, peach, cocoa…; boar: umber, charcoal, russet, ginger; hog:
+sand, chocolate, blush, ash), and each coat carries its own outline colour — a
+single shared brown line suited none of them. Switching species keeps the
+current coat if that animal has it, otherwise falls back to its default. Species is the only avatar attribute still
 legible at 24px on a map pin, which is exactly where telling friends apart
 matters. Boar and hog carry their own coats, ears, tusks and darker outlines;
 all three keep the fatness tiers, nostrils and shading.

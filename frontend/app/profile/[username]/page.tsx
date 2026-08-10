@@ -12,9 +12,10 @@ import {
   FATNESS_TIERS,
   PIG_ACCESSORIES,
   PIG_BACKGROUNDS,
-  PIG_COLORS,
   PIG_HATS,
   PIG_SPECIES,
+  SPECIES_COLORS,
+  SPECIES_DEFAULT_COLOR,
   SPECIES_LABELS,
   Species,
   fatnessTier,
@@ -99,8 +100,8 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
 
           {isMe && (
             <div className="flex w-full gap-2 pt-2">
-              <button onClick={() => setEditOpen(true)} className="btn-secondary flex-1 text-sm">
-                Customise pig
+              <button onClick={() => setEditOpen(true)} className="btn-primary flex-1 text-sm">
+                Customise
               </button>
               <Link href="/profile/me/wishlist" className="btn-plain flex-1 text-center text-sm">
                 Wishlist
@@ -181,7 +182,7 @@ function PigCustomiser({
   }
 
   return (
-    <Sheet open={open} onClose={onClose} title="Your pig">
+    <Sheet open={open} onClose={onClose} title="Your animal">
       <div className="space-y-4 pb-4">
         <div className="flex justify-center">
           <PigAvatar config={cfg} placesLogged={user.places_logged} size={130} variant="full" />
@@ -198,7 +199,17 @@ function PigCustomiser({
             {PIG_SPECIES.map((sp) => (
               <button
                 key={sp}
-                onClick={() => setCfg({ ...cfg, species: sp })}
+                onClick={() =>
+                  // Coats are per-species, so carry the colour over only if the
+                  // new animal has it; otherwise take its default.
+                  setCfg({
+                    ...cfg,
+                    species: sp,
+                    color: SPECIES_COLORS[sp as Species][cfg.color]
+                      ? cfg.color
+                      : SPECIES_DEFAULT_COLOR[sp as Species],
+                  })
+                }
                 className={`flex flex-1 flex-col items-center gap-1.5 rounded-xl border-2 border-ink p-2 ${
                   cfg.species === sp ? "bg-plum text-oat" : "bg-cream text-ink"
                 }`}
@@ -213,15 +224,13 @@ function PigCustomiser({
           <p className="micro mt-1.5">Pig by default — boar and hog are opt-in</p>
         </section>
 
-        {cfg.species === "pig" && (
-          <Picker
-            label="Colour"
-            options={Object.keys(PIG_COLORS)}
-            value={cfg.color}
-            onChange={(v) => setCfg({ ...cfg, color: v })}
-            swatch={(v) => PIG_COLORS[v].mid}
-          />
-        )}
+        <Picker
+          label="Coat"
+          options={Object.keys(SPECIES_COLORS[cfg.species as Species])}
+          value={cfg.color}
+          onChange={(v) => setCfg({ ...cfg, color: v })}
+          swatch={(v) => SPECIES_COLORS[cfg.species as Species][v].mid}
+        />
         <Picker
           label="Background"
           options={Object.keys(PIG_BACKGROUNDS)}
