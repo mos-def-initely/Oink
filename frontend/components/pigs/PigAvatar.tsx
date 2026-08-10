@@ -160,7 +160,11 @@ export default function PigAvatar({
         // The wider the body, the further the arms are shoved off vertical —
         // a slim pig's hang straight down, a fat one's can't. Derived from the
         // waist so it scales with the tier rather than being set per tier.
-        const angle = side * Math.max(0, (w - TIER_SHAPE.slim.waist) * 0.9);
+        // Pivot is the shoulder, so a negative angle swings the hand away from
+        // the body — which is what a belly does to the forearms. Hunky goes the
+        // other way: the lats flare the shoulders out and the forearms come in.
+        const splay = Math.max(0, (w - TIER_SHAPE.slim.waist) * 0.9);
+        const angle = (shape.muscle ? 1 : -1) * side * splay;
         return (
           <g key={side} transform={`rotate(${angle} ${x} ${armTop + 3})`}>
             <rect
