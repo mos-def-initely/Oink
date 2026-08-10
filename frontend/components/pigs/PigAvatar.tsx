@@ -117,9 +117,10 @@ export default function PigAvatar({
     >
       {gradient}
 
-      {/* tail on the lower back, clear of the arms */}
+      {/* Tail starts outside the right arm's outer edge (65 + w + 4), so it
+          reads as coming off the rump rather than out of the arm. */}
       <path
-        d={`M ${65 + w - 1} 90 q 13 -2 11 -14`}
+        d={`M ${65 + w + 5} 88 q 12 -3 10 -14`}
         fill="none"
         stroke={OUTLINE}
         strokeWidth="2.8"
@@ -131,10 +132,13 @@ export default function PigAvatar({
         <rect x={65 - w * 0.55} y="100" width="14" height="19" rx="6.5" fill={p.snout} />
         <rect x={65 + w * 0.55 - 14} y="100" width="14" height="19" rx="6.5" fill={p.snout} />
 
-        {/* One rounded mass for the body — the reference pigs are blobs with
-            tiny legs, not figures with separate arms. Separate limbs read as
-            detached at avatar sizes. */}
         <ellipse cx="65" cy="82" rx={w} ry={w * 0.9} fill={`url(#${grad})`} />
+
+        {/* Arms sit ON TOP of the body edges in the slightly darker ear tone —
+            that's what makes them read as arms in front rather than as limbs
+            floating beside a ball. Drawn behind the body they look detached. */}
+        <rect x={65 - w - 4} y="74" width="13" height="24" rx="6.5" fill={p.ear} />
+        <rect x={65 + w - 9} y="74" width="13" height="24" rx="6.5" fill={p.ear} />
 
         {/* Ears behind, then the head overlapping the body so they read as one
             silhouette rather than a head balanced on a ball. */}

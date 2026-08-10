@@ -154,9 +154,13 @@ ears, tiny trotters, curly tail.
 The avatar is deliberately **neutral** — it is an identity, not a mood. All the
 expression in the interface comes from the reaction icons instead.
 
-Construction: one rounded mass for the body with the head overlapping it, so the
-whole thing reads as a single silhouette. Separate arms were tried and rejected
-— at avatar sizes they read as detached limbs.
+Construction: a rounded body with the head overlapping it, so the whole thing
+reads as one silhouette. Arms are drawn **on top of** the body edges in the
+slightly darker ear tone — that's what makes them read as arms in front. Drawn
+behind the body they look like detached limbs floating beside a ball.
+
+The tail starts outside the right arm's outer edge, so it comes off the rump
+rather than appearing to grow out of the arm.
 
 **The snout and its two nostrils are drawn at every size.** They are the most
 recognisably pig feature, and dropping them at small sizes makes the avatar read
