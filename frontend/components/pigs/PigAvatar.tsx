@@ -89,7 +89,7 @@ export default function PigAvatar({
         <ellipse cx="50" cy="53" rx="33" ry="30" fill={`url(#${grad})`} />
         <Face p={p} cx={50} cy={53} s={1} accessory={cfg.accessory} dead={dead} lean={shape.muscle} />
         <ellipse cx="33" cy="34" rx="9" ry="6" fill="#fff" opacity="0.34" transform="rotate(-24 33 34)" />
-        <Hat hat={cfg.hat} cx={50} topY={18} w={33} />
+        <Hat hat={cfg.hat} cx={50} topY={22} w={33} room={20} />
       </svg>
     );
   }
@@ -132,8 +132,8 @@ export default function PigAvatar({
   return (
     <svg
       width={size}
-      height={(size * 165) / 100}
-      viewBox="0 0 100 165"
+      height={(size * 188) / 100}
+      viewBox="0 -23 100 188"
       className={className}
       role="img"
       aria-label={dead ? "Dead pig" : "Pig"}
@@ -340,7 +340,7 @@ export default function PigAvatar({
           fill="#00B39F"
         />
       )}
-      <Hat hat={cfg.hat} cx={50} topY={headCy - headRy - 8} w={headRx} />
+      <Hat hat={cfg.hat} cx={50} topY={headCy - headRy - 3} w={headRx} room={headCy - headRy - 3 + 21} />
     </svg>
   );
 }
@@ -499,7 +499,20 @@ function Face({
   );
 }
 
-function Hat({ hat, cx, topY, w }: { hat: string; cx: number; topY: number; w: number }) {
+function Hat({
+  hat,
+  cx,
+  topY,
+  w,
+  room,
+}: {
+  hat: string;
+  cx: number;
+  topY: number;
+  w: number;
+  /** Vertical space above topY before the hat would be clipped by the viewBox. */
+  room: number;
+}) {
   switch (hat) {
     case "cap":
       return (
@@ -560,45 +573,48 @@ function Hat({ hat, cx, topY, w }: { hat: string; cx: number; topY: number; w: n
           <rect x={cx - w * 0.52} y={topY + 1} width={w * 1.04} height={w * 0.2} fill="#FF4D6D" />
         </g>
       );
-    case "chef":
+    case "chef": {
+      // The tall straight kind, not the puffy one — capped at whatever room the
+      // viewBox leaves so it can't be clipped on the smaller face variant.
+      const crownH = Math.min(w * 1.25, room);
+      const crownTop = topY + 4 - crownH;
+      const halfW = w * 0.4;
       return (
         <g>
-          {/* Toque: a narrow band, a short stem, and a puff that mushrooms out
-              well past both. The puff has to be clearly wider than the band or
-              it reads as a folded paper hat — which is what the first two
-              attempts at this did. */}
           <rect
-            x={cx - w * 0.34}
-            y={topY - 14}
-            width={w * 0.68}
-            height={w * 0.62}
+            x={cx - halfW}
+            y={crownTop}
+            width={halfW * 2}
+            height={crownH}
+            rx={w * 0.05}
             fill="#FFFDFB"
           />
-          <ellipse cx={cx - w * 0.46} cy={topY - 18} rx={w * 0.4} ry={w * 0.34} fill="#FFFDFB" />
-          <ellipse cx={cx + w * 0.46} cy={topY - 18} rx={w * 0.4} ry={w * 0.34} fill="#FFFDFB" />
-          <ellipse cx={cx} cy={topY - 27} rx={w * 0.46} ry={w * 0.38} fill="#FFFDFB" />
-          <ellipse cx={cx} cy={topY - 17} rx={w * 0.62} ry={w * 0.34} fill="#FFFDFB" />
-          {/* Creases where the puff gathers into the band. */}
-          {[-1, 1].map((side) => (
-            <path
-              key={side}
-              d={`M ${cx + side * w * 0.16} ${topY + 2} L ${cx + side * w * 0.2} ${topY - 12}`}
-              stroke="#E8E0DA"
-              strokeWidth={w * 0.04}
+          {/* Gathered top, and pleats running the full height of the crown. */}
+          <ellipse cx={cx} cy={crownTop + w * 0.05} rx={halfW} ry={w * 0.11} fill="#FFFDFB" />
+          {[-0.5, 0, 0.5].map((offset, i) => (
+            <line
+              key={i}
+              x1={cx + halfW * offset * 1.3}
+              y1={crownTop + w * 0.16}
+              x2={cx + halfW * offset * 1.3}
+              y2={topY + 1}
+              stroke="#EAE2DC"
+              strokeWidth={w * 0.035}
               strokeLinecap="round"
             />
           ))}
           <rect
-            x={cx - w * 0.42}
+            x={cx - w * 0.46}
             y={topY + 1}
-            width={w * 0.84}
-            height={w * 0.3}
+            width={w * 0.92}
+            height={w * 0.28}
             rx={w * 0.05}
             fill="#FFFDFB"
           />
-          <rect x={cx - w * 0.42} y={topY + 1} width={w * 0.84} height={w * 0.055} fill="#E8E0DA" />
+          <rect x={cx - w * 0.46} y={topY + 1} width={w * 0.92} height={w * 0.05} fill="#EAE2DC" />
         </g>
       );
+    }
     default:
       return null;
   }
