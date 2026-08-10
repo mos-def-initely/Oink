@@ -21,7 +21,7 @@ import {
   PIG_SPECIES,
   SPECIES_COLORS,
   SPECIES_DEFAULT_COLOR,
-  PIG_COSTUMES,
+  costumesFor,
   PIG_FACES,
   COSTUME_LABELS,
   COSTUME_HAT,
@@ -380,7 +380,9 @@ function PigCustomiser({
         />
         <Picker
           label="costume"
-          options={[...PIG_COSTUMES]}
+          // Off the saved name rather than the field above it, so the suit
+          // can't be unlocked by typing someone else's name into the box.
+          options={costumesFor(user.display_name)}
           value={cfg.costume}
           onChange={(v) =>
             setCfg({

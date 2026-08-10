@@ -41,9 +41,9 @@ function SignInForm() {
     <main className="flex min-h-screen flex-col items-center justify-center px-5 py-10">
       <div className="mb-5 flex flex-col items-center">
         <PigAvatar
-          size={92}
+          size={140}
           variant="full"
-          placesLogged={18}
+          placesLogged={42}
           holding="knife"
           config={{ color: "pink", hat: "chef" }}
         />

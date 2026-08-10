@@ -44,6 +44,8 @@ const LEMON = "#E6D389";
 const PLUM = "#914E56";
 const RUST = "#A9503C";
 const INK = "#4D303F";
+/** Darker than INK and cooler — a suit has to out-rank the outline. */
+const CHARCOAL = "#3A2530";
 
 export function costumeParts(costume: string, outline: string): CostumeParts {
   const s = { stroke: outline, strokeWidth: 2.1, strokeLinejoin: "round" as const };
@@ -289,6 +291,86 @@ export function costumeParts(costume: string, outline: string): CostumeParts {
           </>
         ),
       };
+
+    // --- suits ------------------------------------------------------------
+    // Not on general release (see SUIT_WEARERS in lib/pig.ts). Both are the
+    // same jacket; what changes is what's underneath, so they share everything
+    // but the shirt.
+    case "suit":
+    case "suitopen": {
+      const open = costume === "suitopen";
+      return {
+        sleeve: CHARCOAL,
+        cuff: CREAM,
+        shell: { fill: CHARCOAL },
+        onBody: (
+          <>
+            {/* Chest, drawn first so the shirt's neckline cuts a hole down to
+                it. Only the open shirt leaves any of it showing — and it has to
+                be a wide hole, or the lapels close over it and the whole point
+                of the costume disappears. */}
+            {open && (
+              <g stroke={outline} strokeWidth="2" fill="none" strokeLinecap="round">
+                <path d="M59 66 q3.5 -5 7 -0.5 q3.5 -5 7 0.5" />
+                <path d="M60 73 q3.5 -5 7 -0.5 q3.5 -5 6 0.5" />
+                <path d="M61.5 80 q3.5 -5 7 -0.5" />
+                <path d="M63 87 q3 -4.5 6 -0.5" />
+              </g>
+            )}
+            <path
+              d={
+                open
+                  ? "M53 56 L57 56 L65 90 L73 56 L77 56 L72 106 L58 106 Z"
+                  : "M55 56 L75 56 L72 106 L58 106 Z"
+              }
+              fill={CREAM}
+              {...s}
+            />
+            {open ? (
+              // Collar falling open either side of the gap.
+              <>
+                <path d="M57 56 L65 90 L51 67 Z" fill={CREAM} {...s} />
+                <path d="M73 56 L65 90 L79 67 Z" fill={CREAM} {...s} />
+              </>
+            ) : (
+              <>
+                {/* Placket and buttons — the shirt has to have a front or it
+                    reads as a bib under the lapels. */}
+                <path d="M65 60 v44" stroke={outline} strokeWidth="1.4" opacity="0.45" fill="none" />
+                <circle cx="65" cy="92" r="1.5" fill={outline} />
+                <circle cx="65" cy="100" r="1.5" fill={outline} />
+              </>
+            )}
+          </>
+        ),
+        overArms: (
+          <>
+            {/* Lapels: a notched V from each shoulder down to the button. The
+                open suit's stop short of the centre line, which is what leaves
+                the chest showing between them. */}
+            {open ? (
+              <>
+                <path d="M46 56 Q51 72 59 88 L61 77 Q55 65 54 55 Z" fill={CHARCOAL} {...s} />
+                <path d="M84 56 Q79 72 71 88 L69 77 Q75 65 76 55 Z" fill={CHARCOAL} {...s} />
+              </>
+            ) : (
+              <>
+                <path d="M47 56 Q54 74 65 88 L65 76 Q57 64 55 55 Z" fill={CHARCOAL} {...s} />
+                <path d="M83 56 Q76 74 65 88 L65 76 Q73 64 75 55 Z" fill={CHARCOAL} {...s} />
+                {/* Tie, knotted into the collar and hanging to the button.
+                    Short and broad: a long thin one reads as a spike once the
+                    body scales it up. */}
+                <path d="M61 59 L69 59 L70.5 67 L59.5 67 Z" fill={RUST} {...s} />
+                <path d="M60 67 L70 67 L67.5 84 L65 88 L62.5 84 Z" fill={RUST} {...s} />
+              </>
+            )}
+            {/* Jacket button, and a pocket square on the left breast. */}
+            <circle cx="65" cy="92" r="2.2" fill={GOLD} stroke={outline} strokeWidth="1.5" />
+            <path d="M48 76 l4 -4 4 4 Z" fill={CREAM} stroke={outline} strokeWidth="1.5" />
+          </>
+        ),
+      };
+    }
 
     default:
       return {};

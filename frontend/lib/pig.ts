@@ -236,6 +236,8 @@ export const PIG_COSTUMES = [
   "hoodie", "puffer", "dungarees",
   "princess", "pirate", "raver", "astronaut", "superhero", "ninja",
   "dinosaur", "rockstar", "chef",
+  // Invitation only — see SUIT_WEARERS.
+  "suit", "suitopen",
 ] as const;
 export type Costume = (typeof PIG_COSTUMES)[number];
 
@@ -244,7 +246,41 @@ export const COSTUME_LABELS: Record<Costume, string> = {
   princess: "princess", pirate: "pirate", raver: "raver", astronaut: "astronaut",
   superhero: "superhero", ninja: "ninja", dinosaur: "dinosaur",
   rockstar: "rockstar", chef: "chef",
+  // Both read as "suit" in the picker — nobody is offered a choice between
+  // them, they just get the one that's theirs.
+  suit: "suit", suitopen: "suit",
 };
+
+/**
+ * The suit is not on general release. These four wear it; everyone else never
+ * sees the option. Matched on the saved display name, folded and trimmed, so
+ * capitalisation doesn't lock anyone out of their own suit.
+ *
+ * Sir Piggiam's is the open-necked one, which is why the value differs — the
+ * costume he's offered *is* the unbuttoned shirt, rather than a variant he has
+ * to go and find.
+ */
+const SUIT_WEARERS: Record<string, Costume> = {
+  "look sharp": "suit",
+  "princess ceo piggy": "suit",
+  "glorious chairman oink": "suit",
+  "sir piggiam": "suitopen",
+};
+
+/** Which suit this display name is entitled to, if any. */
+export function suitFor(displayName?: string | null): Costume | null {
+  return SUIT_WEARERS[(displayName ?? "").trim().toLowerCase()] ?? null;
+}
+
+/**
+ * The costume list to *offer* someone. Everything already saved still draws —
+ * this only gates the picker, so a suit can't be lost by someone else opening
+ * their profile.
+ */
+export function costumesFor(displayName?: string | null): Costume[] {
+  const suit = suitFor(displayName);
+  return PIG_COSTUMES.filter((c) => (c === "suit" || c === "suitopen" ? c === suit : true));
+}
 
 /** The hat each costume suggests, applied only when the hat slot is empty. */
 export const COSTUME_HAT: Partial<Record<Costume, string>> = {

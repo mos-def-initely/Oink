@@ -27,14 +27,30 @@ export default function Held({ item, armX }: { item: string; armX: number }) {
   const s = { stroke: OUTLINE, strokeWidth: STROKE, strokeLinejoin: "round" as const };
 
   switch (item) {
-    case "knife":
+    case "knife": {
+      // Held across the front of the body rather than out at arm's length, so
+      // it reads as pointed at whoever's looking. The grip tracks the hand
+      // through the arm's splay — the arms swing further out the fatter the
+      // pig, and a knife left at the shoulder's x would drift out of the
+      // trotter. Same constants as the arm rotation in PigAvatar.
+      const splay = (Math.max(0, (armX - 20) * 0.9) * Math.PI) / 180;
+      // Gripped at the inner edge of the trotter rather than its centre, so the
+      // hand still reads either side of the handle instead of vanishing under
+      // it, and the blade crosses the belly rather than the arm.
+      const gx = 65 + armX - 7 + 14 * Math.sin(splay);
+      const gy = 77 + 14 * Math.cos(splay);
       return (
-        <g {...s} transform={`rotate(28 ${hx + 3} 80)`}>
-          <rect x={hx} y="74" width="7" height="15" rx="3" fill={INK} />
-          <rect x={hx - 1} y="70" width="9" height="5" rx="1.5" fill={STEEL} />
-          <path d={`M ${hx - 1} 70 L ${hx - 1} 38 L ${hx + 4} 31 L ${hx + 8} 54 L ${hx + 8} 70 Z`} fill={BLADE} />
+        <g {...s} transform={`rotate(-50 ${gx} ${gy})`}>
+          <rect x={gx - 3.5} y={gy - 4} width="7" height="16" rx="3" fill={INK} />
+          <rect x={gx - 4.5} y={gy - 9} width="9" height="5" rx="1.5" fill={STEEL} />
+          <path
+            d={`M ${gx - 4.5} ${gy - 9} L ${gx - 4.5} ${gy - 30} L ${gx} ${gy - 36}
+                L ${gx + 4.5} ${gy - 18} L ${gx + 4.5} ${gy - 9} Z`}
+            fill={BLADE}
+          />
         </g>
       );
+    }
 
     case "guitar":
       return (

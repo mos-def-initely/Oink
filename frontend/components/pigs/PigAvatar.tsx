@@ -332,12 +332,6 @@ export default function PigAvatar({
         </g>
       )}
 
-      {/* Whatever they're holding. `holding` is the prop the logo and sign-in
-          pig use; otherwise it comes from the saved avatar. */}
-      {(holding ?? (cfg.held !== "none" ? cfg.held : null)) && (
-        <Held item={(holding ?? cfg.held) as string} armX={armX} />
-      )}
-
       {dress.under && <g transform={bodyT}>{dress.under}</g>}
       {dress.shell && <Shell fill={dress.shell.fill} k={dress.shell.k} />}
       {dress.onBody && <g transform={bodyT}>{dress.onBody}</g>}
@@ -382,6 +376,13 @@ export default function PigAvatar({
           );
         })}
       </g>
+
+      {/* Whatever they're holding — drawn after the arms so it sits in the
+          trotter rather than behind it. `holding` is the prop the logo and
+          sign-in pig use; otherwise it comes from the saved avatar. */}
+      {(holding ?? (cfg.held !== "none" ? cfg.held : null)) && (
+        <Held item={(holding ?? cfg.held) as string} armX={armX} />
+      )}
 
       {dress.overArms && <g transform={bodyT}>{dress.overArms}</g>}
       {dress.behindHead && <g transform={headT}>{dress.behindHead}</g>}
@@ -593,15 +594,41 @@ function Hat({ hat, cx, topY, w, outline }: { hat: string; cx: number; topY: num
           <circle cx={cx} cy={topY + 4} r={w * 0.09} fill="#914E56" stroke="none" />
         </g>
       );
-    case "chef":
+    case "chef": {
+      // A proper toque: a tall column that flares a little as it rises, gathered
+      // into soft pleats across the top, over a stiff band. The old cloud of
+      // three circles read as candyfloss at any size above a map pin.
+      const bandY = topY + 5;
+      // As tall as the head allows: the viewBox is fixed, so on a big head —
+      // which sits higher — the crown is clamped rather than cropped.
+      const h = Math.min(w * 0.95, bandY - 3);
+      const bw = w * 0.42;             // half-width where it meets the band
+      const tw = w * 0.54;             // half-width at the gathered top
+      const capY = bandY - h;
       return (
         <g {...s}>
-          <rect x={cx - w * 0.5} y={topY + 5} width={w} height={w * 0.3} rx={w * 0.06} fill="#FFFDF6" />
-          <ellipse cx={cx - w * 0.28} cy={topY - 1} rx={w * 0.3} ry={w * 0.26} fill="#FFFDF6" />
-          <ellipse cx={cx + w * 0.28} cy={topY - 1} rx={w * 0.3} ry={w * 0.26} fill="#FFFDF6" />
-          <ellipse cx={cx} cy={topY - 6} rx={w * 0.34} ry={w * 0.3} fill="#FFFDF6" />
+          <path
+            d={`M ${cx - bw} ${bandY + 2}
+                C ${cx - tw} ${bandY - h * 0.5} ${cx - tw} ${bandY - h * 0.62} ${cx - tw} ${capY + h * 0.14}
+                Q ${cx - tw * 0.62} ${capY - h * 0.06} ${cx - tw * 0.3} ${capY + h * 0.08}
+                Q ${cx} ${capY - h * 0.11} ${cx + tw * 0.3} ${capY + h * 0.08}
+                Q ${cx + tw * 0.62} ${capY - h * 0.06} ${cx + tw} ${capY + h * 0.14}
+                C ${cx + tw} ${bandY - h * 0.62} ${cx + tw} ${bandY - h * 0.5} ${cx + bw} ${bandY + 2} Z`}
+            fill="#FFFDF6"
+          />
+          {/* Pleats — the vertical gathers that make it a toque and not a tube. */}
+          <path
+            d={`M ${cx - tw * 0.32} ${capY + h * 0.14} v ${h * 0.66}
+                M ${cx + tw * 0.32} ${capY + h * 0.14} v ${h * 0.66}`}
+            stroke={outline}
+            strokeWidth="1.5"
+            opacity="0.45"
+            fill="none"
+          />
+          <rect x={cx - w * 0.5} y={bandY} width={w} height={w * 0.3} rx={w * 0.06} fill="#FFFDF6" />
         </g>
       );
+    }
     case "tophat":
       // Tall crown, hard brim, and a band picked out in the gold so it doesn't
       // read as a solid black block at pin size.
