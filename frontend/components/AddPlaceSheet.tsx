@@ -50,7 +50,7 @@ export default function AddPlaceSheet({
   const [showLink, setShowLink] = useState(false);
   // Google's id for the place, when the pin came from Google. Stored so the
   // listing photo can be fetched later — photo URLs themselves can't be kept.
-  const [placeId, setPlaceId] = useState<string | null>(null);
+  const [googlePlaceId, setGooglePlaceId] = useState<string | null>(null);
 
   // Your write-up, optional — the same fields as the review sheet, so a place
   // can be logged and reviewed in one go rather than two round trips.
@@ -193,7 +193,7 @@ export default function AddPlaceSheet({
 
   function choose(c: PlaceCandidate) {
     setName(c.name);
-    setPlaceId(c.place_id ?? null);
+    setGooglePlaceId(c.place_id ?? null);
     // These fill the address field programmatically, so clear the typed flag —
     // otherwise the geocode effect fires on our own output.
     setAddressTouched(false);
@@ -238,7 +238,7 @@ export default function AddPlaceSheet({
       }
       setAddressTouched(false);
       setAddressMatch(null);
-      setPlaceId(parsed.place_id ?? null);
+      setGooglePlaceId(parsed.place_id ?? null);
       if (parsed.name) setName(parsed.name);
       if (parsed.address) setAddress(parsed.address);
       if (parsed.city) setCity(parsed.city);
@@ -281,8 +281,8 @@ export default function AddPlaceSheet({
     try {
       // A retry after the review step failed must not create the place twice,
       // so reuse the id from the first attempt if there was one.
-      let placeId = createdIdRef.current;
-      if (!placeId) {
+      let createdId = createdIdRef.current;
+      if (!createdId) {
         const place = await api.createPlace({
           name: name.trim(),
           kind,
@@ -291,27 +291,27 @@ export default function AddPlaceSheet({
           lat: pickedPoint.lat,
           lng: pickedPoint.lng,
           google_maps_url: link.trim() || null,
-          google_place_id: placeId,
+          google_place_id: googlePlaceId,
           address: address || null,
           city: city || null,
           area: area || null,
           postcode: postcode.trim().toUpperCase() || null,
         });
-        placeId = place.id;
+        createdId = place.id;
         createdIdRef.current = place.id;
       }
 
       for (const file of files) {
-        await api.uploadImage(placeId, file);
+        await api.uploadImage(createdId, file);
       }
       // The review is optional — adding a place already counts as an oink.
       if (review.trim()) {
-        await api.recommend(placeId, review.trim(), dishes);
+        await api.recommend(createdId, review.trim(), dishes);
       }
 
       createdIdRef.current = null;
       onCreated();
-      router.push(`/restaurant/${placeId}`);
+      router.push(`/restaurant/${createdId}`);
     } catch (e) {
       const message = e instanceof ApiError ? e.message : "Couldn't save that";
       setError(
