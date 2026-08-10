@@ -18,12 +18,16 @@ export default function PhotoCarousel({
   images,
   alt,
   leadSrc,
+  onOpen,
   className = "",
 }: {
   images: Image[];
   alt: string;
   /** The place's own Google listing photo, shown first. Dropped if it fails. */
   leadSrc?: string | null;
+  /** Raise the full-screen viewer at the photo currently showing. The carousel
+   *  owns which slide that is, so it reports the index rather than the URL. */
+  onOpen?: (index: number) => void;
   className?: string;
 }) {
   const [index, setIndex] = useState(0);
@@ -70,8 +74,9 @@ export default function PhotoCarousel({
             key={slide.key}
             src={slide.src}
             alt={`${alt} — photo ${i + 1} of ${slides.length}`}
-            className="h-full w-full shrink-0 snap-center object-cover"
+            className={`h-full w-full shrink-0 snap-center object-cover ${onOpen ? "cursor-zoom-in" : ""}`}
             draggable={false}
+            onClick={onOpen ? () => onOpen(i) : undefined}
             onError={slide.key === "google" ? () => setLeadFailed(true) : undefined}
           />
         ))}

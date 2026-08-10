@@ -180,6 +180,25 @@ No rating anywhere.
 ### 6.4 Place detail
 Cover, name, kind, category, budget pig, address, Maps link (when present). Oink and Shame buttons (toggle, mutually exclusive). **Two labelled groups — "Oinked" and "Shamed" — listing each person's pig face and name underneath.** Wishlist toggle (hidden once you've been). Then the reviews list: each person's recommendation as its own card with their review, dish tags, photos and timestamp.
 
+### 6.4b Photos
+Every photo opens. Tapping the header carousel or any thumbnail under a review
+raises a full-screen view on a solid dark ground — swipe or arrow between shots,
+Escape or tap to close.
+
+One component serves both surfaces, so it takes a list and an index rather than
+a place: the carousel opens at whichever slide is showing, a review thumbnail at
+the one tapped. The caption credits whoever uploaded it, which review photos
+already know; a place's own listing photo says so instead, since nobody here
+took it.
+
+The viewer is **portalled onto `<body>`**. A z-index only ranks siblings inside
+one stacking context, and this page has several — a sticky blurred header and a
+fixed tab bar among them — so an overlay left in the tree paints under them
+however high its z-index goes.
+
+The ground is solid rather than a scrim: at 95% the layout behind stayed legible
+enough to compete with the photo.
+
 ### 6.4a Replies
 You can reply to a **review**, and only a review. An oink carries no text to
 reply to, and letting every row start a thread turns the feed into a chat.

@@ -11,6 +11,7 @@ import { ApiError, api, googlePhotoSrc } from "@/lib/api";
 import type { PlaceDetail, User } from "@/lib/types";
 import PigAvatar from "@/components/pigs/PigAvatar";
 import ReplyThread from "@/components/ReplyThread";
+import PhotoViewer, { type ViewerPhoto } from "@/components/PhotoViewer";
 import { BudgetTag } from "@/components/pigs/PricePig";
 import { OinkPig, ShamePig } from "@/components/pigs/ReactionPigs";
 import PhotoCarousel from "@/components/PhotoCarousel";
@@ -22,6 +23,8 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
   const [place, setPlace] = useState<PlaceDetail | null>(null);
   // Needed only to know whose replies carry a delete button.
   const [viewer, setViewer] = useState<User | null>(null);
+  // Which photo the full-screen view is showing, or null when it's closed.
+  const [lightbox, setLightbox] = useState<{ photos: ViewerPhoto[]; index: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
@@ -62,6 +65,16 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
 
   const canWishlist = !place.my_recommendation && place.my_reaction !== "oink";
 
+  // The header mixes the place's listing photo with people's own shots, so the
+  // viewer credits each accordingly — the listing one belongs to nobody here.
+  const uploaders = new Map(
+    place.recommendations.flatMap((r) => r.images.map((img) => [img.id, r.user] as const))
+  );
+  const headerPhotos: ViewerPhoto[] = [
+    ...(place.google_place_id ? [{ url: googlePhotoSrc(place.id), by: null }] : []),
+    ...place.images.map((img) => ({ url: img.url, by: uploaders.get(img.id) ?? null })),
+  ];
+
   return (
     <>
       <PageHeader title={place.name} back="/discover" />
@@ -76,6 +89,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
         <PhotoCarousel
           images={place.images}
           leadSrc={place.google_place_id ? googlePhotoSrc(place.id) : null}
+          onOpen={(i) => setLightbox({ photos: headerPhotos, index: i })}
           alt={place.name}
           className="h-52 w-full"
         />
@@ -210,9 +224,25 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
 
               {rec.images.length > 0 && (
                 <div className="flex gap-2 overflow-x-auto">
-                  {rec.images.map((img) => (
-                    // eslint-disable-next-line @next/next/no-img-element -- local uploads
-                    <img key={img.id} src={img.url} alt="" className="h-20 w-20 shrink-0 rounded-xl object-cover" />
+                  {rec.images.map((img, i) => (
+                    <button
+                      key={img.id}
+                      onClick={() =>
+                        setLightbox({
+                          photos: rec.images.map((im) => ({
+                            url: im.url,
+                            by: rec.user,
+                            takenAt: timeAgo(rec.updated_at),
+                          })),
+                          index: i,
+                        })
+                      }
+                      className="shrink-0"
+                      aria-label={`photo ${i + 1} by ${rec.user.display_name}`}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element -- local uploads */}
+                      <img src={img.url} alt="" className="h-20 w-20 cursor-zoom-in rounded-xl object-cover" />
+                    </button>
                   ))}
                 </div>
               )}
@@ -222,6 +252,14 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
           ))}
         </section>
       </main>
+
+      {lightbox && (
+        <PhotoViewer
+          photos={lightbox.photos}
+          index={lightbox.index}
+          onClose={() => setLightbox(null)}
+        />
+      )}
 
       <TabBarSpacer />
       <BottomTabBar />
