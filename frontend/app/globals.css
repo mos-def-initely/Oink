@@ -12,6 +12,9 @@
   body {
     @apply bg-oat text-ink font-body;
     -webkit-tap-highlight-color: transparent;
+    /* The feed runs its own pull-to-refresh, so the browser's native one must
+       stay out of the way — otherwise a pull at the top fires both. */
+    overscroll-behavior-y: contain;
   }
 
   h1,
@@ -134,6 +137,31 @@
   border: 2px solid #4D303F;
   border-radius: 12px;
   box-shadow: none;
+}
+
+/* Navigation feedback — see components/RouteTransition.tsx.
+
+   `screen-in` is opacity-only on purpose: it wraps whole screens, and a
+   transform there would capture their fixed-position children. `content-rise`
+   carries the movement instead, and is only ever put on content that holds no
+   fixed descendants. Both end on `transform: none` rather than translate(0),
+   so the fill mode leaves nothing behind that could act as a containing
+   block. */
+@keyframes screen-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.screen-in { animation: screen-in 190ms ease-out both; }
+
+@keyframes content-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+.content-rise { animation: content-rise 300ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .screen-in,
+  .content-rise { animation: none; }
 }
 
 /* The pigsty's idle sway. Delay is staggered per pig from its id hash, so the

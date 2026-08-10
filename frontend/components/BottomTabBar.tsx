@@ -18,7 +18,7 @@ export default function BottomTabBar() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-1/2 z-[1000] w-full max-w-[480px] -translate-x-1/2 border-t-2 border-ink bg-cream pb-[env(safe-area-inset-bottom)]">
+    <nav className="fixed bottom-0 left-1/2 z-[1000] w-full max-w-[480px] -translate-x-1/2 border-t-2 border-ink bg-cream pt-2.5 pb-[calc(env(safe-area-inset-bottom)+26px)]">
       <ul className="flex">
         {TABS.map(({ href, label, icon: Icon }) => {
           const active =
@@ -27,12 +27,32 @@ export default function BottomTabBar() {
             <li key={href} className="flex-1">
               <Link
                 href={href}
-                className={`flex min-h-[58px] flex-col items-center justify-center gap-0.5 py-2 font-display text-[11px] font-bold ${
-                  active ? "text-plum" : "text-ink-soft"
-                }`}
+                aria-current={active ? "page" : undefined}
+                /* Colour fades rather than flips, and the whole tab dips under
+                   the thumb — the press should feel like it landed before the
+                   next screen has had time to render. */
+                className={`flex min-h-[54px] flex-col items-center justify-center gap-0.5 py-1.5
+                            font-display text-[11px] font-bold transition-[color,transform]
+                            duration-200 ease-out active:scale-[0.94] ${
+                              active ? "text-plum" : "text-ink-soft"
+                            }`}
               >
-                <Icon active={active} />
+                {/* Icons inherit the link's colour, so the swap animates with it. */}
+                <span
+                  className={`transition-transform duration-200 ease-out ${
+                    active ? "-translate-y-[1px] scale-110" : "scale-100"
+                  }`}
+                >
+                  <Icon />
+                </span>
                 {label}
+                {/* A dot that grows in under the active tab. */}
+                <span
+                  aria-hidden
+                  className={`h-1 w-1 rounded-full bg-plum transition-transform duration-200 ease-out ${
+                    active ? "scale-100" : "scale-0"
+                  }`}
+                />
               </Link>
             </li>
           );
@@ -42,25 +62,27 @@ export default function BottomTabBar() {
   );
 }
 
-/** Spacer so page content isn't hidden behind the fixed bar. */
+/**
+ * Spacer so page content isn't hidden behind the fixed bar. Tracks the bar's
+ * own height — 10 top + 54 tab + 26 bottom, plus the home-indicator inset —
+ * with a little air under the last card.
+ */
 export function TabBarSpacer() {
-  return <div className="h-[74px]" aria-hidden />;
+  return <div className="h-[calc(100px+env(safe-area-inset-bottom))]" aria-hidden />;
 }
 
-function FeedIcon({ active }: { active: boolean }) {
-  const c = active ? "#914E56" : "#7A6270";
+function FeedIcon() {
   return (
-    <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2">
+    <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
       <rect x="3" y="4" width="18" height="6" rx="2.5" />
       <rect x="3" y="14" width="18" height="6" rx="2.5" />
     </svg>
   );
 }
 
-function MapIcon({ active }: { active: boolean }) {
-  const c = active ? "#914E56" : "#7A6270";
+function MapIcon() {
   return (
-    <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2">
+    <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
       <path d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11Z" strokeLinejoin="round" />
       <circle cx="12" cy="10" r="2.5" />
     </svg>
@@ -68,10 +90,9 @@ function MapIcon({ active }: { active: boolean }) {
 }
 
 /** Three heads over a fence rail — a crowd, not one pig. */
-function StyIcon({ active }: { active: boolean }) {
-  const c = active ? "#914E56" : "#7A6270";
+function StyIcon() {
   return (
-    <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2">
+    <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <circle cx="7" cy="9" r="3.1" />
       <circle cx="17" cy="9" r="3.1" />
       <circle cx="12" cy="13.5" r="3.6" />
@@ -80,10 +101,9 @@ function StyIcon({ active }: { active: boolean }) {
   );
 }
 
-function PigIcon({ active }: { active: boolean }) {
-  const c = active ? "#914E56" : "#7A6270";
+function PigIcon() {
   return (
-    <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2">
+    <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <path d="M6 8 5 4l5 2.5" strokeLinejoin="round" />
       <path d="M18 8l1-4-5 2.5" strokeLinejoin="round" />
       <ellipse cx="12" cy="13" rx="8" ry="7" />

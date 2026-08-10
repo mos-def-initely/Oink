@@ -37,6 +37,14 @@
  */
 import type { FeedItem, User } from "@/lib/types";
 
+/**
+ * Rows per request. Small on purpose: the first screenful is what the home page
+ * waits on, and every card can pull a place photo behind it. The rest arrives
+ * as you scroll. Shared with the server render so both pages line up — if they
+ * disagreed, the first scroll would either skip rows or repeat them.
+ */
+export const FEED_PAGE_SIZE = 10;
+
 export type FoldedFeedItem = {
   item: FeedItem;
   /** Everyone who oinked this place *after* it was first logged. */

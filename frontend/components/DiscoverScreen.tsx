@@ -280,7 +280,7 @@ export default function DiscoverScreen({ initialPlaces }: { initialPlaces: Place
         )}
 
         {places && view === "list" && (
-          <div className="h-full space-y-3 overflow-y-auto px-3 py-1 pb-24">
+          <div className="h-full space-y-3 overflow-y-auto px-3 py-1 pb-[calc(112px+env(safe-area-inset-bottom))]">
             {filtered.length === 0 && (
               <EmptyState title="nothing matches" body="loosen the filters a bit." />
             )}
@@ -297,7 +297,9 @@ export default function DiscoverScreen({ initialPlaces }: { initialPlaces: Place
             setAddResetKey((k) => k + 1);
             setAddOpen(true);
           }}
-          className="absolute bottom-24 right-4 z-[1000] flex h-16 w-16 items-center justify-center rounded-full bg-plum font-display text-4xl font-extrabold text-white transition-transform active:scale-95"
+          /* Sits clear of the tab bar — this screen has no spacer, so the
+             offset has to cover the bar's height itself. */
+          className="absolute bottom-[calc(112px+env(safe-area-inset-bottom))] right-4 z-[1000] flex h-16 w-16 items-center justify-center rounded-full bg-plum font-display text-4xl font-extrabold text-white transition-transform active:scale-95"
           aria-label="add a place"
         >
           +
