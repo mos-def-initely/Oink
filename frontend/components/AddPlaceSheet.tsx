@@ -33,27 +33,6 @@ type Props = {
   onCreated: () => void;
 };
 
-/**
- * A Google Maps link for a place that was found by searching rather than by
- * pasting one. The place id opens the exact listing; without one, the
- * coordinates at least open the right spot.
- */
-function mapsUrlFor(
-  placeId: string | null,
-  name: string,
-  point: { lat: number; lng: number } | null
-): string | null {
-  if (placeId) {
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-      name.trim()
-    )}&query_place_id=${placeId}`;
-  }
-  if (point) {
-    return `https://www.google.com/maps/search/?api=1&query=${point.lat},${point.lng}`;
-  }
-  return null;
-}
-
 export default function AddPlaceSheet({
   open,
   resetKey = 0,
@@ -370,8 +349,8 @@ export default function AddPlaceSheet({
           budget,
           lat: pickedPoint.lat,
           lng: pickedPoint.lng,
-          google_maps_url:
-            link.trim() || mapsUrlFor(googlePlaceId, name, pickedPoint),
+          // Only a hand-pasted link is stored; the API derives one otherwise.
+          google_maps_url: link.trim() || null,
           google_place_id: googlePlaceId,
           address: address || null,
           city: city || null,

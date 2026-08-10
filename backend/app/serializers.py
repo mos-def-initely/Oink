@@ -6,6 +6,7 @@ These helpers batch their lookups so the map endpoint doesn't N+1 across pins.
 """
 
 from datetime import datetime
+from urllib.parse import quote
 from typing import Dict, List, NamedTuple, Optional, Sequence, Set, Tuple
 
 from sqlalchemy import select
@@ -197,6 +198,27 @@ class RestaurantContext:
         return self._people(self.shame_ids.get(restaurant_id, []))
 
 
+def maps_url(restaurant: Restaurant) -> Optional[str]:
+    """A Google Maps link for a place, derived rather than stored.
+
+    Only a link someone actually pasted is kept on the row; everything else is
+    worked out here from the place id or the coordinates. That way every place
+    gets a link — including the ones added before any link was recorded — with
+    no backfill to run and nothing to go stale if the place is renamed.
+    """
+    if restaurant.google_maps_url:
+        return restaurant.google_maps_url
+    place_id = getattr(restaurant, "google_place_id", None)
+    if place_id:
+        return (
+            "https://www.google.com/maps/search/?api=1"
+            f"&query={quote(restaurant.name or '')}&query_place_id={place_id}"
+        )
+    if restaurant.lat is not None and restaurant.lng is not None:
+        return f"https://www.google.com/maps/search/?api=1&query={restaurant.lat},{restaurant.lng}"
+    return None
+
+
 def restaurant_summary(restaurant: Restaurant, ctx: RestaurantContext) -> RestaurantSummary:
     recommenders = ctx.recommenders(restaurant.id)
     shamers = ctx.shamers(restaurant.id)
@@ -214,7 +236,7 @@ def restaurant_summary(restaurant: Restaurant, ctx: RestaurantContext) -> Restau
         lng=restaurant.lng,
         # Uploaded photo wins; the auto-sourced one is the fallback.
         cover_image_url=restaurant.cover_image_url or restaurant.photo_url,
-        google_maps_url=restaurant.google_maps_url,
+        google_maps_url=maps_url(restaurant),
         google_place_id=restaurant.google_place_id,
         recommenders=recommenders,
         recommender_count=len(recommenders),
