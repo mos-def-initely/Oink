@@ -377,13 +377,6 @@ export default function PigAvatar({
         })}
       </g>
 
-      {/* Whatever they're holding — drawn after the arms so it sits in the
-          trotter rather than behind it. `holding` is the prop the logo and
-          sign-in pig use; otherwise it comes from the saved avatar. */}
-      {(holding ?? (cfg.held !== "none" ? cfg.held : null)) && (
-        <Held item={(holding ?? cfg.held) as string} armX={armX} />
-      )}
-
       {dress.overArms && <g transform={bodyT}>{dress.overArms}</g>}
       {dress.behindHead && <g transform={headT}>{dress.behindHead}</g>}
 
@@ -457,6 +450,17 @@ export default function PigAvatar({
       {specs && <g transform={headT}>{specs}</g>}
       <Hat hat={cfg.hat} cx={65} topY={48 - headRy - 4} w={headRx} outline={OUTLINE} />
       {dress.front && <g transform={bodyT}>{dress.front}</g>}
+
+      {/* Whatever they're holding, drawn last of all: in the trotter rather
+          than behind it, and over every layer of costume — a lapel or a
+          scabbard crossing in front of the thing being held is the one way to
+          make it read as neither worn nor carried. Everything in Held is drawn
+          below the chin for the same reason, since nothing crops it now.
+          `holding` is the prop the logo and sign-in pig use; otherwise it comes
+          from the saved avatar. */}
+      {(holding ?? (cfg.held !== "none" ? cfg.held : null)) && (
+        <Held item={(holding ?? cfg.held) as string} armX={armX} />
+      )}
 
       {cfg.companion !== "none" && (
         <g transform={companionTransform(w)}>{companion(cfg.companion, uid, cfg.truffle)}</g>

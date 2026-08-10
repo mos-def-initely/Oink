@@ -39,9 +39,13 @@ export default function Held({ item, armX }: { item: string; armX: number }) {
 
   // The hand. Same constants as the arm rotation in PigAvatar, so the grip
   // follows the trotter across the whole ladder.
+  // The arm is a rounded 13x24 rect pivoting at (65 + armX - 2.5, 77), so the
+  // hand — its far end — is 17 along from the pivot, swung out by the splay.
+  // Anchoring an object anywhere shorter than that leaves it gripped by the
+  // forearm.
   const splay = (Math.max(0, (armX - 20) * 0.9) * Math.PI) / 180;
-  const gx = 65 + armX - 7 + 14 * Math.sin(splay);
-  const gy = 77 + 14 * Math.cos(splay);
+  const gx = 65 + armX - 4 + 17 * Math.sin(splay);
+  const gy = 77 + 17 * Math.cos(splay);
   // In over the belly — where an upright object has to stand to be seen.
   const ix = gx - 13;
 
@@ -86,14 +90,20 @@ export default function Held({ item, armX }: { item: string; armX: number }) {
 
     case "pistol":
       return (
-        <g {...s} transform={`rotate(-58 ${gx} ${gy})`}>
-          <rect x={gx - 4} y={gy - 26} width="9" height="21" rx="2" fill={STEEL} />
+        // Side-on and level. Pointed up it's a dark oblong with a lump on it;
+        // it only reads as a pistol from the side, where the slide, the guard
+        // and the raked grip are all visible at once.
+        <g {...s} transform={`rotate(-7 ${gx} ${gy})`}>
+          <rect x={gx - 27} y={gy - 15} width="35" height="10" rx="2" fill={INK} />
+          <rect x={gx - 25} y={gy - 18} width="3.5" height="3.5" fill={INK} />
+          <path d={`M ${gx + 6} ${gy - 15} l 5 -4 l 0 4 Z`} fill={INK} />
+          <rect x={gx - 13} y={gy - 6} width="21" height="5" rx="1.5" fill={INK} />
           <path
-            d={`M ${gx - 4.5} ${gy - 7} L ${gx + 5} ${gy - 7} L ${gx + 2.5} ${gy + 10} L ${gx - 6.5} ${gy + 10} Z`}
+            d={`M ${gx - 2} ${gy - 5} L ${gx + 8} ${gy - 5} L ${gx + 5} ${gy + 15} L ${gx - 6} ${gy + 15} Z`}
             fill={INK}
           />
-          {/* Trigger guard — without it the whole thing reads as a spanner. */}
-          <path d={`M ${gx - 4.5} ${gy - 5} q -5 5 0 8 h 5`} fill="none" />
+          <path d={`M ${gx - 3} ${gy - 1} q -6 5 -0.5 9 h 4.5`} fill="none" />
+          <circle cx={gx - 25.5} cy={gy - 10} r="1.7" fill={STEEL} stroke="none" />
         </g>
       );
 
@@ -237,20 +247,20 @@ export default function Held({ item, armX }: { item: string; armX: number }) {
 
     case "torch":
       return (
-        <g {...s} transform={`rotate(-26 ${gx} ${gy})`}>
-          <rect x={gx - 3.5} y={gy - 6} width="8" height="22" rx="2" fill={INK} />
-          <path d={`M ${gx - 8} ${gy - 6} L ${gx + 9} ${gy - 6} L ${gx + 0.5} ${gy - 26} Z`} fill={LEMON} />
-          <path d={`M ${gx - 3} ${gy - 8} L ${gx + 4} ${gy - 8} L ${gx + 0.5} ${gy - 18} Z`} fill={GOLD} stroke="none" />
+        <g {...s} transform={`rotate(-34 ${gx} ${gy})`}>
+          <rect x={gx - 3.5} y={gy - 2} width="8" height="22" rx="2" fill={INK} />
+          <path d={`M ${gx - 8} ${gy - 2} L ${gx + 9} ${gy - 2} L ${gx + 0.5} ${gy - 21} Z`} fill={LEMON} />
+          <path d={`M ${gx - 3} ${gy - 4} L ${gx + 4} ${gy - 4} L ${gx + 0.5} ${gy - 14} Z`} fill={GOLD} stroke="none" />
         </g>
       );
 
     case "fishingrod":
       return (
-        <g {...s} transform={`rotate(-38 ${gx} ${gy})`}>
-          <rect x={gx - 2} y={gy - 34} width="4.5" height="46" rx="2" fill={RUST} />
-          <circle cx={gx + 0.5} cy={gy + 2} r="4.5" fill={STEEL} />
-          <path d={`M ${gx} ${gy - 34} q 15 7 11 21`} fill="none" strokeWidth="1.4" />
-          <path d={`M ${gx + 11} ${gy - 13} l 0 5`} strokeWidth="1.4" />
+        <g {...s} transform={`rotate(-48 ${gx} ${gy})`}>
+          <rect x={gx - 2} y={gy - 24} width="4.5" height="38" rx="2" fill={RUST} />
+          <circle cx={gx + 0.5} cy={gy + 4} r="4.5" fill={STEEL} />
+          <path d={`M ${gx} ${gy - 24} q 14 6 10 19`} fill="none" strokeWidth="1.4" />
+          <path d={`M ${gx + 10} ${gy - 5} l 0 5`} strokeWidth="1.4" />
         </g>
       );
 
