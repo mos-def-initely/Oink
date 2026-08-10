@@ -10,6 +10,8 @@ import { api } from "@/lib/api";
 import type { PlaceSummary, User } from "@/lib/types";
 import {
   TIER_LABELS,
+  TIER_ORDER,
+  baseTier,
   PIG_ACCESSORIES,
   PIG_BACKGROUNDS,
   PIG_COLORS,
@@ -54,6 +56,12 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
   const next = nextTier(user.places_logged);
   const dead = tier === "dead";
   const decayDays = daysUntilDecay(user.places_logged, user.last_logged_at);
+  // What the place count alone has earned, before any starving is applied.
+  // Tiers are never actually lost — a single log restores the lot — so a
+  // decayed pig must be told that, not handed the count-based target, which
+  // reads as though the whole climb has to be done again.
+  const earned = baseTier(user.places_logged);
+  const hasDecayed = TIER_ORDER.indexOf(tier) < TIER_ORDER.indexOf(earned);
 
   return (
     <>
@@ -113,11 +121,18 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
             </p>
           ) : (
             <>
-              {next && (
-                <p className="text-center text-xs text-ink-soft">
-                  {next.needed} more {next.needed === 1 ? "place" : "places"} until you're a{" "}
-                  {next.label.toLowerCase()} pig.
+              {hasDecayed ? (
+                <p className="text-center text-xs font-bold text-ink-soft">
+                  Gone quiet. Log anywhere and {isMe ? "you're" : "they're"} straight back to{" "}
+                  {TIER_LABELS[earned].toLowerCase()} — nothing has to be earned twice.
                 </p>
+              ) : (
+                next && (
+                  <p className="text-center text-xs text-ink-soft">
+                    {next.needed} more {next.needed === 1 ? "place" : "places"} until you're a{" "}
+                    {next.label.toLowerCase()} pig.
+                  </p>
+                )
               )}
               {decayDays !== null && decayDays <= 3 && (
                 <p className="text-center text-xs font-bold text-rust">

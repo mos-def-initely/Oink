@@ -175,6 +175,26 @@ def delete_log(
     if reaction:
         db.delete(reaction)
 
+    db.flush()
+
+    # If that was the last word anyone had said about the place, it shouldn't
+    # linger on the map as a pin nobody has endorsed. A wishlist entry counts as
+    # someone still caring, so the place survives that.
+    orphaned = (
+        db.execute(
+            select(Recommendation).where(Recommendation.restaurant_id == place.id)
+        ).first()
+        is None
+        and db.execute(select(Reaction).where(Reaction.restaurant_id == place.id)).first() is None
+        and db.execute(select(WishlistItem).where(WishlistItem.restaurant_id == place.id)).first()
+        is None
+    )
+    if orphaned:
+        detail = restaurant_detail(db, place, viewer)
+        db.delete(place)
+        db.commit()
+        return detail
+
     db.commit()
     db.refresh(place)
     return restaurant_detail(db, place, viewer)

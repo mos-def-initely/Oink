@@ -75,8 +75,9 @@ export default function HowItWorks({ open, onClose }: { open: boolean; onClose: 
           <h3 className="font-display text-sm font-extrabold">It works both ways</h3>
           <p className="text-sm text-ink-soft">
             Go a fortnight without logging anywhere and your pig drops a tier. Keep it up and
-            it starves all the way down to a dead pig. Log a single place and it comes
-            straight back to whatever you&apos;d earned.
+            it starves all the way down to a dead pig. <strong className="text-ink">Nothing is
+            ever lost though</strong> — log a single place and you&apos;re straight back to
+            whatever you&apos;d earned, however far you fell.
           </p>
         </section>
 

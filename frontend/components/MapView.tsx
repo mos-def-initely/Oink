@@ -405,8 +405,18 @@ export default function MapView({
         markersRef.current.push(
           L.marker(bounds.getCenter(), { icon })
             .addTo(map)
-            // Zoom into the cluster rather than opening one arbitrary member.
-            .on("click", () => map.fitBounds(bounds, { padding: [70, 70], maxZoom: 18 }))
+            // Zooming in is the right response while it can still separate the
+            // pins. Two places on the same corner never separate, though, and
+            // the cluster then swallowed every tap — so once zooming would gain
+            // nothing, open the first place instead of doing nothing at all.
+            .on("click", () => {
+              const canSeparate = map.getBoundsZoom(bounds, false) > map.getZoom();
+              if (canSeparate) {
+                map.fitBounds(bounds, { padding: [70, 70], maxZoom: 18 });
+              } else {
+                onSelect(group[0]);
+              }
+            })
         );
       });
 
