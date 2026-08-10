@@ -316,8 +316,30 @@ export default function PigAvatar({
       {/* Arms sit ON TOP of the body edges in the darker ear tone, which is what
           makes them read as arms in front rather than limbs beside a ball. */}
       <g stroke={OUTLINE} strokeWidth={STROKE} strokeLinejoin="round">
-        <rect x={65 - armX - 4} y="74" width="13" height="24" rx="6.5" fill={p.ear} />
-        <rect x={65 + armX - 9} y="74" width="13" height="24" rx="6.5" fill={p.ear} />
+        {[-1, 1].map((side) => {
+          // The wider the body, the further the arms are shoved off vertical: a
+          // slim pig's hang straight down, a fat one's can't. Taken from the
+          // waist so it scales with the tier rather than being set per tier.
+          const splay = Math.max(0, (w - TIER_SHAPE.slim.waist) * 0.9);
+          // Pivot is the shoulder, so a negative angle swings the hand away
+          // from the body — which is what a belly does to the forearms. Hunky
+          // goes the other way: the lats flare the shoulders and the forearms
+          // come back in.
+          const angle = (lean ? 1 : -1) * side * splay;
+          const cx = 65 + side * (armX - 2.5);
+          return (
+            <g key={side} transform={`rotate(${angle} ${cx} 77)`}>
+              <rect
+                x={side < 0 ? 65 - armX - 4 : 65 + armX - 9}
+                y="74"
+                width="13"
+                height="24"
+                rx="6.5"
+                fill={p.ear}
+              />
+            </g>
+          );
+        })}
       </g>
 
       <g stroke={OUTLINE} strokeWidth={STROKE} strokeLinejoin="round">
