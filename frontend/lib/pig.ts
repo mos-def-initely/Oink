@@ -120,9 +120,9 @@ export const TIER_SHAPE: Record<FatnessTier, TierShape> = {
   dead: { waist: 17, rolls: 0, head: 22 },
   slim: { waist: 20, rolls: 0, head: 24.5 },
   regular: { waist: 25, rolls: 1, head: 26, belly: 0.5 },
-  chubby: { waist: 30, rolls: 0, head: 27.5, moobs: 0.8, belly: 0.8, chin: true },
+  chubby: { waist: 30, rolls: 0, head: 27.5, moobs: 0.68, belly: 0.8, chin: true },
   // Fat is volume, not stripes: chest and gut both full, and a second chin.
-  fat: { waist: 35, rolls: 0, head: 29, moobs: 1, belly: 1, chin: true },
+  fat: { waist: 35, rolls: 0, head: 29, moobs: 1.1, belly: 1, chin: true },
   // Broad, but the width sits in the chest rather than the gut.
   hunky: { waist: 32, rolls: 0, head: 27, muscle: true },
 };

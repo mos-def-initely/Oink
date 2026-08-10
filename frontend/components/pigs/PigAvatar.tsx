@@ -230,11 +230,11 @@ export default function PigAvatar({
         <g clipPath={`url(#${bodyClip})`}>
           <defs>
             <linearGradient id={chestGrad} gradientUnits="userSpaceOnUse"
-              x1="0" y1={82 - w * 0.72} x2="0" y2={82 - w * 0.12}>
+              x1="0" y1={82 - w * 0.6} x2="0" y2={82 + w * 0.02}>
               <stop offset="0%" stopColor="#fff" stopOpacity="0.26" />
               <stop offset="45%" stopColor="#fff" stopOpacity="0" />
               <stop offset="62%" stopColor={p.dark} stopOpacity="0" />
-              <stop offset="100%" stopColor={p.dark} stopOpacity="0.58" />
+              <stop offset="100%" stopColor={p.dark} stopOpacity={0.34 + 0.34 * (shape.moobs ?? 0)} />
             </linearGradient>
             <linearGradient id={bellyGrad} gradientUnits="userSpaceOnUse"
               x1="0" y1={82 - w * 0.05} x2="0" y2={82 + w * 0.95}>
@@ -250,9 +250,9 @@ export default function PigAvatar({
               <ellipse
                 key={side}
                 cx={65 + side * w * 0.42}
-                cy={82 - w * 0.4}
-                rx={w * 0.48 * shape.moobs!}
-                ry={w * 0.26 * shape.moobs!}
+                cy={82 - w * 0.3}
+                rx={w * 0.5 * shape.moobs!}
+                ry={w * 0.28 * shape.moobs!}
                 fill={`url(#${chestGrad})`}
               />
             ))}
