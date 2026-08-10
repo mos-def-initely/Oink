@@ -78,7 +78,7 @@ export function Sheet({
   );
 }
 
-export function Spinner({ label = "Loading…" }: { label?: string }) {
+export function Spinner({ label = "loading…" }: { label?: string }) {
   return (
     <div className="flex flex-col items-center gap-3 py-16">
       <div className="h-9 w-9 animate-spin rounded-full border-4 border-oat-deep border-t-plum" />

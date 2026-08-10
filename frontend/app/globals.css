@@ -27,8 +27,12 @@
     @apply rounded-card border-2 border-ink bg-cream;
   }
 
+  /* The app speaks in lowercase — headings, buttons, nav, labels. Anything the
+     app writes about itself. Never applied to user content: place names,
+     display names, review text and dish tags keep whatever casing they came
+     with. */
   .btn {
-    @apply font-display font-bold rounded-full px-4 py-3 min-h-[46px]
+    @apply font-display font-bold lowercase rounded-full px-4 py-3 min-h-[46px]
            border-2 border-ink transition-transform duration-100
            active:scale-[0.975]
            disabled:opacity-45 disabled:pointer-events-none;

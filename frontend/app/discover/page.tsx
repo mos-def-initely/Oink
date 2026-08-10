@@ -80,7 +80,7 @@ export default function DiscoverPage() {
               activeFilters ? "bg-plum text-oat" : "bg-cream"
             }`}
           >
-            Filters{activeFilters ? ` (${activeFilters})` : ""}
+            filters{activeFilters ? ` (${activeFilters})` : ""}
           </button>
           <div className="flex overflow-hidden rounded-xl border-2 border-ink bg-cream">
             {(["map", "list"] as const).map((v) => (
@@ -91,20 +91,20 @@ export default function DiscoverPage() {
                   view === v ? "bg-plum text-oat" : "text-ink"
                 }`}
               >
-                {v === "map" ? "Map" : "List"}
+                {v === "map" ? "map" : "list"}
               </button>
             ))}
           </div>
         </div>
         {pickMode && (
           <p className="mt-2 rounded-lg border-2 border-ink bg-gold px-3 py-2 text-center font-display text-xs font-bold text-ink-deep">
-            Tap the map to drop your pin
+            tap the map to drop your pin
           </p>
         )}
       </header>
 
       <div className="relative flex-1 overflow-hidden">
-        {!places && <Spinner label="Finding the good stuff…" />}
+        {!places && <Spinner label="finding the good stuff…" />}
 
         {places && (
           <div className={view === "map" ? "h-full w-full" : "hidden"}>
@@ -126,7 +126,7 @@ export default function DiscoverPage() {
         {places && view === "list" && (
           <div className="h-full space-y-3 overflow-y-auto px-3 py-1 pb-24">
             {filtered.length === 0 && (
-              <EmptyState title="Nothing matches" body="Loosen the filters a bit." />
+              <EmptyState title="nothing matches" body="loosen the filters a bit" />
             )}
             {filtered.map((p) => (
               <PlaceListCard key={p.id} place={p} />
@@ -167,7 +167,7 @@ export default function DiscoverPage() {
 
             <div>
               <p className="font-display text-sm font-bold">
-                {selected.recommender_count > 0 ? "Recommended by" : "Nobody's endorsed this yet"}
+                {selected.recommender_count > 0 ? "recommended by" : "nobody's endorsed this yet"}
               </p>
               <div className="mt-1.5 flex flex-wrap items-center gap-2">
                 {selected.recommenders.map((u) => (
@@ -195,10 +195,10 @@ export default function DiscoverPage() {
       </Sheet>
 
       {/* Filters */}
-      <Sheet open={filtersOpen} onClose={() => setFiltersOpen(false)} title="Filters">
+      <Sheet open={filtersOpen} onClose={() => setFiltersOpen(false)} title="filters">
         <div className="space-y-4 pb-4">
           <section>
-            <p className="mb-1.5 font-display text-sm font-bold">Type</p>
+            <p className="mb-1.5 font-display text-sm font-bold">type</p>
             <div className="flex gap-2">
               {(["restaurant", "bar", "cafe"] as Kind[]).map((k) => (
                 <button
@@ -215,7 +215,7 @@ export default function DiscoverPage() {
           </section>
 
           <section>
-            <p className="mb-1.5 font-display text-sm font-bold">Budget</p>
+            <p className="mb-1.5 font-display text-sm font-bold">budget</p>
             <div className="grid grid-cols-4 gap-1.5">
               {BUDGETS.map((b) => (
                 <button
@@ -232,7 +232,7 @@ export default function DiscoverPage() {
           </section>
 
           <section>
-            <p className="mb-1.5 font-display text-sm font-bold">Category</p>
+            <p className="mb-1.5 font-display text-sm font-bold">category</p>
             <div className="flex flex-wrap gap-1.5">
               {allCategories.map((c) => (
                 <button

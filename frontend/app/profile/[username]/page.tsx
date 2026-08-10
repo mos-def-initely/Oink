@@ -43,7 +43,7 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
 
   useEffect(load, [load]);
 
-  if (error) return <EmptyState title="No such pig" body={error} />;
+  if (error) return <EmptyState title="no such animal" body={error} />;
   if (!user) return <Spinner />;
 
   const isMe = me?.id === user.id;
@@ -54,7 +54,7 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
   return (
     <>
       <PageHeader
-        title={isMe ? "You" : user.display_name}
+        title={isMe ? "you" : user.display_name}
         right={
           isMe ? (
             <button
@@ -117,8 +117,8 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
           {!places && <Spinner label="Loading…" />}
           {places?.length === 0 && (
             <EmptyState
-              title="Nothing logged yet"
-              body={isMe ? "Go find somewhere on Discover." : undefined}
+              title="nothing logged yet"
+              body={isMe ? "go find somewhere on discover" : undefined}
             />
           )}
           {places?.map((p) => (
@@ -182,19 +182,19 @@ function PigCustomiser({
   }
 
   return (
-    <Sheet open={open} onClose={onClose} title="Your animal">
+    <Sheet open={open} onClose={onClose} title="your animal">
       <div className="space-y-4 pb-4">
         <div className="flex justify-center">
           <PigAvatar config={cfg} placesLogged={user.places_logged} size={130} variant="full" />
         </div>
 
         <label className="block">
-          <span className="font-display text-sm font-bold">Display name</span>
+          <span className="font-display text-sm font-bold">display name</span>
           <input className="field mt-1" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
         </label>
 
         <section>
-          <p className="mb-1.5 font-display text-sm font-bold">Animal</p>
+          <p className="mb-1.5 font-display text-sm font-bold">animal</p>
           <div className="flex gap-2">
             {PIG_SPECIES.map((sp) => (
               <button
@@ -221,31 +221,31 @@ function PigCustomiser({
               </button>
             ))}
           </div>
-          <p className="micro mt-1.5">Pig by default — boar and hog are opt-in</p>
+          <p className="micro mt-1.5">pig by default — boar and hog are opt-in</p>
         </section>
 
         <Picker
-          label="Coat"
+          label="coat"
           options={Object.keys(SPECIES_COLORS[cfg.species as Species])}
           value={cfg.color}
           onChange={(v) => setCfg({ ...cfg, color: v })}
           swatch={(v) => SPECIES_COLORS[cfg.species as Species][v].mid}
         />
         <Picker
-          label="Background"
+          label="background"
           options={Object.keys(PIG_BACKGROUNDS)}
           value={cfg.background}
           onChange={(v) => setCfg({ ...cfg, background: v })}
           swatch={(v) => PIG_BACKGROUNDS[v]}
         />
         <Picker
-          label="Hat"
+          label="hat"
           options={[...PIG_HATS]}
           value={cfg.hat}
           onChange={(v) => setCfg({ ...cfg, hat: v })}
         />
         <Picker
-          label="Accessory"
+          label="accessory"
           options={[...PIG_ACCESSORIES]}
           value={cfg.accessory}
           onChange={(v) => setCfg({ ...cfg, accessory: v })}
@@ -280,7 +280,7 @@ function Picker({
           <button
             key={opt}
             onClick={() => onChange(opt)}
-            className={`tag capitalize ${value === opt ? "bg-plum text-oat" : ""}`}
+            className={`tag lowercase ${value === opt ? "bg-plum text-oat" : ""}`}
           >
             {swatch && (
               <span

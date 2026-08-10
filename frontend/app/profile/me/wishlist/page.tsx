@@ -27,7 +27,7 @@ export default function WishlistPage() {
   return (
     <div className="flex h-[100dvh] flex-col">
       <PageHeader
-        title="Wishlist"
+        title="wishlist"
         back="/profile/me"
         right={
           <div className="flex overflow-hidden rounded-xl border-2 border-ink bg-cream">
@@ -39,7 +39,7 @@ export default function WishlistPage() {
                   view === v ? "bg-plum text-oat" : "text-ink"
                 }`}
               >
-                {v === "list" ? "List" : "Map"}
+                {v === "list" ? "list" : "map"}
               </button>
             ))}
           </div>
@@ -50,7 +50,7 @@ export default function WishlistPage() {
         {!places && <Spinner />}
 
         {places?.length === 0 && (
-          <EmptyState title="Nothing on the wishlist" body="Find somewhere on Discover and star it." />
+          <EmptyState title="nothing on the wishlist" body="find somewhere on discover and star it" />
         )}
 
         {places && places.length > 0 && view === "list" && (

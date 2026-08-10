@@ -41,7 +41,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
     }
   }
 
-  if (error && !place) return <EmptyState title="Couldn't load this place" body={error} />;
+  if (error && !place) return <EmptyState title="couldn't load this place" body={error} />;
   if (!place) return <Spinner />;
 
   const canWishlist = !place.my_recommendation && place.my_reaction !== "oink";
@@ -108,8 +108,8 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
 
         {/* Who oinked, who shamed — two labelled groups (spec §6.4) */}
         <section className="grid gap-2.5">
-          <PeopleGroup title="Oinked" people={place.oinked_by} tone="plum" />
-          <PeopleGroup title="Shamed" people={place.shamed_by} tone="rust" />
+          <PeopleGroup title="oinked" people={place.oinked_by} tone="plum" />
+          <PeopleGroup title="shamed" people={place.shamed_by} tone="rust" />
         </section>
 
         {canWishlist && (
@@ -134,7 +134,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
 
         {place.images.length > 0 && (
           <section className="space-y-2">
-            <h3 className="px-1 text-base">Photos</h3>
+            <h3 className="px-1 text-base">photos</h3>
             <div className="grid grid-cols-3 gap-2">
               {place.images.map((img) => (
                 // eslint-disable-next-line @next/next/no-img-element -- local uploads
@@ -151,7 +151,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
           </h3>
 
           {place.recommendations.length === 0 && (
-            <EmptyState title="No write-ups yet" body="Be the first to say something." />
+            <EmptyState title="no write-ups yet" body="be the first to say something" />
           )}
 
           {place.recommendations.map((rec) => (
@@ -180,7 +180,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
 
               {rec.recommended_dishes.length > 0 && (
                 <div>
-                  <p className="mb-1.5 font-display text-xs font-bold text-ink-soft">Get the:</p>
+                  <p className="mb-1.5 font-display text-xs font-bold text-ink-soft">get the:</p>
                   <div className="flex flex-wrap gap-1.5">
                     {rec.recommended_dishes.map((d) => (
                       <span key={d} className="dish-tag">{d}</span>
@@ -239,7 +239,7 @@ function PeopleGroup({
       </div>
 
       {people.length === 0 ? (
-        <p className="text-sm text-ink-soft">Nobody yet</p>
+        <p className="text-sm text-ink-soft">nobody yet</p>
       ) : (
         <div className="flex flex-wrap gap-x-3 gap-y-2">
           {people.map((u) => (
@@ -316,7 +316,7 @@ function ReviewSheet({
   }
 
   return (
-    <Sheet open={open} onClose={onClose} title={existing ? "Edit your take" : "Your take"}>
+    <Sheet open={open} onClose={onClose} title={existing ? "edit your take" : "your take"}>
       <form onSubmit={submit} className="space-y-3 pb-4">
         <textarea
           className="field min-h-[120px]"
@@ -327,7 +327,7 @@ function ReviewSheet({
         />
 
         <div className="space-y-2">
-          <p className="font-display text-sm font-bold">Dishes worth ordering</p>
+          <p className="font-display text-sm font-bold">dishes worth ordering</p>
           <div className="flex gap-2">
             <input
               className="field flex-1"
@@ -360,7 +360,7 @@ function ReviewSheet({
         </div>
 
         <div className="space-y-2">
-          <p className="font-display text-sm font-bold">Photos</p>
+          <p className="font-display text-sm font-bold">photos</p>
           <input
             ref={fileInput}
             type="file"

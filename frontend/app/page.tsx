@@ -23,14 +23,14 @@ export default function HomePage() {
     <>
       <header className="sticky top-0 z-[900] flex items-baseline justify-between bg-oat/95 px-3 py-3 backdrop-blur">
         <span className="wordmark text-3xl">oink</span>
-        <span className="micro">Feed</span>
+        <span className="micro">feed</span>
       </header>
 
       <main className="space-y-4 px-3 pb-4">
-        {error && <EmptyState title="Couldn't load the feed" body={error} />}
-        {!items && !error && <Spinner label="Fetching the goss…" />}
+        {error && <EmptyState title="couldn't load the feed" body={error} />}
+        {!items && !error && <Spinner label="fetching the goss…" />}
         {items?.length === 0 && (
-          <EmptyState title="Nothing here yet" body="Head to Discover and log the first place." />
+          <EmptyState title="nothing here yet" body="head to discover and log the first place" />
         )}
         {items?.map((item) => (
           <ActivityCard key={`${item.activity}-${item.id}`} item={item} />

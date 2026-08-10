@@ -212,11 +212,12 @@ Thresholds live only in `lib/pig.ts`.
 appears only on the feed and the profile.
 
 **Species** — pig, boar or hog, chosen in the customiser with **pig as the
-default** so nobody has to decide. Each species has **its own set of coats**
-(pig: pink, rose, peach, cocoa…; boar: umber, charcoal, russet, ginger; hog:
-sand, chocolate, blush, ash), and each coat carries its own outline colour — a
-single shared brown line suited none of them. Switching species keeps the
-current coat if that animal has it, otherwise falls back to its default. Species is the only avatar attribute still
+default** so nobody has to decide. **All three share one set of 13 coats** — playful (pink, mint, seafoam, lilac,
+butter) alongside naturalistic (umber, charcoal, ginger, sand) — so a mint boar
+is as possible as a pink pig. The species is the silhouette; the coat is taste.
+Each coat carries its own outline colour, since one shared brown line suited
+neither a charcoal boar nor a pink pig. Only the starting colour differs by
+species: pig begins pink, boar umber, hog sand. Species is the only avatar attribute still
 legible at 24px on a map pin, which is exactly where telling friends apart
 matters. Boar and hog carry their own coats, ears, tusks and darker outlines;
 all three keep the fatness tiers, nostrils and shading.
@@ -249,6 +250,12 @@ difference from earlier iterations.
   spaced) carry timestamps, place meta lines and status pills, so the display
   face is reserved for things that are actually headings.
 - **Wordmark**: lowercase `oink`, olive `#806B28`, tight tracking.
+- **The app speaks in lowercase.** Headings, buttons, nav, form labels, empty
+  states — anything the app writes about itself. Never applied to user content:
+  place names, display names, review text and dish tags keep whatever casing
+  they arrived with. Mono micro-labels stay uppercase, which is the one
+  deliberate exception and reads as a different register rather than an
+  inconsistency.
 - **Badges** — `oinked`, `shamed`, `recommends` — are outlined, **never
   rotated**, and set in the display face **lowercase**, matching the wordmark.
 - **Dashed rules** separate a card's header from its body.

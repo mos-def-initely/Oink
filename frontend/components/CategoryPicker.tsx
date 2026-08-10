@@ -97,8 +97,8 @@ export default function CategoryPicker({
           {value.length
             ? `${value.length} selected`
             : fixed
-              ? "Pick what kind of bar"
-              : "Add cuisine tags"}
+              ? "pick what kind of bar"
+              : "add cuisine tags"}
         </span>
         <span aria-hidden className="text-ink-soft">{open ? "▲" : "▼"}</span>
       </button>
@@ -124,7 +124,7 @@ export default function CategoryPicker({
                   setOpen(false);
                 }
               }}
-              placeholder="Search…"
+              placeholder="search…"
               className="w-full rounded-lg bg-oat px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-plum"
               autoCapitalize="none"
               autoCorrect="off"
@@ -158,7 +158,7 @@ export default function CategoryPicker({
 
             {visible.length === 0 && !canAddCustom && (
               <li className="px-4 py-3 text-sm text-ink-soft">
-                {fixed ? "Nothing left to pick" : "No matches"}
+                {fixed ? "nothing left to pick" : "no matches"}
               </li>
             )}
           </ul>

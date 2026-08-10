@@ -8,9 +8,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const TABS = [
-  { href: "/", label: "Feed", icon: FeedIcon },
-  { href: "/discover", label: "Discover", icon: MapIcon },
-  { href: "/profile/me", label: "You", icon: PigIcon },
+  { href: "/", label: "feed", icon: FeedIcon },
+  { href: "/discover", label: "discover", icon: MapIcon },
+  { href: "/profile/me", label: "you", icon: PigIcon },
 ];
 
 export default function BottomTabBar() {

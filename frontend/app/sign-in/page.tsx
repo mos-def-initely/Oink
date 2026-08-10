@@ -41,7 +41,7 @@ function SignInForm() {
         <PigAvatar size={92} variant="full" placesLogged={18} config={{ color: "pink", hat: "chef" }} />
         <h1 className="mt-2 text-5xl tracking-tight">Oink</h1>
         <p className="mt-1 text-center font-display text-sm text-ink-soft">
-          Where your friends actually eat.
+          where your friends actually eat
         </p>
       </div>
 
@@ -65,7 +65,7 @@ function SignInForm() {
         </div>
 
         <label className="block">
-          <span className="font-display text-sm font-bold">Username</span>
+          <span className="font-display text-sm font-bold">username</span>
           <input
             className="field mt-1 bg-oat"
             value={username}
@@ -79,7 +79,7 @@ function SignInForm() {
 
         {mode === "signup" && (
           <label className="block">
-            <span className="font-display text-sm font-bold">Display name</span>
+            <span className="font-display text-sm font-bold">display name</span>
             <input
               className="field mt-1 bg-oat"
               value={displayName}
@@ -90,7 +90,7 @@ function SignInForm() {
         )}
 
         <label className="block">
-          <span className="font-display text-sm font-bold">Password</span>
+          <span className="font-display text-sm font-bold">password</span>
           <input
             className="field mt-1 bg-oat"
             type="password"
@@ -107,7 +107,7 @@ function SignInForm() {
           {busy ? "…" : mode === "login" ? "Let me in" : "Make me a pig"}
         </button>
 
-        <p className="text-center text-xs text-ink-soft">Stays signed in for 30 days.</p>
+        <p className="text-center text-xs text-ink-soft">stays signed in for 30 days</p>
       </form>
     </main>
   );

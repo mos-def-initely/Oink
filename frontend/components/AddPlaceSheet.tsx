@@ -328,11 +328,11 @@ export default function AddPlaceSheet({
   }
 
   return (
-    <Sheet open={open} onClose={onClose} title="Add a place">
+    <Sheet open={open} onClose={onClose} title="add a place">
       <form onSubmit={submit} className="space-y-4 pb-4">
         {/* Name + type-ahead search */}
         <section className="space-y-2">
-          <label className="block font-display text-sm font-bold">What's it called?</label>
+          <label className="block font-display text-sm font-bold">what's it called?</label>
           <input
             className="field"
             value={name}
@@ -343,7 +343,7 @@ export default function AddPlaceSheet({
             placeholder="Start typing to search…"
             required
           />
-          {searching && <p className="text-xs text-ink-soft">Searching…</p>}
+          {searching && <p className="text-xs text-ink-soft">searching…</p>}
           {results.length > 0 && (
             <ul className="overflow-hidden rounded-xl bg-cream shadow-lift">
               {results.map((c, i) => (
@@ -366,7 +366,7 @@ export default function AddPlaceSheet({
 
         {/* Location */}
         <section className="space-y-2">
-          <p className="font-display text-sm font-bold">Where is it?</p>
+          <p className="font-display text-sm font-bold">where is it?</p>
           <div className="flex gap-2">
             <button type="button" onClick={useCurrentLocation} className="btn-secondary flex-1 text-sm">
               I'm here now
@@ -395,12 +395,12 @@ export default function AddPlaceSheet({
               onClick={() => setShowLink(true)}
               className="text-sm font-bold text-plum underline underline-offset-2"
             >
-              Or paste a Google Maps link (optional)
+              or paste a google maps link (optional)
             </button>
           ) : (
             <>
               <label className="block font-display text-sm font-bold">
-                Google Maps link <span className="font-normal text-ink-soft">— optional</span>
+                google maps link <span className="font-normal text-ink-soft">— optional</span>
               </label>
               <input
                 className="field"
@@ -445,7 +445,7 @@ export default function AddPlaceSheet({
 
           <div>
             <p className="mb-1.5 font-display text-sm font-bold">
-              {kind === "bar" ? "What kind of bar?" : "Cuisine"}
+              {kind === "bar" ? "what kind of bar?" : "cuisine"}
             </p>
             <CategoryPicker
               kind={kind}
@@ -458,7 +458,7 @@ export default function AddPlaceSheet({
           </div>
 
           <div>
-            <p className="mb-1.5 font-display text-sm font-bold">How pricey?</p>
+            <p className="mb-1.5 font-display text-sm font-bold">how pricey?</p>
             <div className="grid grid-cols-4 gap-1.5">
               {BUDGETS.map((b) => (
                 <button
@@ -485,7 +485,7 @@ export default function AddPlaceSheet({
               }}
               placeholder="Street address"
             />
-            {locating && <p className="text-xs text-ink-soft">Looking up that address…</p>}
+            {locating && <p className="text-xs text-ink-soft">looking up that address…</p>}
             {addressMatch && (
               <button
                 type="button"
