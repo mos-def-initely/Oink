@@ -132,6 +132,19 @@ def create_restaurant(
     db: Session = Depends(get_db),
     viewer: User = Depends(get_current_user),
 ):
+    # Every place has to arrive with Google's id for it, from picking a search
+    # result or from a pasted Maps link. That id is what makes duplicates
+    # impossible: two people adding the same restaurant bring the same id, so
+    # the second one lands on the first's entry instead of beside it.
+    if not (payload.google_place_id or "").strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "Pick the place from the search results, or paste its Google Maps link. "
+                "That's what stops the same place being added twice."
+            ),
+        )
+
     # Somewhere already on the map: oink it rather than adding a second copy.
     existing = _find_existing(db, payload)
     if existing:

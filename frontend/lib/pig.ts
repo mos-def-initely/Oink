@@ -15,12 +15,12 @@ export type FatnessTier = "dead" | "slim" | "regular" | "chubby" | "fat" | "hunk
 
 export const FATNESS_TIERS: { tier: FatnessTier; min: number; label: string }[] = [
   { tier: "slim", min: 0, label: "Slim" },
-  { tier: "regular", min: 5, label: "Regular" },
-  { tier: "chubby", min: 10, label: "Chubby" },
-  { tier: "fat", min: 15, label: "Fat" },
+  { tier: "regular", min: 10, label: "Regular" },
+  { tier: "chubby", min: 20, label: "Chubby" },
+  { tier: "fat", min: 30, label: "Fat" },
   // The top of the ladder turns the corner: eat enough and the pig comes out
   // the other side built rather than bigger.
-  { tier: "hunky", min: 20, label: "Hunky" },
+  { tier: "hunky", min: 40, label: "Hunky" },
 ];
 
 /** Worst to best. Decay walks down this, and it bottoms out at the dead pig. */
@@ -35,9 +35,9 @@ export const TIER_LABELS: Record<FatnessTier, string> = {
   hunky: "Hunky",
 };
 
-/** How long idleness costs a tier. A fortnight, not a week — a friend
- *  group can easily go a month without eating out, and weekly decay killed a
- *  maxed-out pig in four. */
+/** How long idleness costs a tier. A fortnight — long enough that a quiet
+ *  couple of weeks isn't punished, short enough that the pig means something.
+ *  Nothing is lost either way: a single log puts the whole ladder back. */
 const DECAY_MS = 14 * 24 * 60 * 60 * 1000;
 
 /** Tier from count alone, before any decay is applied. */

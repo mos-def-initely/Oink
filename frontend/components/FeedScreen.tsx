@@ -10,6 +10,9 @@ import BottomTabBar, { TabBarSpacer } from "@/components/BottomTabBar";
 import { EmptyState, PageHeader, Spinner } from "@/components/ui";
 import HowItWorks from "@/components/HowItWorks";
 import { introPending, markIntroSeen } from "@/lib/intro";
+import AddToHomeScreen from "@/components/AddToHomeScreen";
+import { markInstallOffered, platform, shouldOfferInstall } from "@/lib/homescreen";
+import type { Platform } from "@/lib/homescreen";
 
 export default function FeedScreen({ initialItems }: { initialItems: FeedItem[] | null }) {
   const [items, setItems] = useState<FeedItem[] | null>(initialItems);
@@ -18,6 +21,24 @@ export default function FeedScreen({ initialItems }: { initialItems: FeedItem[] 
   const [introFor, setIntroFor] = useState<string | null>(null);
 
   useEffect(() => setIntroFor(introPending()), []);
+
+  // Everyone gets the home-screen steps once, including people who joined
+  // before this existed — so it can't ride on the intro's flag. It waits for
+  // the intro to be dealt with rather than stacking two sheets on a new user.
+  const [installFor, setInstallFor] = useState<string | null>(null);
+  const [os, setOs] = useState<Platform>("desktop");
+  useEffect(() => {
+    if (introFor) return;
+    setOs(platform());
+    api
+      .me()
+      .then((u) => {
+        if (shouldOfferInstall(u.id)) setInstallFor(u.id);
+      })
+      .catch(() => {
+        /* not signed in, or offline — nothing to offer */
+      });
+  }, [introFor]);
 
   useEffect(() => {
     // Same as Discover: the server payload is a snapshot, so refresh behind it
@@ -50,6 +71,15 @@ export default function FeedScreen({ initialItems }: { initialItems: FeedItem[] 
 
       <TabBarSpacer />
       <BottomTabBar />
+
+      <AddToHomeScreen
+        open={!!installFor}
+        os={os}
+        onClose={() => {
+          if (installFor) markInstallOffered(installFor);
+          setInstallFor(null);
+        }}
+      />
 
       <HowItWorks
         open={!!introFor}

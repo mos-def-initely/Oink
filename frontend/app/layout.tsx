@@ -22,6 +22,16 @@ const body = Nunito_Sans({
 export const metadata: Metadata = {
   title: "Oink",
   description: "Restaurant, bar and cafe recommendations between friends.",
+  // Makes "add to home screen" produce an actual app: own icon, own name, and
+  // no browser chrome. Without these it installs as a bookmark with a
+  // screenshot for an icon, which is what stops people bothering.
+  manifest: "/manifest.webmanifest",
+  applicationName: "Oink",
+  appleWebApp: { capable: true, title: "Oink", statusBarStyle: "default" },
+  icons: {
+    icon: [{ url: "/icon-192.png", sizes: "192x192", type: "image/png" }],
+    apple: [{ url: "/icon-192.png", sizes: "192x192", type: "image/png" }],
+  },
 };
 
 // Mobile-first (spec §6) — lock the viewport to device width.

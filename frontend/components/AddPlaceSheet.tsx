@@ -251,6 +251,11 @@ export default function AddPlaceSheet({
   function choose(c: PlaceCandidate) {
     setName(c.name);
     setGooglePlaceId(c.place_id ?? null);
+    if (!c.place_id) {
+      // An OpenStreetMap fallback result: fine for placing the pin, but it
+      // carries no Google id, so it can't be what a place is added from.
+      setNote("That result isn't a Google listing — paste the Maps link to add it.");
+    }
     // These fill the address field programmatically, so clear the typed flag —
     // otherwise the geocode effect fires on our own output.
     setAddressTouched(false);
@@ -444,10 +449,12 @@ export default function AddPlaceSheet({
           {pickedPoint ? (
             <p className="rounded-lg bg-gold-pale px-3 py-2 text-xs font-bold text-[#7A6212]">
               Pin dropped at {pickedPoint.lat.toFixed(4)}, {pickedPoint.lng.toFixed(4)}
+              {!googlePlaceId && " — still needs a Google match"}
             </p>
           ) : (
             <p className="text-xs text-ink-soft">
-              Pick a result above, type an address or postcode below, use your location, or drop a pin.
+              Pick a result above, or paste a Google Maps link. Dropping a pin or typing an
+              address moves the marker, but the place itself has to come from Google.
             </p>
           )}
           {note && <p className="rounded-lg bg-oat-deep px-3 py-2 text-xs">{note}</p>}
@@ -663,7 +670,18 @@ export default function AddPlaceSheet({
 
         {error && <ErrorNote message={error} />}
 
-        <button type="submit" className="btn-primary w-full text-lg" disabled={saving}>
+        {!googlePlaceId && (
+          <p className="rounded-card border-2 border-ink bg-gold px-3 py-2 text-sm font-bold text-ink-deep">
+            Pick the place from the search results above, or paste its Google Maps link. That&apos;s
+            what stops the same place going on twice.
+          </p>
+        )}
+
+        <button
+          type="submit"
+          className="btn-primary w-full text-lg"
+          disabled={saving || !googlePlaceId}
+        >
           {saving ? "Saving…" : review.trim() ? "Add it & post your take" : "Add it"}
         </button>
       </form>

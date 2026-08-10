@@ -39,6 +39,32 @@ def init_db():
 
     Base.metadata.create_all(bind=engine)
     _add_missing_columns()
+    _ensure_unique_place_ids()
+
+
+def _ensure_unique_place_ids() -> None:
+    """One row per Google listing, enforced by the database.
+
+    The API already refuses a place without an id and hands back the existing
+    entry when it recognises one, but that's a check two concurrent requests can
+    both pass. The index is what actually makes it true. Existing rows predate
+    the rule and have no id; both SQLite and Postgres allow repeated NULLs in a
+    unique index, so they're unaffected.
+    """
+    try:
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS uq_restaurant_google_place_id "
+                    "ON restaurants (google_place_id)"
+                )
+            )
+    except Exception:  # noqa: BLE001 — a duplicate already in the data, say
+        logger.warning(
+            "Couldn't add the unique index on google_place_id — "
+            "there may already be duplicate places to merge.",
+            exc_info=True,
+        )
 
 
 def _add_missing_columns() -> None:

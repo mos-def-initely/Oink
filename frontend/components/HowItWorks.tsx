@@ -12,6 +12,8 @@ import PigAvatar from "@/components/pigs/PigAvatar";
 import { OinkPig, ShamePig } from "@/components/pigs/ReactionPigs";
 import { FATNESS_TIERS, TIER_LABELS } from "@/lib/pig";
 import { Sheet } from "@/components/ui";
+import { InstallSteps } from "@/components/AddToHomeScreen";
+import { platform } from "@/lib/homescreen";
 
 const NOW = new Date().toISOString();
 const LONG_AGO = new Date(Date.now() - 400 * 24 * 3600 * 1000).toISOString();
@@ -79,6 +81,14 @@ export default function HowItWorks({ open, onClose }: { open: boolean; onClose: 
             ever lost though</strong> — log a single place and you&apos;re straight back to
             whatever you&apos;d earned, however far you fell.
           </p>
+        </section>
+
+        <section className="space-y-2">
+          <h3 className="font-display text-sm font-extrabold">put it on your home screen</h3>
+          <p className="text-sm text-ink-soft">
+            Oink works like an app from there — own icon, no browser bar, straight to the feed.
+          </p>
+          <InstallSteps os={platform()} />
         </section>
 
         <button onClick={onClose} className="btn-primary w-full text-lg">
