@@ -198,19 +198,28 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
             />
           )}
           {places?.map((p) => (
-            <div key={p.id} className="relative">
-              <PlaceListCard place={p} />
-              {isMe && (
-                <button
-                  onClick={() => setUnlogging(p)}
-                  className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full border-2 border-ink bg-cream text-xs font-bold"
-                  aria-label={`Remove ${p.name} from your log`}
-                  title="remove from your log"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
+            <PlaceListCard
+              key={p.id}
+              place={p}
+              action={
+                isMe ? (
+                  <button
+                    onClick={(e) => {
+                      // The whole card is a link to the place; removing it isn't
+                      // visiting it.
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setUnlogging(p);
+                    }}
+                    className="-my-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-cream text-xs font-bold"
+                    aria-label={`remove ${p.name} from your log`}
+                    title="remove from your log"
+                  >
+                    ✕
+                  </button>
+                ) : undefined
+              }
+            />
           ))}
         </section>
       </main>

@@ -1,6 +1,12 @@
 "use client";
 
-/** Horizontal place card — discover list view and wishlist (spec §6.3). */
+/**
+ * Horizontal place card — discover list view, wishlist and profile (spec §6.3).
+ *
+ * `action` is a slot in the title row rather than something callers overlay on
+ * top. An absolutely-positioned button in the corner lands on the budget pig,
+ * which already lives there.
+ */
 import Link from "next/link";
 import { googlePhotoSrc } from "@/lib/api";
 import type { PlaceSummary } from "@/lib/types";
@@ -9,7 +15,15 @@ import { BudgetTag } from "@/components/pigs/PricePig";
 import PlacePhoto from "@/components/PlacePhoto";
 import { KIND_LABELS } from "@/components/ui";
 
-export default function PlaceListCard({ place }: { place: PlaceSummary }) {
+export default function PlaceListCard({
+  place,
+  action,
+}: {
+  place: PlaceSummary;
+  /** Rendered beside the budget pig. Owns its own click handling — the card
+   *  around it is a link, so anything interactive has to stop propagation. */
+  action?: React.ReactNode;
+}) {
   return (
     <Link href={`/restaurant/${place.id}`} className="card flex items-stretch overflow-hidden">
 <PlacePhoto
@@ -23,6 +37,7 @@ export default function PlaceListCard({ place }: { place: PlaceSummary }) {
             {place.name}
           </h3>
           <BudgetTag budget={place.budget} size={22} />
+          {action}
         </div>
 
         <p className="truncate text-xs text-ink-soft">
