@@ -70,10 +70,12 @@ export default function DiscoverScreen({ initialPlaces }: { initialPlaces: Place
   }, []);
 
   useEffect(() => {
-    // Server-rendered already; skip the duplicate fetch on mount.
-    if (initialPlaces) return;
+    // The server payload paints instantly, but it's a snapshot: anything
+    // changed since — a place un-logged, someone else's oink — would sit here
+    // stale forever if this returned early. Refresh in the background instead,
+    // which costs a request and never blanks what's already on screen.
     load();
-  }, [load, initialPlaces]);
+  }, [load]);
 
   // Filtering happens client-side so toggling a filter doesn't refetch. The API
   // supports the same filters for when the dataset outgrows this.

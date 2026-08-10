@@ -19,12 +19,16 @@ export default function FeedScreen({ initialItems }: { initialItems: FeedItem[] 
   useEffect(() => setIntroFor(introPending()), []);
 
   useEffect(() => {
-    // Already server-rendered — don't fetch the same thing again on mount.
-    if (initialItems) return;
+    // Same as Discover: the server payload is a snapshot, so refresh behind it
+    // rather than trusting it forever. Errors are only surfaced when there's
+    // nothing on screen already — a failed background refresh shouldn't replace
+    // a feed that's rendering fine.
     api
       .feed()
       .then(setItems)
-      .catch((e) => setError(e.message ?? "Couldn't load the feed"));
+      .catch((e) => {
+        if (!initialItems) setError(e.message ?? "Couldn't load the feed");
+      });
   }, [initialItems]);
 
   return (
