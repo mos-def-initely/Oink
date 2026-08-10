@@ -128,7 +128,14 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
                 credit for finding it lives here instead. */}
             {!!user.og_oinks && (
               <span className="sticker bg-lilac text-ink">
-                {user.og_oinks} og {user.og_oinks === 1 ? "oink" : "oinks"}
+                {/* One inline run inside the flex sticker — separate children
+                    would drop the spaces between them. OG stays uppercase: the
+                    app speaks in lowercase, but an initialism read as a word
+                    isn't lowercase, it's just wrong. */}
+                <span>
+                  {user.og_oinks} <span className="uppercase">og</span>{" "}
+                  {user.og_oinks === 1 ? "oink" : "oinks"}
+                </span>
               </span>
             )}
               <span className={`sticker ${dead ? "bg-ink-deep text-oat" : "bg-plum text-oat"}`}>

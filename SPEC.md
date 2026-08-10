@@ -345,7 +345,9 @@ matters. Boar and hog carry their own coats, ears, tusks and darker outlines;
 all three keep the fatness tiers, nostrils and shading.
 
 **OG oinks.** Being first to put a place on the map is counted on the profile as
-*og oinks*, beside the places count. It's kept off the feed cards deliberately:
+**OG oinks**, beside the places count. `OG` is the one thing in the app that
+stays uppercase: the app speaks in lowercase, but an initialism set in lower case
+reads as a word rather than an abbreviation. It's kept off the feed cards deliberately:
 review-first anchoring hands the card to whoever wrote the place up, and adding a
 third credit to every card was noise. The profile is where a finder's tally
 belongs, and it's durable in a way a scrolling card never is.
