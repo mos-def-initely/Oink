@@ -108,7 +108,7 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
         }
       />
 
-      <main className="space-y-4 px-3 pb-4">
+      <main className="mx-auto max-w-[760px] space-y-4 px-3 pb-4">
         {/* Lemon is used on exactly two surfaces — here and empty states —
             where there's no photography for it to fight. */}
         <section className="flex flex-col items-center gap-2 rounded-card border-2 border-ink bg-lemon p-4">
@@ -145,6 +145,20 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
             )}
               <span className={`sticker ${dead ? "bg-ink-deep text-oat" : "bg-plum text-oat"}`}>
                 {dead ? "dead pig" : `${tierLabel.toLowerCase()} pig`}
+              </span>
+            </div>
+
+            {/* What the group made of the places this person found. Its own row
+                under the counts, because it isn't one: the two above are things
+                you did, these two are things that were done back. */}
+            <div className="flex items-center gap-2">
+              <span className="sticker bg-gold text-ink">
+                {user.og_oinks_received ?? 0}{" "}
+                {(user.og_oinks_received ?? 0) === 1 ? "oink" : "oinks"} received
+              </span>
+              <span className="sticker bg-rust text-oat">
+                {user.og_shames_received ?? 0}{" "}
+                {(user.og_shames_received ?? 0) === 1 ? "shame" : "shames"} received
               </span>
             </div>
 

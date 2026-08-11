@@ -14,7 +14,7 @@
 export type FatnessTier = "dead" | "slim" | "regular" | "chubby" | "fat" | "humungous";
 
 export const FATNESS_TIERS: { tier: FatnessTier; min: number; label: string }[] = [
-  { tier: "slim", min: 0, label: "Slim" },
+  { tier: "slim", min: 0, label: "Skinny" },
   { tier: "regular", min: 10, label: "Regular" },
   { tier: "chubby", min: 20, label: "Chubby" },
   { tier: "fat", min: 30, label: "Fat" },
@@ -27,7 +27,7 @@ export const TIER_ORDER: FatnessTier[] = ["dead", "slim", "regular", "chubby", "
 
 export const TIER_LABELS: Record<FatnessTier, string> = {
   dead: "Dead Pig",
-  slim: "Slim",
+  slim: "Skinny",
   regular: "Regular",
   chubby: "Chubby",
   fat: "Fat",

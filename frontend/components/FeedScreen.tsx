@@ -174,11 +174,27 @@ export default function FeedScreen({ initialItems }: { initialItems: FeedItem[] 
       </button>
 
       <PullToRefresh onRefresh={refresh}>
-        <main className="content-rise space-y-4 px-3 pb-4">
-          {error && <EmptyState title="couldn't load the feed" body={error} />}
-          {!items && !error && <Spinner label="fetching the goss…" />}
+        {/* One column on a phone; two on a laptop, where a single 480px strip
+            of cards down the middle of a 1400px screen is mostly wallpaper.
+            Grid rather than CSS columns: columns fill top-to-bottom, which
+            would put the second-newest card halfway down the page. */}
+        <main className="content-rise mx-auto max-w-[1100px] space-y-4 px-3 pb-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0">
+          {/* Full-width whatever the column count — a spinner in one half of a
+              two-column grid reads as a card that failed. */}
+          {error && (
+            <div className="lg:col-span-2">
+              <EmptyState title="couldn't load the feed" body={error} />
+            </div>
+          )}
+          {!items && !error && (
+            <div className="lg:col-span-2">
+              <Spinner label="fetching the goss…" />
+            </div>
+          )}
           {items?.length === 0 && (
-            <EmptyState title="nothing here yet" body="head to discover and log the first place." />
+            <div className="lg:col-span-2">
+              <EmptyState title="nothing here yet" body="head to discover and log the first place." />
+            </div>
           )}
           {folded?.map(({ item, agreed }) => (
             <ActivityCard key={keyOf(item)} item={item} agreed={agreed} />
@@ -186,7 +202,7 @@ export default function FeedScreen({ initialItems }: { initialItems: FeedItem[] 
 
           {/* Trips the next page, and holds the spinner while it lands. */}
           {items && items.length > 0 && !exhausted && (
-            <div ref={sentinel} className="py-2">
+            <div ref={sentinel} className="py-2 lg:col-span-2">
               {loadingMore && (
                 <div className="flex justify-center py-3">
                   <span className="h-6 w-6 animate-spin rounded-full border-[3px] border-oat-deep border-t-plum" />

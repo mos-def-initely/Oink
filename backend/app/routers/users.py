@@ -95,7 +95,14 @@ def get_user(identifier: str, db: Session = Depends(get_db), viewer: User = Depe
     counts = places_logged_counts(db, [user.id])
     last = last_logged_map(db, [user.id])
     og = og_oink_counts(db, [user.id])
-    return user_public(user, counts.get(user.id, 0), last.get(user.id), og.get(user.id, 0))
+    verdict = og_reaction_counts(db, [user.id])
+    return user_public(
+        user,
+        counts.get(user.id, 0),
+        last.get(user.id),
+        og.get(user.id, 0),
+        verdict.get(user.id, (0, 0)),
+    )
 
 
 @router.get("/{identifier}/recommendations", response_model=List[RestaurantSummary])

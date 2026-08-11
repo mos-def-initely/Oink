@@ -204,7 +204,9 @@ export default function DiscoverScreen({ initialPlaces }: { initialPlaces: Place
           >
             Filters{activeFilters ? ` (${activeFilters})` : ""}
           </button>
-          <div className="flex overflow-hidden rounded-xl border-2 border-ink bg-cream">
+          {/* The toggle is a phone compromise — a laptop has room for both, so
+              above `lg` they're both on screen and there's nothing to switch. */}
+          <div className="flex overflow-hidden rounded-xl border-2 border-ink bg-cream lg:hidden">
             {(["map", "list"] as const).map((v) => (
               <button
                 key={v}
@@ -257,11 +259,11 @@ export default function DiscoverScreen({ initialPlaces }: { initialPlaces: Place
         )}
       </header>
 
-      <div className="relative flex-1 overflow-hidden">
+      <div className="relative flex-1 overflow-hidden lg:flex">
         {!places && <Spinner label="finding the good stuff…" />}
 
         {places && (
-          <div className={view === "map" ? "h-full w-full" : "hidden"}>
+          <div className={`lg:block lg:h-full lg:min-w-0 lg:flex-1 ${view === "map" ? "h-full w-full" : "hidden"}`}>
             <MapView
               places={filtered}
               onSelect={setSelected}
@@ -279,8 +281,13 @@ export default function DiscoverScreen({ initialPlaces }: { initialPlaces: Place
           </div>
         )}
 
-        {places && view === "list" && (
-          <div className="h-full space-y-3 overflow-y-auto px-3 py-1 pb-[calc(112px+env(safe-area-inset-bottom))]">
+        {places && (
+          <div
+            className={`h-full space-y-3 overflow-y-auto px-3 py-1 pb-[calc(112px+env(safe-area-inset-bottom))]
+                        lg:block lg:w-[400px] lg:shrink-0 lg:border-l-2 lg:border-ink lg:pb-6 ${
+                          view === "list" ? "" : "hidden"
+                        }`}
+          >
             {filtered.length === 0 && (
               <EmptyState title="nothing matches" body="loosen the filters a bit." />
             )}
@@ -299,7 +306,7 @@ export default function DiscoverScreen({ initialPlaces }: { initialPlaces: Place
           }}
           /* Sits clear of the tab bar — this screen has no spacer, so the
              offset has to cover the bar's height itself. */
-          className="absolute bottom-[calc(112px+env(safe-area-inset-bottom))] right-4 z-[1000] flex h-16 w-16 items-center justify-center rounded-full bg-plum font-display text-4xl font-extrabold text-white transition-transform active:scale-95"
+          className="absolute bottom-[calc(112px+env(safe-area-inset-bottom))] right-4 z-[1000] flex h-16 w-16 items-center justify-center rounded-full bg-plum font-display text-4xl font-extrabold text-white transition-transform active:scale-95 lg:bottom-6 lg:right-[424px]"
           aria-label="add a place"
         >
           +

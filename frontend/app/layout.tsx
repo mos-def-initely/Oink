@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Outfit, Nunito_Sans } from "next/font/google";
 import "./globals.css";
 import RouteTransition from "@/components/RouteTransition";
+import SideNav from "@/components/SideNav";
 
 // Outfit: geometric, even, tight — the "funky but designed" face. Used for the
 // wordmark, headings and place names only. Body copy stays on a plain sans,
@@ -47,9 +48,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${display.variable} ${body.variable}`}>
       <body>
-        {/* Phone-width column, centred on desktop rather than stretched (spec §6) */}
-        <div className="mx-auto min-h-screen w-full max-w-[480px] bg-oat">
-          <RouteTransition>{children}</RouteTransition>
+        {/* Phone-width column below `lg`; above it the nav moves to the left
+            edge and the column becomes a proper content area. The 480px cap is
+            the whole of the phone layout, so it's lifted rather than widened —
+            each screen decides its own measure from there, because a feed of
+            cards and a page of prose don't want the same one. */}
+        <div className="lg:flex">
+          <SideNav />
+          <div className="mx-auto min-h-screen w-full max-w-[480px] bg-oat lg:max-w-none lg:flex-1">
+            <RouteTransition>{children}</RouteTransition>
+          </div>
         </div>
       </body>
     </html>

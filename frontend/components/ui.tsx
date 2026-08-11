@@ -63,9 +63,9 @@ export function Sheet({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[2000] flex items-end justify-center">
+    <div className="fixed inset-0 z-[2000] flex items-end justify-center lg:items-center lg:p-6">
       <button className="absolute inset-0 bg-ink/40" onClick={onClose} aria-label="close" tabIndex={-1} />
-      <div className="relative max-h-[88vh] w-full max-w-[480px] overflow-y-auto rounded-t-3xl border-t-2 border-x-2 border-ink bg-oat pb-6 shadow-lift">
+      <div className="relative max-h-[88vh] w-full max-w-[480px] overflow-y-auto rounded-t-3xl border-t-2 border-x-2 border-ink bg-oat pb-6 shadow-lift lg:max-h-[86vh] lg:rounded-3xl lg:border-2 lg:max-w-[560px]">
         <div className="sticky top-0 z-10 flex items-center gap-2 bg-oat px-4 pb-2 pt-4">
           <h2 className="min-w-0 flex-1 truncate text-xl">{title}</h2>
           <button

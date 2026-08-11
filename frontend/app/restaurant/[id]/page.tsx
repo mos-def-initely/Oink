@@ -79,7 +79,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
     <>
       <PageHeader title={place.name} back="/discover" />
 
-      <main className="space-y-4 px-3 pb-4">
+      <main className="mx-auto max-w-[820px] space-y-4 px-3 pb-4">
         {landedOnExisting && (
           <p className="rounded-card border-2 border-ink bg-gold px-3 py-2 text-sm font-bold text-ink-deep">
             Already on the map — oinked it for you instead of adding it twice.

@@ -199,6 +199,39 @@ export default function PigstyScreen({ initialUsers }: { initialUsers: User[] | 
     api.users().then(setUsers).catch(() => {});
   }, []);
 
+  // Zoom the field with the wheel or a trackpad. Pinch needs two fingers and a
+  // touchscreen; on a laptop the slider was the only way in, which is a poor
+  // substitute for zooming where the pointer already is.
+  //
+  // The listener is attached by hand rather than through onWheel because React
+  // registers wheel handlers passively at the root, where preventDefault is
+  // ignored — so the page would scroll underneath the zoom. Live values come
+  // from refs: the effect runs once, and a closure over the state would zoom
+  // from whatever the scale was on mount forever after.
+  const scaleRef = useRef(scale);
+  const panRef = useRef(pan);
+  scaleRef.current = scale;
+  panRef.current = pan;
+  useEffect(() => {
+    const el = viewport.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const box = el.getBoundingClientRect();
+      const px = e.clientX - box.left;
+      const py = e.clientY - box.top;
+      const from = scaleRef.current;
+      const to = Math.min(MAX_SCALE, Math.max(MIN_SCALE, from * Math.exp(-e.deltaY * 0.0018)));
+      if (to === from) return;
+      // Hold the point under the cursor still, the same way the pinch does.
+      const p = panRef.current;
+      setScale(to);
+      setPan({ x: px - ((px - p.x) / from) * to, y: py - ((py - p.y) / from) * to });
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, []);
+
   /**
    * The field, with the throne's band above the crowd and the enclosure's
    * below it. Both occupants come out of the grid — they're standing somewhere
@@ -429,7 +462,7 @@ export default function PigstyScreen({ initialUsers }: { initialUsers: User[] | 
 
   return (
     <>
-      <header className="sticky top-0 z-[900] bg-oat/95 px-3 pb-2 pt-3 backdrop-blur">
+      <header className="sticky top-0 z-[900] mx-auto max-w-[1400px] bg-oat/95 px-3 pb-2 pt-3 backdrop-blur">
         <div className="flex items-baseline justify-between">
           {/* Matched to the feed and discover — three tabs of equal standing
               shouldn't have two title treatments between them. */}
@@ -453,7 +486,7 @@ export default function PigstyScreen({ initialUsers }: { initialUsers: User[] | 
         </label>
       </header>
 
-      <main className="px-3">
+      <main className="mx-auto max-w-[1400px] px-3">
         {!users && <Spinner label="rounding them up…" />}
 
         {users && (
@@ -464,7 +497,7 @@ export default function PigstyScreen({ initialUsers }: { initialUsers: User[] | 
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
               onPointerCancel={onPointerUp}
-              className="relative h-[58vh] min-h-[320px] cursor-grab touch-none overflow-hidden rounded-card border-2 border-ink bg-grass active:cursor-grabbing"
+              className="relative h-[58vh] min-h-[320px] cursor-grab touch-none overflow-hidden rounded-card border-2 border-ink bg-grass active:cursor-grabbing lg:h-[calc(100vh-230px)]"
               style={{ backgroundImage: "linear-gradient(#AECD8F, #8FB374)" }}
             >
               <div

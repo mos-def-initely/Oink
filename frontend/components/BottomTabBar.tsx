@@ -1,13 +1,16 @@
 "use client";
 
 /**
- * Primary navigation — spec §6: a thumb-reachable bottom tab bar, not a
- * desktop-style top nav.
+ * Primary navigation on a phone — spec §6: a thumb-reachable bottom tab bar,
+ * not a desktop-style top nav.
+ *
+ * Above `lg` this hides and SideNav takes over down the left; the two share
+ * TABS so they can't drift apart.
  */
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const TABS = [
+export const TABS = [
   { href: "/", label: "feed", icon: FeedIcon },
   { href: "/discover", label: "discover", icon: MapIcon },
   { href: "/pigsty", label: "pigsty", icon: StyIcon },
@@ -18,7 +21,7 @@ export default function BottomTabBar() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-1/2 z-[1000] w-full max-w-[480px] -translate-x-1/2 border-t-2 border-ink bg-cream pt-2.5 pb-[calc(env(safe-area-inset-bottom)+26px)]">
+    <nav className="fixed bottom-0 left-1/2 z-[1000] w-full max-w-[480px] -translate-x-1/2 border-t-2 border-ink bg-cream pt-2.5 pb-[calc(env(safe-area-inset-bottom)+26px)] lg:hidden">
       <ul className="flex">
         {TABS.map(({ href, label, icon: Icon }) => {
           const active =
@@ -68,7 +71,7 @@ export default function BottomTabBar() {
  * with a little air under the last card.
  */
 export function TabBarSpacer() {
-  return <div className="h-[calc(100px+env(safe-area-inset-bottom))]" aria-hidden />;
+  return <div className="h-[calc(100px+env(safe-area-inset-bottom))] lg:h-6" aria-hidden />;
 }
 
 function FeedIcon() {
