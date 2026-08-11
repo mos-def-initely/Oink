@@ -39,6 +39,7 @@ const GLASS = "#3F5C36";
 const SILVER = "#C6C5BF";
 const SILVER_DARK = "#8D8C85";
 const CASH = "#8FAE79";
+const WINE = "#7C3242";
 
 export default function Held({ item, armX }: { item: string; armX: number }) {
   const s = { stroke: OUTLINE, strokeWidth: STROKE, strokeLinejoin: "round" as const };
@@ -329,6 +330,15 @@ export default function Held({ item, armX }: { item: string; armX: number }) {
             d={`M ${ox - 8} ${gy - 18} L ${ox + 8} ${gy - 18} L ${ox + 4.5} ${gy - 3} L ${ox - 4.5} ${gy - 3} Z`}
             fill={CREAM}
           />
+          {/* A measure in the bottom of it. Cut to the bowl's own taper rather
+              than clipped, so the wine meets the glass exactly at the sides. */}
+          <path
+            d={`M ${ox - 6.4} ${gy - 11} L ${ox + 6.4} ${gy - 11} L ${ox + 4.5} ${gy - 3}
+                L ${ox - 4.5} ${gy - 3} Z`}
+            fill={WINE}
+            stroke="none"
+          />
+          <path d={`M ${ox - 6.4} ${gy - 11} h 12.8`} stroke={OUTLINE} strokeWidth="1.4" fill="none" />
           <rect x={ox - 1.4} y={gy - 3} width="3" height="12" fill={CREAM} />
           <rect x={ox - 6} y={gy + 9} width="12" height="3.5" rx="1.7" fill={CREAM} />
         </g>
