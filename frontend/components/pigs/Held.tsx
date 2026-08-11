@@ -79,8 +79,8 @@ export default function Held({ item, armX }: { item: string; armX: number }) {
        * and the bell is the small end of it, which is the difference between a
        * tenor and the stubby alto this was.
        */
-      const tube = `M ${sx - 4} ${gy - 38} Q ${sx + 5} ${gy - 36} ${sx + 4} ${gy - 29}
-                    Q ${sx + 3} ${gy - 25} ${sx} ${gy - 22}
+      const tube = `M ${sx - 15} ${gy - 33} Q ${sx - 5} ${gy - 33} ${sx - 1} ${gy - 28}
+                    Q ${sx + 2} ${gy - 25} ${sx} ${gy - 22}
                     L ${sx} ${gy + 6} Q ${sx} ${gy + 17} ${sx + 8} ${gy + 17}
                     Q ${sx + 16} ${gy + 17} ${sx + 16} ${gy + 7} L ${sx + 16} ${gy + 1}`;
       return (
@@ -90,8 +90,8 @@ export default function Held({ item, armX }: { item: string; armX: number }) {
         // the arm doesn't splay and the whole instrument sits closest in; 14
         // down and a size smaller is what clears it at every tier.
         <g
-          transform={`translate(0 14) rotate(20 ${sx} ${gy})
-                      translate(${sx} ${gy}) scale(0.85) translate(${-sx} ${-gy})`}
+          transform={`translate(0 16) rotate(20 ${sx} ${gy})
+                      translate(${sx} ${gy}) scale(0.78) translate(${-sx} ${-gy})`}
         >
           {/* Outline first as a fatter stroke of the same path — the run bends
               three times, and two stroked passes hold an even width where an
@@ -123,16 +123,17 @@ export default function Held({ item, armX }: { item: string; armX: number }) {
           />
           <ellipse cx={sx + 16.2} cy={gy - 10} rx="6.8" ry="2.8" fill={LEMON} {...s} />
 
-          {/* Mouthpiece, on the end of the crook. */}
+          {/* Mouthpiece, lying along the end of the crook rather than standing
+              up off it. */}
           <rect
-            x={sx - 11}
-            y={gy - 46}
-            width="8"
-            height="11"
+            x={sx - 25}
+            y={gy - 37.5}
+            width="11"
+            height="9"
             rx="2.5"
             fill={INK}
             {...s}
-            transform={`rotate(-18 ${sx - 7} ${gy - 41})`}
+            transform={`rotate(-6 ${sx - 19} ${gy - 33})`}
           />
 
           {/* Keys down the near side of the body. */}
