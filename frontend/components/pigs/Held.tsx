@@ -72,7 +72,7 @@ export default function Held({ item, armX }: { item: string; armX: number }) {
       );
 
     case "sax": {
-      const sx = gx - 6;
+      const sx = gx - 16;
       /**
        * The whole instrument as one run, in the order the air goes: an S-bent
        * crook down from the mouthpiece, a long body, round the bow and back up
@@ -90,13 +90,13 @@ export default function Held({ item, armX }: { item: string; armX: number }) {
         //
         // The lean is doing the work. The mouthpiece sits at the top left of
         // the instrument, so turning it further swings that end outboard, and
-        // the head's silhouette climbs as you go out from its centre. At 45°
-        // there's room to hang the sax high and draw it large and still miss
-        // the snout; at 20° there wasn't, at any size worth having. The
-        // narrowest pig is what it's set against: no arm splay there, so the
-        // whole instrument sits closest in.
+        // the head's silhouette climbs as you go out from its centre. At 60°
+        // that end clears the snout with room to spare, which is what lets the
+        // instrument sit in over the belly rather than out at arm's length.
+        // The narrowest pig is what it's set against: no arm splay there, so
+        // the whole thing hangs closest in to the head.
         <g
-          transform={`translate(0 12) rotate(45 ${sx} ${gy})
+          transform={`translate(0 12) rotate(60 ${sx} ${gy})
                       translate(${sx} ${gy}) scale(0.92) translate(${-sx} ${-gy})`}
         >
           {/* Outline first as a fatter stroke of the same path — the run bends
