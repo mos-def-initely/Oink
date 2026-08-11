@@ -109,7 +109,6 @@ export function Throne({ user }: { user: User }) {
           Supreme Oink
         </p>
       </div>
-      <p className="mt-1 font-display text-xs font-bold text-ink">{user.display_name}</p>
     </div>
   );
 }
@@ -166,7 +165,6 @@ export function Grave({ user }: { user: User }) {
           />
         </div>
       </div>
-      <p className="font-display text-[11px] font-bold text-ink">{user.display_name}</p>
     </div>
   );
 }
@@ -204,10 +202,26 @@ export function GraveyardGround({ width, height }: { width: number; height: numb
   );
 }
 
+/** A fence post: a squared timber with a chamfered top. */
+function post(x: number, baseY: number, height: number, w = 13) {
+  const top = baseY - height;
+  return `M${x} ${baseY} L${x} ${top + 7} L${x + w / 2} ${top} L${x + w} ${top + 7} L${x + w} ${baseY} Z`;
+}
+
 export function ShameEnclosure({ user }: { user: User }) {
+  // The pen, in plan: a square plot seen at a slight angle, so all four runs of
+  // fence are visible rather than just the near one.
+  const BL = { x: 46, y: 176 }; // back left
+  const BR = { x: 214, y: 176 };
+  const FL = { x: 20, y: 268 }; // front left
+  const FR = { x: 240, y: 268 };
+  /** A rail along one side, as a beam of the given thickness lifted by `up`. */
+  const rail = (a: { x: number; y: number }, b: { x: number; y: number }, up: number, t = 9) =>
+    `M${a.x} ${a.y - up} L${b.x} ${b.y - up} L${b.x} ${b.y - up + t} L${a.x} ${a.y - up + t} Z`;
+
   return (
     <div className="flex flex-col items-center">
-      <div className="relative" style={{ width: 260, height: 262 }}>
+      <div className="relative" style={{ width: 260, height: 300 }}>
         {/* Billboard, behind everything. */}
         <svg width="260" height="150" viewBox="0 0 260 150" aria-hidden className="absolute left-0 top-0">
           <g stroke={INK} strokeWidth="3" strokeLinejoin="round">
@@ -234,39 +248,35 @@ export function ShameEnclosure({ user }: { user: User }) {
           >
             Enclosure
           </text>
-          <g fill={BLOOD}>
-            <path d="M62 50 q2 14 0 22 q-4 -8 -2 -22 Z" />
-            <path d="M148 52 q2 10 0 16 q-4 -6 -2 -16 Z" />
-            <path d="M96 82 q2 16 0 24 q-4 -9 -2 -24 Z" />
-            <path d="M170 84 q2 9 0 14 q-4 -5 -2 -14 Z" />
-            <circle cx="61" cy="74" r="2.6" />
-            <circle cx="95" cy="108" r="2.4" />
-          </g>
         </svg>
 
-        {/* The ground inside the pen: churned bare mud, nothing growing. The
-            grass tile runs everywhere else in the sty, so the enclosure reads
-            as a place nothing has come back from. */}
-        <svg
-          width="260"
-          height="120"
-          viewBox="0 0 260 120"
-          aria-hidden
-          className="absolute bottom-0 left-0"
-        >
-          <ellipse cx="130" cy="76" rx="116" ry="42" fill="#7A5637" stroke={INK} strokeWidth="3" />
-          <ellipse cx="130" cy="72" rx="104" ry="34" fill="#8A6340" stroke="none" />
+        {/* The pen: bare mud inside a square of fence. The grass tile runs
+            everywhere else in the sty, so this reads as a patch nothing has
+            come back from. Back and sides go down first, the occupant next,
+            the near run last — which is what makes it an enclosure rather than
+            a fence with a pig behind it. */}
+        <svg width="260" height="300" viewBox="0 0 260 300" aria-hidden className="absolute inset-0">
+          <g stroke={INK} strokeWidth="3" strokeLinejoin="round">
+            <path
+              d={`M${BL.x} ${BL.y} L${BR.x} ${BR.y} L${FR.x} ${FR.y} L${FL.x} ${FL.y} Z`}
+              fill="#7A5637"
+            />
+          </g>
+          <path
+            d={`M${BL.x + 8} ${BL.y + 6} L${BR.x - 8} ${BR.y + 6} L${FR.x - 10} ${FR.y - 8} L${FL.x + 10} ${FL.y - 8} Z`}
+            fill="#8A6340"
+          />
           <g fill="#6A4A2E">
-            <ellipse cx="72" cy="66" rx="16" ry="6" />
-            <ellipse cx="168" cy="88" rx="20" ry="7" />
-            <ellipse cx="120" cy="96" rx="14" ry="5" />
-            <ellipse cx="196" cy="62" rx="11" ry="4" />
-            <ellipse cx="52" cy="90" rx="12" ry="4" />
+            <ellipse cx="86" cy="204" rx="17" ry="6" />
+            <ellipse cx="176" cy="232" rx="21" ry="7" />
+            <ellipse cx="112" cy="248" rx="15" ry="5" />
+            <ellipse cx="200" cy="196" rx="11" ry="4" />
+            <ellipse cx="56" cy="236" rx="12" ry="4" />
           </g>
           {/* Trotter prints, going nowhere. */}
           <g fill="#5E4128" opacity="0.8">
             {[
-              [88, 82], [100, 90], [150, 70], [162, 78], [200, 84],
+              [96, 220], [108, 228], [154, 200], [166, 208], [204, 216],
             ].map(([x, y], i) => (
               <g key={i}>
                 <ellipse cx={x} cy={y} rx="3" ry="4" />
@@ -274,47 +284,75 @@ export function ShameEnclosure({ user }: { user: User }) {
               </g>
             ))}
           </g>
+
+          {/* Back run, then the two sides. */}
+          <g stroke={INK} strokeWidth="3" strokeLinejoin="round">
+            <path d={rail(BL, BR, 20)} fill={TIMBER} />
+            <path d={rail(BL, BR, 6)} fill={TIMBER} />
+            {[BL.x, 88, 130, 172, BR.x - 13].map((x) => (
+              <path key={`b${x}`} d={post(x, BL.y + 4, 42)} fill={TIMBER_DARK} />
+            ))}
+
+            <path d={rail(BL, FL, 20)} fill={TIMBER} />
+            <path d={rail(BL, FL, 6)} fill={TIMBER} />
+            <path d={rail(BR, FR, 20)} fill={TIMBER} />
+            <path d={rail(BR, FR, 6)} fill={TIMBER} />
+            {[0.5].map((t) => (
+              <g key={t}>
+                <path
+                  d={post(BL.x + (FL.x - BL.x) * t - 6, BL.y + (FL.y - BL.y) * t + 4, 42)}
+                  fill={TIMBER_DARK}
+                />
+                <path
+                  d={post(BR.x + (FR.x - BR.x) * t - 6, BR.y + (FR.y - BR.y) * t + 4, 42)}
+                  fill={TIMBER_DARK}
+                />
+              </g>
+            ))}
+          </g>
         </svg>
 
         {/* The occupant, penned in. */}
-        <div className="absolute left-1/2 -translate-x-1/2" style={{ top: 108 }}>
+        <div className="absolute left-1/2 -translate-x-1/2" style={{ top: 132 }}>
           <div className="relative">
             <PigAvatar
               config={user.pig_avatar_config}
               placesLogged={user.places_logged}
               lastLoggedAt={user.last_logged_at}
-              size={96}
+              size={104}
               variant="full"
             />
-            {/* Placard round the neck, on a string over the shoulders. */}
+            {/* Placard round the neck. Drawn in the avatar's own coordinates —
+                130 across, head bottom around y=71 — so the string sits on the
+                shoulders and the board hangs on the chest whatever the tier. */}
             <svg
-              width="96"
-              height="99"
-              viewBox="0 0 96 99"
+              width="104"
+              height={(104 * 134) / 130}
+              viewBox="0 0 130 134"
               aria-hidden
               className="pointer-events-none absolute left-0 top-0"
             >
               <path
-                d="M36 34 L47 56 L60 34"
+                d="M52 66 L65 86 L78 66"
                 fill="none"
                 stroke={INK}
-                strokeWidth="2"
+                strokeWidth="2.4"
                 strokeLinecap="round"
               />
-              <g transform="rotate(-6 47 66)">
+              <g transform="rotate(-5 65 93)">
                 <rect
-                  x="20"
-                  y="53"
-                  width="54"
-                  height="22"
+                  x="41"
+                  y="83"
+                  width="48"
+                  height="21"
                   rx="2.5"
                   fill="#FFFDF6"
                   stroke={INK}
                   strokeWidth="2.4"
                 />
                 <text
-                  x="47"
-                  y="69"
+                  x="65"
+                  y="98"
                   textAnchor="middle"
                   fill={BLOOD}
                   style={{ font: "800 13px var(--font-display, system-ui)", letterSpacing: "0.06em" }}
@@ -326,29 +364,17 @@ export function ShameEnclosure({ user }: { user: User }) {
           </div>
         </div>
 
-        {/* The fence, drawn last so it stands in front of the pig. */}
-        <svg
-          width="260"
-          height="96"
-          viewBox="0 0 260 96"
-          aria-hidden
-          className="absolute bottom-0 left-0"
-        >
+        {/* The near run, drawn last so it stands in front of the pig. */}
+        <svg width="260" height="300" viewBox="0 0 260 300" aria-hidden className="absolute inset-0">
           <g stroke={INK} strokeWidth="3" strokeLinejoin="round">
-            <rect x="24" y="40" width="212" height="9" rx="3" fill={TIMBER} />
-            <rect x="24" y="66" width="212" height="9" rx="3" fill={TIMBER} />
-            {[30, 74, 118, 162, 206].map((x) => (
-              <path
-                key={x}
-                d={`M${x} 88 L${x} 30 L${x + 7} 22 L${x + 14} 30 L${x + 14} 88 Z`}
-                fill={TIMBER_DARK}
-              />
+            <path d={rail(FL, FR, 20)} fill={TIMBER} />
+            <path d={rail(FL, FR, 6)} fill={TIMBER} />
+            {[FL.x, 75, 130, 185, FR.x - 13].map((x) => (
+              <path key={`f${x}`} d={post(x, FL.y + 6, 46)} fill={TIMBER_DARK} />
             ))}
           </g>
         </svg>
       </div>
-
-      <p className="mt-1 font-display text-xs font-bold text-ink">{user.display_name}</p>
     </div>
   );
 }

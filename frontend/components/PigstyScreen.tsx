@@ -62,10 +62,13 @@ type Spot = { user: User; x: number; y: number; landmark?: "throne" | "shame" | 
 type Plot = { x: number; y: number; width: number; height: number };
 type Field = { spots: Spot[]; width: number; height: number; graveyard: Plot | null };
 
-/** Room above the crowd for the throne, below it for the enclosure, and below
- *  that for the graveyard. */
-const THRONE_BAND = 320;
-const SHAME_BAND = 350;
+/** Room above the crowd for the throne and the enclosure, which stand at either
+ *  end of the same band — the two verdicts, facing each other across the top of
+ *  the sty — and room below it for the graveyard. */
+const TOP_BAND = 380;
+/** Distance between the two, centre to centre. Far enough apart to be separate
+ *  places, close enough to be read as a pair. */
+const TOP_GAP = 360;
 const GRAVE_COLS = 4;
 const GRAVE_W = 150;
 const GRAVE_H = 196;
@@ -224,8 +227,7 @@ export default function PigstyScreen({ initialUsers }: { initialUsers: User[] | 
       (u) => u.id !== throned?.id && u.id !== shamed?.id && !dead.has(u.id)
     );
     const base = layout(crowd);
-    const top = throned ? THRONE_BAND : 0;
-    const bottom = shamed ? SHAME_BAND : 0;
+    const top = throned || shamed ? TOP_BAND : 0;
 
     const graveCols = Math.min(GRAVE_COLS, Math.max(buried.length, 1));
     const graveRows = Math.ceil(buried.length / GRAVE_COLS);
@@ -233,25 +235,35 @@ export default function PigstyScreen({ initialUsers }: { initialUsers: User[] | 
     const plotH = graveRows * GRAVE_H + GRAVE_PAD * 2;
     const graveBand = buried.length ? plotH + 60 : 0;
 
-    // The bands are wider than a couple of pigs, so a small sty still gives all
-    // of them room to stand in.
-    const width = Math.max(base.width, 460, plotW + 40);
+    // Wide enough for both landmarks to stand apart at the top, so a small sty
+    // still gives all of them room.
+    const width = Math.max(base.width, TOP_GAP + 300, plotW + 40);
     const dx = (width - base.width) / 2;
 
     const spots: Spot[] = base.spots.map((s) => ({ ...s, x: s.x + dx, y: s.y + top }));
-    if (throned) spots.push({ user: throned, x: width / 2, y: top / 2, landmark: "throne" });
+    // Both sit in the top band, either side of the middle. When only one of
+    // them exists it takes the centre rather than standing off to one side.
+    const bothUp = !!throned && !!shamed;
+    if (throned) {
+      spots.push({
+        user: throned,
+        x: width / 2 - (bothUp ? TOP_GAP / 2 : 0),
+        y: top / 2,
+        landmark: "throne",
+      });
+    }
     if (shamed) {
       spots.push({
         user: shamed,
-        x: width / 2,
-        y: top + base.height + bottom / 2,
+        x: width / 2 + (bothUp ? TOP_GAP / 2 : 0),
+        y: top / 2,
         landmark: "shame",
       });
     }
 
     let graveyard: Plot | null = null;
     if (buried.length) {
-      const plotTop = top + base.height + bottom + 30;
+      const plotTop = top + base.height + 30;
       graveyard = { x: (width - plotW) / 2, y: plotTop, width: plotW, height: plotH };
       buried.forEach((user, i) => {
         const col = i % GRAVE_COLS;
@@ -267,7 +279,7 @@ export default function PigstyScreen({ initialUsers }: { initialUsers: User[] | 
       });
     }
 
-    return { spots, width, height: base.height + top + bottom + graveBand, graveyard };
+    return { spots, width, height: base.height + top + graveBand, graveyard };
   }, [users]);
 
   const q = query.trim().toLowerCase();
