@@ -323,26 +323,31 @@ export default function Held({ item, armX }: { item: string; armX: number }) {
         </g>
       );
 
-    case "wine":
+    // Held a little tighter in and a little higher than the rest of the
+    // outboard set — a glass is carried up at the chest, not swung at arm's
+    // length like a case or a bottle.
+    case "wine": {
+      const wx = ox - 4;
       return (
-        <g {...s}>
+        <g {...s} transform={`translate(0 -6)`}>
           <path
-            d={`M ${ox - 8} ${gy - 18} L ${ox + 8} ${gy - 18} L ${ox + 4.5} ${gy - 3} L ${ox - 4.5} ${gy - 3} Z`}
+            d={`M ${wx - 8} ${gy - 18} L ${wx + 8} ${gy - 18} L ${wx + 4.5} ${gy - 3} L ${wx - 4.5} ${gy - 3} Z`}
             fill={CREAM}
           />
           {/* A measure in the bottom of it. Cut to the bowl's own taper rather
               than clipped, so the wine meets the glass exactly at the sides. */}
           <path
-            d={`M ${ox - 6.4} ${gy - 11} L ${ox + 6.4} ${gy - 11} L ${ox + 4.5} ${gy - 3}
-                L ${ox - 4.5} ${gy - 3} Z`}
+            d={`M ${wx - 6.4} ${gy - 11} L ${wx + 6.4} ${gy - 11} L ${wx + 4.5} ${gy - 3}
+                L ${wx - 4.5} ${gy - 3} Z`}
             fill={WINE}
             stroke="none"
           />
-          <path d={`M ${ox - 6.4} ${gy - 11} h 12.8`} stroke={OUTLINE} strokeWidth="1.4" fill="none" />
-          <rect x={ox - 1.4} y={gy - 3} width="3" height="12" fill={CREAM} />
-          <rect x={ox - 6} y={gy + 9} width="12" height="3.5" rx="1.7" fill={CREAM} />
+          <path d={`M ${wx - 6.4} ${gy - 11} h 12.8`} stroke={OUTLINE} strokeWidth="1.4" fill="none" />
+          <rect x={wx - 1.4} y={gy - 3} width="3" height="12" fill={CREAM} />
+          <rect x={wx - 6} y={gy + 9} width="12" height="3.5" rx="1.7" fill={CREAM} />
         </g>
       );
+    }
 
     case "coffee":
       return (
