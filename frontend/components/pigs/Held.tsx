@@ -35,6 +35,10 @@ const LILAC = "#D8B5F7";
 const BLACK = "#000000";
 /** Bottle glass — the green a Jameson bottle is. */
 const GLASS = "#3F5C36";
+/** Cooler and lighter than STEEL, which is a warm grey: brushed aluminium. */
+const SILVER = "#C6C5BF";
+const SILVER_DARK = "#8D8C85";
+const CASH = "#8FAE79";
 
 export default function Held({ item, armX }: { item: string; armX: number }) {
   const s = { stroke: OUTLINE, strokeWidth: STROKE, strokeLinejoin: "round" as const };
@@ -67,11 +71,8 @@ export default function Held({ item, armX }: { item: string; armX: number }) {
         </g>
       );
 
-    // Hung at the waist and leaned in 20° off vertical, mouthpiece end toward
-    // the head — which is the way it sits on a strap, and the only tilt at
-    // which the bell doesn't swing out past the pig.
     case "sax": {
-      const sx = gx - 10;
+      const sx = gx - 6;
       /**
        * The whole instrument as one run, in the order the air goes: an S-bent
        * crook down from the mouthpiece, a long body, round the bow and back up
@@ -84,14 +85,19 @@ export default function Held({ item, armX }: { item: string; armX: number }) {
                     L ${sx} ${gy + 6} Q ${sx} ${gy + 17} ${sx + 8} ${gy + 17}
                     Q ${sx + 16} ${gy + 17} ${sx + 16} ${gy + 7} L ${sx + 16} ${gy + 1}`;
       return (
-        // Sloping up to the top right, the way it hangs off a strap — and
-        // dropped clear of the head, because it's hanging, not being played.
-        // The mouthpiece has to miss the snout on the narrowest pig too, where
-        // the arm doesn't splay and the whole instrument sits closest in; 14
-        // down and a size smaller is what clears it at every tier.
+        // Slung up to the top right the way it hangs off a strap, and never
+        // at the mouth — it's hanging, not being played.
+        //
+        // The lean is doing the work. The mouthpiece sits at the top left of
+        // the instrument, so turning it further swings that end outboard, and
+        // the head's silhouette climbs as you go out from its centre. At 45°
+        // there's room to hang the sax high and draw it large and still miss
+        // the snout; at 20° there wasn't, at any size worth having. The
+        // narrowest pig is what it's set against: no arm splay there, so the
+        // whole instrument sits closest in.
         <g
-          transform={`translate(0 16) rotate(20 ${sx} ${gy})
-                      translate(${sx} ${gy}) scale(0.78) translate(${-sx} ${-gy})`}
+          transform={`translate(0 12) rotate(45 ${sx} ${gy})
+                      translate(${sx} ${gy}) scale(0.92) translate(${-sx} ${-gy})`}
         >
           {/* Outline first as a fatter stroke of the same path — the run bends
               three times, and two stroked passes hold an even width where an
@@ -147,13 +153,51 @@ export default function Held({ item, armX }: { item: string; armX: number }) {
       );
     }
 
+    // A ribbed aluminium case, with a few notes caught in the seam. Drawn
+    // notes-first so the lid closes over their ends: laid on top instead they
+    // read as money stuck to the outside of a briefcase.
     case "briefcase":
       return (
         <g {...s}>
+          <g strokeWidth="1.6">
+            <rect
+              x={gx + 12}
+              y={gy + 1}
+              width="11"
+              height="7"
+              rx="1"
+              fill={CASH}
+              transform={`rotate(20 ${gx + 17} ${gy + 4})`}
+            />
+            <rect
+              x={gx - 9}
+              y={gy + 2}
+              width="10"
+              height="6.5"
+              rx="1"
+              fill={CASH}
+              transform={`rotate(-16 ${gx - 4} ${gy + 5})`}
+            />
+            <rect
+              x={gx + 3}
+              y={gy}
+              width="10"
+              height="6"
+              rx="1"
+              fill={CASH}
+              transform={`rotate(7 ${gx + 8} ${gy + 3})`}
+            />
+          </g>
+
           <path d={`M ${gx - 1} ${gy + 6} q 5 -9 10 -1`} fill="none" />
-          <rect x={gx - 5} y={gy + 5} width="24" height="17" rx="2.5" fill={BLACK} />
-          <rect x={gx - 5} y={gy + 11} width="24" height="3" fill={BLACK} stroke="none" />
-          <rect x={gx + 4} y={gy + 10} width="6" height="5" rx="1.5" fill={GOLD} strokeWidth="1.5" />
+          <rect x={gx - 5} y={gy + 5} width="24" height="17" rx="2.5" fill={SILVER} />
+          <path
+            d={`M ${gx - 5} ${gy + 9} h 24 M ${gx - 5} ${gy + 13.5} h 24 M ${gx - 5} ${gy + 18} h 24`}
+            stroke={SILVER_DARK}
+            strokeWidth="1.7"
+            fill="none"
+          />
+          <rect x={gx + 4} y={gy + 10} width="6" height="5" rx="1.5" fill={SILVER_DARK} strokeWidth="1.5" />
         </g>
       );
 
@@ -163,16 +207,18 @@ export default function Held({ item, armX }: { item: string; armX: number }) {
     case "pistol":
       return (
         <g {...s} transform={`rotate(22 ${gx} ${gy})`}>
-          <rect x={gx - 4} y={gy - 17} width="30" height="13" rx="2.5" fill={INK} />
-          <rect x={gx + 20} y={gy - 21} width="4" height="4" fill={INK} />
-          <path d={`M ${gx - 4} ${gy - 17} l -5 -4 l 0 4 Z`} fill={INK} />
-          <rect x={gx - 4} y={gy - 5} width="15" height="5" rx="1.5" fill={INK} />
+          <rect x={gx - 4} y={gy - 17} width="30" height="13" rx="2.5" fill={SILVER} />
+          <rect x={gx + 20} y={gy - 21} width="4" height="4" fill={SILVER} />
+          <path d={`M ${gx - 4} ${gy - 17} l -5 -4 l 0 4 Z`} fill={SILVER} />
+          <rect x={gx - 4} y={gy - 5} width="15" height="5" rx="1.5" fill={SILVER} />
+          {/* Grip a shade down from the slide, or the whole thing flattens into
+              one silver blob at pin size. */}
           <path
             d={`M ${gx - 4} ${gy - 4} L ${gx + 5} ${gy - 4} L ${gx + 3} ${gy + 9} L ${gx - 8} ${gy + 9} Z`}
-            fill={INK}
+            fill={SILVER_DARK}
           />
           <path d={`M ${gx + 5} ${gy} q 5 4 0.5 8 h -4.5`} fill="none" />
-          <circle cx={gx + 23} cy={gy - 10.5} r="2.1" fill={STEEL} stroke="none" />
+          <circle cx={gx + 23} cy={gy - 10.5} r="2.1" fill={SILVER_DARK} stroke="none" />
         </g>
       );
 
