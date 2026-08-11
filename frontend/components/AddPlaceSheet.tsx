@@ -340,6 +340,12 @@ export default function AddPlaceSheet({
       setError("Pick a location — search the name, use your current spot, or drop a pin.");
       return;
     }
+    // The subtype is what the map filters on, so a place without one only ever
+    // turns up under "all". Asked for here rather than chased later.
+    if (!category.length) {
+      setError(kind === "bar" ? "Pick at least one type of bar." : "Pick at least one cuisine.");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -519,6 +525,7 @@ export default function AddPlaceSheet({
           <div>
             <p className="mb-1.5 font-display text-sm font-bold">
               {kind === "bar" ? "What kind of bar?" : "Cuisine"}
+              <span className="ml-1 font-normal text-ink-soft">(pick at least one)</span>
             </p>
             <CategoryPicker
               kind={kind}

@@ -145,6 +145,18 @@ def create_restaurant(
             ),
         )
 
+    # The subtype is what the map filters on, so a place added without one is
+    # invisible to every filter but "all" — and nobody goes back to fix it.
+    if not [c for c in payload.category if c.strip()]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "Pick at least one type of bar."
+                if payload.kind == "bar"
+                else "Pick at least one cuisine."
+            ),
+        )
+
     # Somewhere already on the map: oink it rather than adding a second copy.
     existing = _find_existing(db, payload)
     if existing:
@@ -239,7 +251,16 @@ def update_restaurant(
             detail="Only whoever added this place can edit it",
         )
 
-    for field, value in payload.model_dump(exclude_unset=True).items():
+    fields = payload.model_dump(exclude_unset=True)
+    # Same rule as on the way in: an edit can't strip the last subtype off a
+    # place and drop it out of every filter.
+    if "category" in fields and not [c for c in (fields["category"] or []) if c.strip()]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Keep at least one type on it.",
+        )
+
+    for field, value in fields.items():
         setattr(place, field, value)
     db.commit()
     db.refresh(place)
