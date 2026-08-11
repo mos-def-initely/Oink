@@ -37,6 +37,7 @@ import {
   normalisePig,
 } from "@/lib/pig";
 import { costumeParts, faceItem } from "./Costume";
+import { hairParts } from "./Hair";
 import { companion, companionTransform } from "./Companion";
 
 type Props = {
@@ -94,6 +95,10 @@ export default function PigAvatar({
   // head centre; the garment shell comes off the real silhouette (below).
   const dress = costumeParts(cfg.costume, OUTLINE, p.mid);
   const specs = faceItem(cfg.face, OUTLINE);
+  // Drawn in the same normalised head space as the costume headwear: the head
+  // is an ellipse centred (65, 48), rx 27.5.
+  const hair = hairParts(cfg.hair, cfg.hairColor, OUTLINE);
+  const faceHairT = "translate(60 62) scale(1.2727) translate(-65 -48)";
   const blushScale = rosy ? 1.35 : 1;
   const blushAlpha = rosy ? 0.82 : 0.5;
 
@@ -101,6 +106,7 @@ export default function PigAvatar({
   const blur = `b-${uid}`;
   const headClip = `hc-${uid}`;
   const bodyClip = `bc-${uid}`;
+  const hairClip = `hp-${uid}`;
   const chestGrad = `cg-${uid}`;
   const bellyGrad = `bg-${uid}`;
 
@@ -126,6 +132,18 @@ export default function PigAvatar({
         </clipPath>
 
         {!bare && <circle cx="60" cy="60" r="60" fill={bg} />}
+
+        {/* Cropped to the badge. The head fills most of a face avatar, so hair
+            long enough to reach a full-body pig's shoulders would otherwise run
+            off all four sides of a map pin. */}
+        <clipPath id={hairClip}>
+          <circle cx="60" cy="60" r="59" />
+        </clipPath>
+        {hair.back && (
+          <g clipPath={`url(#${hairClip})`} transform={faceHairT}>
+            {hair.back}
+          </g>
+        )}
 
         <g stroke={OUTLINE} strokeWidth={STROKE} strokeLinejoin="round">
           {!earsHidden && <Ears species={species} fill={p.ear} />}
@@ -166,6 +184,11 @@ export default function PigAvatar({
         <ellipse cx="65" cy="71" rx="2.3" ry="3.2" fill={p.nostril} />
 
         {specs && <g transform="translate(60 55) scale(1.27) translate(-65 -48)">{specs}</g>}
+        {hair.front && (
+          <g clipPath={`url(#${hairClip})`} transform={faceHairT}>
+            {hair.front}
+          </g>
+        )}
         <Hat hat={cfg.hat} cx={60} topY={24} w={35} outline={OUTLINE} />
       </svg>
     );
@@ -380,6 +403,8 @@ export default function PigAvatar({
       {dress.overArms && <g transform={bodyT}>{dress.overArms}</g>}
       {dress.behindHead && <g transform={headT}>{dress.behindHead}</g>}
 
+      {hair.back && <g transform={headT}>{hair.back}</g>}
+
       <g stroke={OUTLINE} strokeWidth={STROKE} strokeLinejoin="round">
         {!earsHidden && <BodyEars species={species} fill={p.ear} headRx={headRx} />}
         <ellipse cx="65" cy="48" rx={headRx} ry={headRy} fill={`url(#${grad})`} />
@@ -448,6 +473,7 @@ export default function PigAvatar({
 
       {dress.headExtra && <g transform={headT}>{dress.headExtra}</g>}
       {specs && <g transform={headT}>{specs}</g>}
+      {hair.front && <g transform={headT}>{hair.front}</g>}
       <Hat hat={cfg.hat} cx={65} topY={48 - headRy - 4} w={headRx} outline={OUTLINE} />
       {dress.front && <g transform={bodyT}>{dress.front}</g>}
 

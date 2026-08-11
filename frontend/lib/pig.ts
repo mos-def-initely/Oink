@@ -224,6 +224,46 @@ export function hidesEars(hat: string | undefined): boolean {
 export const PIG_ACCESSORIES = ["none", "blush", "sunglasses"] as const;
 
 /**
+ * Hair — its own slot, so it stacks with a hat rather than competing for the
+ * head. Each style is drawn in two passes (behind the head and over it), which
+ * is what stops long hair looking like a wig laid on the face.
+ */
+export const PIG_HAIR = [
+  "none", "long", "short", "mohican",
+  "afro", "curly", "braids", "locs", "cornrows", "bun", "ponytail", "buzz",
+] as const;
+export type Hair = (typeof PIG_HAIR)[number];
+
+export const HAIR_LABELS: Record<string, string> = {
+  none: "none",
+  long: "long",
+  short: "short",
+  mohican: "mohican",
+  afro: "afro",
+  curly: "curly",
+  braids: "braids",
+  locs: "locs",
+  cornrows: "cornrows",
+  bun: "bun",
+  ponytail: "ponytail",
+  buzz: "buzz cut",
+};
+
+/** `mid` is the hair itself; `dark` shades the underside of it. */
+export const HAIR_COLORS: Record<string, { mid: string; dark: string }> = {
+  blonde: { mid: "#E7C46B", dark: "#C9A245" },
+  platinum: { mid: "#EFE6CD", dark: "#D3C5A4" },
+  ginger: { mid: "#C8642C", dark: "#A44C1E" },
+  brown: { mid: "#7E4E2E", dark: "#5E381F" },
+  black: { mid: "#332A33", dark: "#211B22" },
+  silver: { mid: "#BDB6AE", dark: "#9A938B" },
+  pink: { mid: "#E8709F", dark: "#C94E85" },
+  blue: { mid: "#5B87AC", dark: "#43678A" },
+  green: { mid: "#5E9A72", dark: "#457755" },
+  lilac: { mid: "#B98FD6", dark: "#9770B4" },
+};
+
+/**
  * Costumes (spec §9.3). Club Penguin's memorable items were never garments, they
  * were characters — so three everyday tops sit alongside nine costumes.
  *
@@ -303,7 +343,7 @@ export const PIG_COMPANIONS = ["none", "truffle"] as const;
 export const PIG_HELD = [
   "none", "knife", "guitar", "briefcase", "pistol", "wine", "pint",
   "coffee", "rollingpin", "pan", "baguette", "umbrella", "balloon",
-  "bouquet", "camera", "trophy", "torch", "fishingrod",
+  "bouquet", "camera", "trophy",
 ] as const;
 export type Held = (typeof PIG_HELD)[number];
 
@@ -324,8 +364,6 @@ export const HELD_LABELS: Record<string, string> = {
   bouquet: "bouquet",
   camera: "camera",
   trophy: "trophy",
-  torch: "torch",
-  fishingrod: "fishing rod",
 };
 export type Companion = (typeof PIG_COMPANIONS)[number];
 
@@ -387,6 +425,8 @@ export type PigConfig = {
   companion?: string;
   truffle?: string;
   held?: string;
+  hair?: string;
+  hairColor?: string;
 };
 
 export const DEFAULT_PIG: Required<PigConfig> = {
@@ -400,6 +440,8 @@ export const DEFAULT_PIG: Required<PigConfig> = {
   companion: "none",
   truffle: "burgundy",
   held: "none",
+  hair: "none",
+  hairColor: "blonde",
 };
 
 export function normalisePig(config: PigConfig | undefined | null): Required<PigConfig> {
@@ -423,6 +465,8 @@ export function normalisePig(config: PigConfig | undefined | null): Required<Pig
     face: pick(c.face, PIG_FACES, DEFAULT_PIG.face),
     companion: pick(c.companion, PIG_COMPANIONS, DEFAULT_PIG.companion),
     held: pick(c.held, PIG_HELD, DEFAULT_PIG.held),
+    hair: pick(c.hair, PIG_HAIR, DEFAULT_PIG.hair),
+    hairColor: c.hairColor && HAIR_COLORS[c.hairColor] ? c.hairColor : DEFAULT_PIG.hairColor,
     truffle: c.truffle && TRUFFLE_VARIETIES[c.truffle] ? c.truffle : DEFAULT_PIG.truffle,
   };
 }

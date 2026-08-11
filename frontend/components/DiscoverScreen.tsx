@@ -195,7 +195,7 @@ export default function DiscoverScreen({ initialPlaces }: { initialPlaces: Place
     <div className="relative flex h-[100dvh] flex-col">
       <header className="z-[900] bg-oat px-3 py-2.5">
         <div className="flex items-center gap-2">
-          <h1 className="flex-1 text-2xl">discover</h1>
+          <h1 className="flex-1 text-3xl capitalize text-plum">discover</h1>
           <button
             onClick={() => setFiltersOpen(true)}
             className={`btn px-3 py-2 text-sm ${

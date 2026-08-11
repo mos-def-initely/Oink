@@ -4,7 +4,7 @@
  * Profile — spec §6.5. Along with the feed, this is one of only two places
  * that show the full-body pig; everywhere else uses the face.
  */
-import { use, useCallback, useEffect, useState } from "react";
+import { Children, use, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import type { PlaceSummary, User } from "@/lib/types";
@@ -17,6 +17,9 @@ import {
   PIG_HATS,
   PIG_HELD,
   HELD_LABELS,
+  PIG_HAIR,
+  HAIR_LABELS,
+  HAIR_COLORS,
   daysUntilDecay,
   PIG_SPECIES,
   SPECIES_COLORS,
@@ -325,7 +328,11 @@ function PigCustomiser({
   return (
     <Sheet open={open} onClose={onClose} title="your animal">
       <div className="space-y-4 pb-4">
-        <div className="flex justify-center">
+        {/* The pig stays put and the controls move under it. Stacked
+            vertically, every choice past the first two was made blind — you
+            scrolled the thing you were dressing off the screen to reach the
+            control that dressed it. */}
+        <div className="sticky top-0 z-10 flex justify-center bg-oat pb-1">
           <PigAvatar
             config={cfg}
             placesLogged={user.places_logged}
@@ -340,6 +347,7 @@ function PigCustomiser({
           <input className="field mt-1" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
         </label>
 
+        <Pages>
         <section>
           <p className="mb-1.5 font-display text-sm font-bold">animal</p>
           <div className="flex gap-2">
@@ -446,12 +454,79 @@ function PigCustomiser({
           value={cfg.accessory}
           onChange={(v) => setCfg({ ...cfg, accessory: v })}
         />
+        <Picker
+          label="hair"
+          options={[...PIG_HAIR]}
+          value={cfg.hair}
+          onChange={(v) => setCfg({ ...cfg, hair: v })}
+          format={(v) => HAIR_LABELS[v] ?? v}
+        />
+        <Picker
+          label="hair colour"
+          options={Object.keys(HAIR_COLORS)}
+          value={cfg.hairColor}
+          onChange={(v) => setCfg({ ...cfg, hairColor: v })}
+          swatch={(v) => HAIR_COLORS[v].mid}
+        />
+        </Pages>
 
         <button onClick={save} className="btn-primary w-full text-lg" disabled={saving}>
           {saving ? "saving…" : "save pig"}
         </button>
       </div>
     </Sheet>
+  );
+}
+
+/**
+ * The customiser's controls, paged sideways two at a time.
+ *
+ * The pig is pinned above this, so whatever you're changing is always in
+ * shot — which it wasn't when the controls were a single tall column and
+ * everything past the second one was chosen blind.
+ */
+function Pages({ children }: { children: React.ReactNode }) {
+  const items = Children.toArray(children);
+  const groups: React.ReactNode[][] = [];
+  for (let i = 0; i < items.length; i += 2) groups.push(items.slice(i, i + 2));
+  const [at, setAt] = useState(0);
+  const track = useRef<HTMLDivElement>(null);
+
+  return (
+    <div>
+      <div
+        ref={track}
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          setAt(Math.round(el.scrollLeft / (el.clientWidth || 1)));
+        }}
+        className="flex snap-x snap-mandatory overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {groups.map((group, i) => (
+          <div key={i} className="w-full shrink-0 snap-center space-y-4 pb-1">
+            {group}
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-3 flex items-center justify-center gap-1.5">
+        {groups.map((_, i) => (
+          <button
+            key={i}
+            type="button"
+            aria-label={`page ${i + 1} of ${groups.length}`}
+            onClick={() => {
+              const el = track.current;
+              if (el) el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
+            }}
+            className={`h-1.5 rounded-full transition-all ${
+              i === at ? "w-5 bg-plum" : "w-1.5 bg-ink/25"
+            }`}
+          />
+        ))}
+      </div>
+      <p className="micro mt-1 text-center">swipe for more</p>
+    </div>
   );
 }
 

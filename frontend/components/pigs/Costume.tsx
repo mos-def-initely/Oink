@@ -325,19 +325,17 @@ export function costumeParts(costume: string, outline: string, skin = "#EFAFC0")
                     chest down to about y=77 here, so anything above that is
                     drawn for nobody. */}
                 <g stroke={outline} strokeWidth="1.5" fill="none" strokeLinecap="round">
-                  <path d="M61 78 q4 -5 8 -0.5" />
-                  <path d="M62 84 q3.5 -4.5 7 -0.5" />
-                  <path d="M63 89 q3 -4 6 -0.5" />
+                  <path d="M61 77 q4 -5 8 -0.5" />
+                  <path d="M62.5 84 q3 -4 6 -0.5" />
                 </g>
               </>
             )}
             <path
               d={
                 open
-                  ? // Two front panels held apart, not a V: a V narrows to
-                    // nothing exactly where the chest is visible, so the
-                    // opening is parallel-sided until it closes at the button.
-                    "M53 56 L59 56 L59 84 Q65 91 71 84 L71 56 L77 56 L72 106 L58 106 Z"
+                  ? // A V, cut wide at the collar so there's still a chest to
+                    // see by the time it narrows.
+                    "M53 56 L56 56 L65 92 L74 56 L77 56 L72 106 L58 106 Z"
                   : "M55 56 L75 56 L72 106 L58 106 Z"
               }
               fill={CREAM}
@@ -347,8 +345,13 @@ export function costumeParts(costume: string, outline: string, skin = "#EFAFC0")
               // Collar falling open either side of the gap — kept short, or it
               // closes over the very window it's meant to open.
               <>
-                <path d="M59 56 L60 74 L50 65 Z" fill={CREAM} {...s} />
-                <path d="M71 56 L70 74 L80 65 Z" fill={CREAM} {...s} />
+                <path d="M56 56 L61 76 L49 64 Z" fill={CREAM} {...s} />
+                <path d="M74 56 L69 76 L81 64 Z" fill={CREAM} {...s} />
+                {/* The buttons that are still done up — the shirt only reads as
+                    a shirt if you can see where it stops being undone. */}
+                <path d="M65 92 v14" stroke={outline} strokeWidth="1.4" opacity="0.45" fill="none" />
+                <circle cx="65" cy="97" r="1.6" fill={outline} />
+                <circle cx="65" cy="103" r="1.6" fill={outline} />
               </>
             ) : (
               <>
