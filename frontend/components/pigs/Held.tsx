@@ -84,8 +84,15 @@ export default function Held({ item, armX }: { item: string; armX: number }) {
                     L ${sx} ${gy + 6} Q ${sx} ${gy + 17} ${sx + 8} ${gy + 17}
                     Q ${sx + 16} ${gy + 17} ${sx + 16} ${gy + 7} L ${sx + 16} ${gy + 1}`;
       return (
-        // Sloping up to the top right, the way it hangs off a strap.
-        <g transform={`rotate(20 ${sx} ${gy})`}>
+        // Sloping up to the top right, the way it hangs off a strap — and
+        // dropped clear of the head, because it's hanging, not being played.
+        // The mouthpiece has to miss the snout on the narrowest pig too, where
+        // the arm doesn't splay and the whole instrument sits closest in; 14
+        // down and a size smaller is what clears it at every tier.
+        <g
+          transform={`translate(0 14) rotate(20 ${sx} ${gy})
+                      translate(${sx} ${gy}) scale(0.85) translate(${-sx} ${-gy})`}
+        >
           {/* Outline first as a fatter stroke of the same path — the run bends
               three times, and two stroked passes hold an even width where an
               outlined shape would pinch on curves that tight. */}
