@@ -11,7 +11,6 @@
  * the throne's inscription calls it democratic.
  */
 import PigAvatar from "@/components/pigs/PigAvatar";
-import { SPECIES_COLORS, Species, normalisePig } from "@/lib/pig";
 import type { User } from "@/lib/types";
 
 const GOLD = "#CFA51F";
@@ -24,16 +23,17 @@ const TIMBER = "#8A6134";
 const TIMBER_DARK = "#6A4826";
 
 export function Throne({ user }: { user: User }) {
-  // The avatar always stands. Rather than teach it a second pose, the seat is
-  // drawn over its legs and a pair of thighs is drawn hanging off the front —
-  // so the coat has to match, which means reading the same palette the avatar
-  // reads.
-  const cfg = normalisePig(user.pig_avatar_config);
-  const coat = SPECIES_COLORS[cfg.species as Species][cfg.color];
-
   return (
-    <div className="relative" style={{ width: 210, height: 250 }}>
-      <svg width="210" height="250" viewBox="0 0 210 250" aria-hidden className="absolute inset-0">
+    <div className="relative" style={{ width: 210, height: 258 }}>
+      {/* The viewBox starts above the origin so the banner can sit clear of the
+          crown without the whole throne having to move down for it. */}
+      <svg
+        width="210"
+        height="258"
+        viewBox="0 -8 210 258"
+        aria-hidden
+        className="absolute inset-0"
+      >
         <defs>
           <linearGradient id="throne-gold" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor={GOLD_LIGHT} />
@@ -65,13 +65,25 @@ export function Throne({ user }: { user: User }) {
           <circle cx="138" cy="102" r="6" fill="#4E7FA8" />
         </g>
 
+        <g stroke={INK} strokeWidth="3" strokeLinejoin="round">
+          {/* Seat and cushion — the pig stands on this, so both go down before
+              it rather than over its legs. */}
+          <rect x="24" y="166" width="162" height="26" rx="6" fill="url(#throne-gold)" />
+          <rect x="36" y="154" width="138" height="26" rx="11" fill={PLUM} />
+
+          {/* Legs. */}
+          <rect x="40" y="190" width="22" height="42" rx="5" fill="url(#throne-gold)" />
+          <rect x="148" y="190" width="22" height="42" rx="5" fill="url(#throne-gold)" />
+          <rect x="30" y="228" width="150" height="13" rx="5" fill={GOLD_DARK} />
+        </g>
+
         {/* The banner, over the top of the throne rather than under it. */}
         <g stroke={INK} strokeWidth="3" strokeLinejoin="round">
-          <path d="M0 30 L22 2 L188 2 L210 30 L188 58 L22 58 Z" fill="url(#throne-gold)" />
+          <path d="M0 22 L22 -6 L188 -6 L210 22 L188 50 L22 50 Z" fill="url(#throne-gold)" />
         </g>
         <text
           x="105"
-          y="26"
+          y="18"
           textAnchor="middle"
           fill={INK}
           style={{ font: "800 11px var(--font-display, system-ui)", letterSpacing: "0.01em" }}
@@ -80,7 +92,7 @@ export function Throne({ user }: { user: User }) {
         </text>
         <text
           x="105"
-          y="46"
+          y="38"
           textAnchor="middle"
           fill={INK}
           style={{ font: "800 13px var(--font-display, system-ui)", letterSpacing: "0.05em" }}
@@ -89,36 +101,17 @@ export function Throne({ user }: { user: User }) {
         </text>
       </svg>
 
-      {/* Sat in the chair. Its own legs end up behind the seat below. */}
-      <div className="absolute left-1/2 -translate-x-1/2" style={{ top: 46 }}>
+      {/* Stood on the cushion, in front of the chair. The container's origin is
+          8 above the viewBox's, so this is offset to match. */}
+      <div className="absolute left-1/2 -translate-x-1/2" style={{ top: 8 + 48 }}>
         <PigAvatar
           config={user.pig_avatar_config}
           placesLogged={user.places_logged}
           lastLoggedAt={user.last_logged_at}
-          size={128}
+          size={132}
           variant="full"
         />
       </div>
-
-      <svg width="210" height="250" viewBox="0 0 210 250" aria-hidden className="absolute inset-0">
-        <g stroke={INK} strokeWidth="3" strokeLinejoin="round">
-          {/* Seat and cushion, over the standing legs. */}
-          <rect x="24" y="166" width="162" height="26" rx="6" fill="url(#throne-gold)" />
-          <rect x="36" y="154" width="138" height="26" rx="11" fill={PLUM} />
-        </g>
-
-        {/* Thighs over the front edge, in the wearer's own coat. */}
-        <g stroke={coat.outline} strokeWidth="2.6" strokeLinejoin="round">
-          <rect x="76" y="176" width="22" height="38" rx="10" fill={coat.snout} />
-          <rect x="112" y="176" width="22" height="38" rx="10" fill={coat.snout} />
-        </g>
-
-        <g stroke={INK} strokeWidth="3" strokeLinejoin="round">
-          <rect x="40" y="190" width="22" height="42" rx="5" fill="url(#throne-gold)" />
-          <rect x="148" y="190" width="22" height="42" rx="5" fill="url(#throne-gold)" />
-          <rect x="30" y="228" width="150" height="13" rx="5" fill={GOLD_DARK} />
-        </g>
-      </svg>
     </div>
   );
 }
