@@ -98,7 +98,7 @@ export default function Held({ item, armX }: { item: string; armX: number }) {
         // The narrowest pig is what it's set against: no arm splay there, so
         // the whole thing hangs closest in to the head.
         <g
-          transform={`translate(0 4) rotate(68 ${sx} ${gy})
+          transform={`translate(0 0) rotate(68 ${sx} ${gy})
                       translate(${sx} ${gy}) scale(0.92) translate(${-sx} ${-gy})`}
         >
           {/* Outline first as a fatter stroke of the same path — the run bends
