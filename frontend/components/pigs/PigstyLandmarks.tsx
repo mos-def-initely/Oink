@@ -22,14 +22,26 @@ const BLOOD = "#8E1B12";
 const TIMBER = "#8A6134";
 const TIMBER_DARK = "#6A4826";
 
+/**
+ * Every pig in the sty is drawn at the same size, landmark or not — an occupant
+ * rendered larger than the crowd reads as a different animal rather than the
+ * same one somewhere special.
+ *
+ * The three sets of scenery were each laid out around a bigger pig than that,
+ * so each carries the ratio it was drawn at and scales its own artwork down to
+ * suit. The viewBoxes are untouched; only the box they're painted into shrinks.
+ */
+export const STY_PIG = 86;
+
 export function Throne({ user }: { user: User }) {
+  const k = STY_PIG / 132;
   return (
-    <div className="relative" style={{ width: 210, height: 258 }}>
+    <div className="relative" style={{ width: 210 * k, height: 258 * k }}>
       {/* The viewBox starts above the origin so the banner can sit clear of the
           crown without the whole throne having to move down for it. */}
       <svg
-        width="210"
-        height="258"
+        width={210 * k}
+        height={258 * k}
         viewBox="0 -8 210 258"
         aria-hidden
         className="absolute inset-0"
@@ -103,12 +115,12 @@ export function Throne({ user }: { user: User }) {
 
       {/* Stood on the cushion, in front of the chair. The container's origin is
           8 above the viewBox's, so this is offset to match. */}
-      <div className="absolute left-1/2 -translate-x-1/2" style={{ top: 8 + 48 }}>
+      <div className="absolute left-1/2 -translate-x-1/2" style={{ top: (8 + 48) * k }}>
         <PigAvatar
           config={user.pig_avatar_config}
           placesLogged={user.places_logged}
           lastLoggedAt={user.last_logged_at}
-          size={132}
+          size={STY_PIG}
           variant="full"
         />
       </div>
@@ -126,10 +138,11 @@ export function Throne({ user }: { user: User }) {
  */
 export function Grave({ user }: { user: User }) {
   const stone = hashTilt(user.id);
+  const k = STY_PIG / 92;
   return (
     <div className="flex flex-col items-center">
-      <div className="relative" style={{ width: 130, height: 168 }}>
-        <svg width="130" height="168" viewBox="0 0 130 168" aria-hidden className="absolute inset-0">
+      <div className="relative" style={{ width: 130 * k, height: 168 * k }}>
+        <svg width={130 * k} height={168 * k} viewBox="0 0 130 168" aria-hidden className="absolute inset-0">
           <g transform={`rotate(${stone} 65 120)`}>
             <path
               d="M34 122 L34 56 a 31 31 0 0 1 62 0 L96 122 Z"
@@ -158,12 +171,12 @@ export function Grave({ user }: { user: User }) {
           <ellipse cx="65" cy="129" rx="46" ry="11" fill="#8A6340" stroke="none" />
         </svg>
 
-        <div className="absolute left-1/2 -translate-x-1/2" style={{ top: 40 }}>
+        <div className="absolute left-1/2 -translate-x-1/2" style={{ top: 40 * k }}>
           <PigAvatar
             config={user.pig_avatar_config}
             placesLogged={user.places_logged}
             lastLoggedAt={user.last_logged_at}
-            size={92}
+            size={STY_PIG}
             variant="full"
           />
         </div>
@@ -222,11 +235,12 @@ export function ShameEnclosure({ user }: { user: User }) {
   const rail = (a: { x: number; y: number }, b: { x: number; y: number }, up: number, t = 9) =>
     `M${a.x} ${a.y - up} L${b.x} ${b.y - up} L${b.x} ${b.y - up + t} L${a.x} ${a.y - up + t} Z`;
 
+  const k = STY_PIG / 104;
   return (
     <div className="flex flex-col items-center">
-      <div className="relative" style={{ width: 260, height: 300 }}>
+      <div className="relative" style={{ width: 260 * k, height: 300 * k }}>
         {/* Billboard, behind everything. */}
-        <svg width="260" height="150" viewBox="0 0 260 150" aria-hidden className="absolute left-0 top-0">
+        <svg width={260 * k} height={150 * k} viewBox="0 0 260 150" aria-hidden className="absolute left-0 top-0">
           <g stroke={INK} strokeWidth="3" strokeLinejoin="round">
             <rect x="58" y="96" width="12" height="52" fill={TIMBER_DARK} />
             <rect x="190" y="96" width="12" height="52" fill={TIMBER_DARK} />
@@ -258,7 +272,7 @@ export function ShameEnclosure({ user }: { user: User }) {
             come back from. Back and sides go down first, the occupant next,
             the near run last — which is what makes it an enclosure rather than
             a fence with a pig behind it. */}
-        <svg width="260" height="300" viewBox="0 0 260 300" aria-hidden className="absolute inset-0">
+        <svg width={260 * k} height={300 * k} viewBox="0 0 260 300" aria-hidden className="absolute inset-0">
           <g stroke={INK} strokeWidth="3" strokeLinejoin="round">
             <path
               d={`M${BL.x} ${BL.y} L${BR.x} ${BR.y} L${FR.x} ${FR.y} L${FL.x} ${FL.y} Z`}
@@ -316,21 +330,21 @@ export function ShameEnclosure({ user }: { user: User }) {
         </svg>
 
         {/* The occupant, penned in. */}
-        <div className="absolute left-1/2 -translate-x-1/2" style={{ top: 132 }}>
+        <div className="absolute left-1/2 -translate-x-1/2" style={{ top: 132 * k }}>
           <div className="relative">
             <PigAvatar
               config={user.pig_avatar_config}
               placesLogged={user.places_logged}
               lastLoggedAt={user.last_logged_at}
-              size={104}
+              size={STY_PIG}
               variant="full"
             />
             {/* Placard round the neck. Drawn in the avatar's own coordinates —
                 130 across, head bottom around y=71 — so the string sits on the
                 shoulders and the board hangs on the chest whatever the tier. */}
             <svg
-              width="104"
-              height={(104 * 134) / 130}
+              width={STY_PIG}
+              height={(STY_PIG * 134) / 130}
               viewBox="0 0 130 134"
               aria-hidden
               className="pointer-events-none absolute left-0 top-0"
@@ -368,7 +382,7 @@ export function ShameEnclosure({ user }: { user: User }) {
         </div>
 
         {/* The near run, drawn last so it stands in front of the pig. */}
-        <svg width="260" height="300" viewBox="0 0 260 300" aria-hidden className="absolute inset-0">
+        <svg width={260 * k} height={300 * k} viewBox="0 0 260 300" aria-hidden className="absolute inset-0">
           <g stroke={INK} strokeWidth="3" strokeLinejoin="round">
             <path d={rail(FL, FR, 20)} fill={TIMBER} />
             <path d={rail(FL, FR, 6)} fill={TIMBER} />

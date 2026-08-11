@@ -29,7 +29,13 @@ import PigAvatar from "@/components/pigs/PigAvatar";
 import BottomTabBar, { TabBarSpacer } from "@/components/BottomTabBar";
 import { Spinner } from "@/components/ui";
 import { TIER_LABELS, fatnessTier } from "@/lib/pig";
-import { Grave, GraveyardGround, ShameEnclosure, Throne } from "@/components/pigs/PigstyLandmarks";
+import {
+  Grave,
+  GraveyardGround,
+  STY_PIG,
+  ShameEnclosure,
+  Throne,
+} from "@/components/pigs/PigstyLandmarks";
 
 /** How much room one pig gets. The field is sized from the crowd rather than
  *  fixed, so five pigs aren't marooned in a paddock built for thirty. */
@@ -65,14 +71,14 @@ type Field = { spots: Spot[]; width: number; height: number; graveyard: Plot | n
 /** Room above the crowd for the throne and the enclosure, which stand at either
  *  end of the same band — the two verdicts, facing each other across the top of
  *  the sty — and room below it for the graveyard. */
-const TOP_BAND = 380;
+const TOP_BAND = 300;
 /** Distance between the two, centre to centre. Far enough apart to be separate
  *  places, close enough to be read as a pair. */
-const TOP_GAP = 360;
+const TOP_GAP = 250;
 const GRAVE_COLS = 4;
-const GRAVE_W = 150;
-const GRAVE_H = 196;
-const GRAVE_PAD = 46;
+const GRAVE_W = 128;
+const GRAVE_H = 172;
+const GRAVE_PAD = 40;
 
 /**
  * Whoever the group's verdict picks out, by the widest margin, for each end of
@@ -237,7 +243,7 @@ export default function PigstyScreen({ initialUsers }: { initialUsers: User[] | 
 
     // Wide enough for both landmarks to stand apart at the top, so a small sty
     // still gives all of them room.
-    const width = Math.max(base.width, TOP_GAP + 300, plotW + 40);
+    const width = Math.max(base.width, TOP_GAP + 240, plotW + 40);
     const dx = (width - base.width) / 2;
 
     const spots: Spot[] = base.spots.map((s) => ({ ...s, x: s.x + dx, y: s.y + top }));
@@ -515,7 +521,7 @@ export default function PigstyScreen({ initialUsers }: { initialUsers: User[] | 
                             config={user.pig_avatar_config}
                             placesLogged={user.places_logged}
                             lastLoggedAt={user.last_logged_at}
-                            size={86}
+                            size={STY_PIG}
                             variant="full"
                           />
                         </span>
