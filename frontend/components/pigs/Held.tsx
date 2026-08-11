@@ -65,6 +65,68 @@ export default function Held({ item, armX }: { item: string; armX: number }) {
         </g>
       );
 
+    // Hung at the waist and leaned in 20° off vertical, mouthpiece end toward
+    // the head — which is the way it sits on a strap, and the only tilt at
+    // which the bell doesn't swing out past the pig.
+    case "sax": {
+      const sx = gx - 9;
+      /** Mouthpiece down the body, round the bow and back up into the bell. */
+      const tube = `M ${sx + 4} ${gy - 28} Q ${sx} ${gy - 26} ${sx} ${gy - 20}
+                    L ${sx} ${gy + 8} Q ${sx} ${gy + 20} ${sx - 10} ${gy + 20}
+                    Q ${sx - 20} ${gy + 20} ${sx - 20} ${gy + 8} L ${sx - 20} ${gy - 4}`;
+      return (
+        <g transform={`rotate(-20 ${sx} ${gy})`}>
+          {/* Outline first as a fatter stroke of the same path — the tube bends
+              twice, and two stroked passes hold the line at an even width where
+              an outlined outline would pinch on the curves. */}
+          <path
+            d={tube}
+            fill="none"
+            stroke={OUTLINE}
+            strokeWidth="12"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d={tube}
+            fill="none"
+            stroke={GOLD}
+            strokeWidth="8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+
+          {/* Bell, flaring up off the end of that last run. */}
+          <path
+            d={`M ${sx - 29} ${gy - 16} L ${sx - 11} ${gy - 16} L ${sx - 15} ${gy - 2}
+                L ${sx - 25} ${gy - 2} Z`}
+            fill={GOLD}
+            {...s}
+          />
+          <ellipse cx={sx - 20} cy={gy - 16} rx="9" ry="3.4" fill={LEMON} {...s} />
+
+          {/* Mouthpiece. */}
+          <rect
+            x={sx + 2}
+            y={gy - 38}
+            width="8"
+            height="11"
+            rx="2.5"
+            fill={INK}
+            {...s}
+            transform={`rotate(18 ${sx + 6} ${gy - 33})`}
+          />
+
+          {/* Keys down the body. */}
+          <g fill={INK} stroke="none">
+            <circle cx={sx + 5} cy={gy - 14} r="2" />
+            <circle cx={sx + 5} cy={gy - 6} r="2" />
+            <circle cx={sx + 5} cy={gy + 2} r="2" />
+          </g>
+        </g>
+      );
+    }
+
     case "briefcase":
       return (
         <g {...s}>
@@ -91,6 +153,50 @@ export default function Held({ item, armX }: { item: string; armX: number }) {
           />
           <path d={`M ${gx + 5} ${gy} q 5 4 0.5 8 h -4.5`} fill="none" />
           <circle cx={gx + 23} cy={gy - 10.5} r="2.1" fill={STEEL} stroke="none" />
+        </g>
+      );
+
+    // At the pig's side, bell forward and up. Small enough to read as a
+    // trumpet rather than a length of pipe.
+    case "trumpet":
+      return (
+        // Pulled inboard of `ox`: bell-first it needs 20px clear to the right,
+        // and the widest pig's arm leaves nothing like that before the frame.
+        <g {...s} transform={`rotate(-14 ${ox} ${gy})`}>
+          <rect x={ox - 25} y={gy - 5} width="26" height="10" rx="3" fill={GOLD} />
+          <path
+            d={`M ${ox} ${gy - 11} L ${ox + 9} ${gy - 14} L ${ox + 9} ${gy + 14}
+                L ${ox} ${gy + 11} Z`}
+            fill={GOLD}
+          />
+          <rect x={ox - 30} y={gy - 3} width="6" height="6" rx="2.5" fill={STEEL} />
+          {/* Valves. */}
+          <g stroke={OUTLINE} strokeWidth="1.8">
+            <rect x={ox - 18} y={gy - 12} width="4.5" height="8" rx="1.6" fill={STEEL} />
+            <rect x={ox - 11} y={gy - 12} width="4.5" height="8" rx="1.6" fill={STEEL} />
+            <rect x={ox - 4} y={gy - 12} width="4.5" height="8" rx="1.6" fill={STEEL} />
+          </g>
+        </g>
+      );
+
+    case "whisky":
+      return (
+        <g {...s}>
+          <path
+            d={`M ${ox - 9} ${gy + 12} L ${ox - 9} ${gy - 9} Q ${ox - 9} ${gy - 14} ${ox - 3.5} ${gy - 17}
+                L ${ox - 3.5} ${gy - 26} L ${ox + 3.5} ${gy - 26} L ${ox + 3.5} ${gy - 17}
+                Q ${ox + 9} ${gy - 14} ${ox + 9} ${gy - 9} L ${ox + 9} ${gy + 12} Z`}
+            fill="#8A5A22"
+          />
+          {/* Cork, and a label with a couple of ruled lines on it. */}
+          <rect x={ox - 4.5} y={gy - 31} width="9" height="6" rx="1.5" fill={INK} />
+          <rect x={ox - 8} y={gy - 6} width="16" height="13" rx="1.5" fill={CREAM} />
+          <path
+            d={`M ${ox - 5} ${gy - 2} h 10 M ${ox - 5} ${gy + 2} h 10`}
+            stroke={OUTLINE}
+            strokeWidth="1.3"
+            fill="none"
+          />
         </g>
       );
 

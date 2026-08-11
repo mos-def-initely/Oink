@@ -341,7 +341,7 @@ export const PIG_COMPANIONS = ["none", "truffle"] as const;
 
 /** Things a pig can be brandishing. Its own slot, so it stacks with everything. */
 export const PIG_HELD = [
-  "none", "knife", "guitar", "briefcase", "pistol", "wine", "pint",
+  "none", "knife", "guitar", "sax", "trumpet", "briefcase", "pistol", "wine", "pint", "whisky",
   "coffee", "rollingpin", "pan", "baguette", "umbrella", "balloon",
   "bouquet", "camera", "trophy",
 ] as const;
@@ -351,10 +351,13 @@ export const HELD_LABELS: Record<string, string> = {
   none: "nothing",
   knife: "knife",
   guitar: "guitar",
+  sax: "saxophone",
+  trumpet: "trumpet",
   briefcase: "briefcase",
   pistol: "pistol",
   wine: "wine glass",
   pint: "pint",
+  whisky: "whisky",
   coffee: "coffee",
   rollingpin: "rolling pin",
   pan: "frying pan",
