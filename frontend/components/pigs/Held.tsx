@@ -90,13 +90,14 @@ export default function Held({ item, armX }: { item: string; armX: number }) {
         //
         // The lean is doing the work. The mouthpiece sits at the top left of
         // the instrument, so turning it further swings that end outboard, and
-        // the head's silhouette climbs as you go out from its centre. At 60°
-        // that end clears the snout with room to spare, which is what lets the
-        // instrument sit in over the belly rather than out at arm's length.
+        // the head's silhouette climbs as you go out from its centre. At 68°
+        // that end clears the snout by a good margin, which is what lets the
+        // instrument sit high and in over the belly rather than low and out at
+        // arm's length.
         // The narrowest pig is what it's set against: no arm splay there, so
         // the whole thing hangs closest in to the head.
         <g
-          transform={`translate(0 12) rotate(60 ${sx} ${gy})
+          transform={`translate(0 4) rotate(68 ${sx} ${gy})
                       translate(${sx} ${gy}) scale(0.92) translate(${-sx} ${-gy})`}
         >
           {/* Outline first as a fatter stroke of the same path — the run bends
