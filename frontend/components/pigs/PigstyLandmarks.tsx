@@ -11,6 +11,7 @@
  * the throne's inscription calls it democratic.
  */
 import PigAvatar from "@/components/pigs/PigAvatar";
+import { SPECIES_COLORS, Species, normalisePig } from "@/lib/pig";
 import type { User } from "@/lib/types";
 
 const GOLD = "#CFA51F";
@@ -23,92 +24,101 @@ const TIMBER = "#8A6134";
 const TIMBER_DARK = "#6A4826";
 
 export function Throne({ user }: { user: User }) {
+  // The avatar always stands. Rather than teach it a second pose, the seat is
+  // drawn over its legs and a pair of thighs is drawn hanging off the front —
+  // so the coat has to match, which means reading the same palette the avatar
+  // reads.
+  const cfg = normalisePig(user.pig_avatar_config);
+  const coat = SPECIES_COLORS[cfg.species as Species][cfg.color];
+
   return (
-    <div className="flex flex-col items-center">
-      <div className="relative" style={{ width: 210, height: 250 }}>
-        <svg
-          width="210"
-          height="250"
-          viewBox="0 0 210 250"
-          aria-hidden
-          className="absolute inset-0"
+    <div className="relative" style={{ width: 210, height: 250 }}>
+      <svg width="210" height="250" viewBox="0 0 210 250" aria-hidden className="absolute inset-0">
+        <defs>
+          <linearGradient id="throne-gold" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor={GOLD_LIGHT} />
+            <stop offset="55%" stopColor={GOLD} />
+            <stop offset="100%" stopColor={GOLD_DARK} />
+          </linearGradient>
+        </defs>
+
+        <g stroke={INK} strokeWidth="3" strokeLinejoin="round">
+          {/* Back, with a crown along the top rail. It runs all the way down to
+              the seat: a gap between the two read as two bits of furniture with
+              a pig floating between them. */}
+          <path
+            d="M46 152 L46 74 L60 56 L74 74 L88 52 L105 68 L122 52 L136 74 L150 56 L164 74 L164 152 Z"
+            fill="url(#throne-gold)"
+          />
+          <rect x="46" y="140" width="118" height="14" rx="4" fill={GOLD_DARK} />
+
+          {/* Arms — deep enough to rest on and tall enough to be arms rather
+              than a lip on the seat. */}
+          <rect x="14" y="112" width="30" height="66" rx="11" fill="url(#throne-gold)" />
+          <rect x="166" y="112" width="30" height="66" rx="11" fill="url(#throne-gold)" />
+        </g>
+
+        {/* Jewels down the back. */}
+        <g stroke={INK} strokeWidth="2">
+          <circle cx="105" cy="92" r="9" fill="#B03A45" />
+          <circle cx="72" cy="102" r="6" fill="#4E7FA8" />
+          <circle cx="138" cy="102" r="6" fill="#4E7FA8" />
+        </g>
+
+        {/* The banner, over the top of the throne rather than under it. */}
+        <g stroke={INK} strokeWidth="3" strokeLinejoin="round">
+          <path d="M0 30 L22 2 L188 2 L210 30 L188 58 L22 58 Z" fill="url(#throne-gold)" />
+        </g>
+        <text
+          x="105"
+          y="26"
+          textAnchor="middle"
+          fill={INK}
+          style={{ font: "800 11px var(--font-display, system-ui)", letterSpacing: "0.01em" }}
         >
-          <defs>
-            <linearGradient id="throne-gold" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor={GOLD_LIGHT} />
-              <stop offset="55%" stopColor={GOLD} />
-              <stop offset="100%" stopColor={GOLD_DARK} />
-            </linearGradient>
-          </defs>
+          DEMOCRATICALLY ANOINTED
+        </text>
+        <text
+          x="105"
+          y="46"
+          textAnchor="middle"
+          fill={INK}
+          style={{ font: "800 13px var(--font-display, system-ui)", letterSpacing: "0.05em" }}
+        >
+          SUPREME OINK
+        </text>
+      </svg>
 
-          <g stroke={INK} strokeWidth="3" strokeLinejoin="round">
-            {/* Back, with a crown along the top rail. It runs all the way down
-                to the seat: a gap between the two read as two bits of
-                furniture with a pig floating between them. */}
-            <path
-              d="M44 140 L44 34 L58 14 L72 34 L88 10 L105 28 L122 10 L138 34 L152 14 L166 34 L166 140 Z"
-              fill="url(#throne-gold)"
-            />
-            <rect x="44" y="126" width="122" height="14" rx="4" fill={GOLD_DARK} />
-
-            {/* Arms, then the seat over them. */}
-            <rect x="26" y="112" width="20" height="42" rx="9" fill="url(#throne-gold)" />
-            <rect x="164" y="112" width="20" height="42" rx="9" fill="url(#throne-gold)" />
-            <rect x="34" y="140" width="142" height="24" rx="6" fill="url(#throne-gold)" />
-
-            {/* Legs. */}
-            <rect x="44" y="162" width="20" height="40" rx="5" fill="url(#throne-gold)" />
-            <rect x="146" y="162" width="20" height="40" rx="5" fill="url(#throne-gold)" />
-            <rect x="34" y="198" width="142" height="12" rx="5" fill={GOLD_DARK} />
-          </g>
-
-          {/* Jewels down the back. */}
-          <g stroke={INK} strokeWidth="2">
-            <circle cx="105" cy="50" r="9" fill="#B03A45" />
-            <circle cx="72" cy="60" r="6" fill="#4E7FA8" />
-            <circle cx="138" cy="60" r="6" fill="#4E7FA8" />
-          </g>
-
-          {/* Cushion, drawn after the seat so the pig has something to sit on
-              and something to sit in front of. */}
-          <rect
-            x="46"
-            y="128"
-            width="118"
-            height="24"
-            rx="10"
-            fill={PLUM}
-            stroke={INK}
-            strokeWidth="3"
-          />
-        </svg>
-
-        {/* Sat on the cushion — the pig's feet land on it rather than in it. */}
-        <div className="absolute left-1/2 -translate-x-1/2" style={{ top: 8 }}>
-          <PigAvatar
-            config={user.pig_avatar_config}
-            placesLogged={user.places_logged}
-            lastLoggedAt={user.last_logged_at}
-            size={132}
-            variant="full"
-          />
-        </div>
+      {/* Sat in the chair. Its own legs end up behind the seat below. */}
+      <div className="absolute left-1/2 -translate-x-1/2" style={{ top: 46 }}>
+        <PigAvatar
+          config={user.pig_avatar_config}
+          placesLogged={user.places_logged}
+          lastLoggedAt={user.last_logged_at}
+          size={128}
+          variant="full"
+        />
       </div>
 
-      {/* The inscription, on a plaque under the throne. */}
-      <div
-        className="-mt-1 rounded-md border-[3px] px-3 py-1.5 text-center"
-        style={{ borderColor: INK, background: "linear-gradient(#E9CE63, #CFA51F)" }}
-      >
-        <p
-          className="font-display text-[13px] font-extrabold uppercase leading-tight tracking-[0.06em]"
-          style={{ color: INK }}
-        >
-          Democratically Anointed
-          <br />
-          Supreme Oink
-        </p>
-      </div>
+      <svg width="210" height="250" viewBox="0 0 210 250" aria-hidden className="absolute inset-0">
+        <g stroke={INK} strokeWidth="3" strokeLinejoin="round">
+          {/* Seat and cushion, over the standing legs. */}
+          <rect x="24" y="166" width="162" height="26" rx="6" fill="url(#throne-gold)" />
+          <rect x="36" y="154" width="138" height="26" rx="11" fill={PLUM} />
+        </g>
+
+        {/* Thighs over the front edge, in the wearer's own coat. */}
+        <g stroke={coat.outline} strokeWidth="2.6" strokeLinejoin="round">
+          <rect x="76" y="176" width="22" height="38" rx="10" fill={coat.snout} />
+          <rect x="112" y="176" width="22" height="38" rx="10" fill={coat.snout} />
+        </g>
+
+        <g stroke={INK} strokeWidth="3" strokeLinejoin="round">
+          <rect x="40" y="190" width="22" height="42" rx="5" fill="url(#throne-gold)" />
+          <rect x="148" y="190" width="22" height="42" rx="5" fill="url(#throne-gold)" />
+          <rect x="30" y="228" width="150" height="13" rx="5" fill={GOLD_DARK} />
+        </g>
+      </svg>
     </div>
   );
 }
