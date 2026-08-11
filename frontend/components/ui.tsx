@@ -24,10 +24,11 @@ export function PageHeader({
           ←
         </Link>
       )}
-      {/* Capitalised in CSS rather than in the strings: every title in the app
-          is written lowercase, and a screen's name shouldn't have to be
-          spelled twice to be styled once. */}
-      <h1 className="min-w-0 flex-1 truncate text-3xl capitalize text-plum">{title}</h1>
+      {/* No case forced either way. Screen names are written lowercase at the
+          call site, which is the app's voice; the ones that aren't a screen
+          name — a restaurant, a person — are somebody's actual name and keep
+          the case they came with. */}
+      <h1 className="min-w-0 flex-1 truncate text-3xl text-plum">{title}</h1>
       {right}
     </header>
   );
@@ -66,7 +67,7 @@ export function Sheet({
       <button className="absolute inset-0 bg-ink/40" onClick={onClose} aria-label="close" tabIndex={-1} />
       <div className="relative max-h-[88vh] w-full max-w-[480px] overflow-y-auto rounded-t-3xl border-t-2 border-x-2 border-ink bg-oat pb-6 shadow-lift">
         <div className="sticky top-0 z-10 flex items-center gap-2 bg-oat px-4 pb-2 pt-4">
-          <h2 className="min-w-0 flex-1 truncate text-xl capitalize">{title}</h2>
+          <h2 className="min-w-0 flex-1 truncate text-xl">{title}</h2>
           <button
             onClick={onClose}
             className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-ink bg-cream"

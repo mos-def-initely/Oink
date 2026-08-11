@@ -431,7 +431,9 @@ export default function PigstyScreen({ initialUsers }: { initialUsers: User[] | 
     <>
       <header className="sticky top-0 z-[900] bg-oat/95 px-3 pb-2 pt-3 backdrop-blur">
         <div className="flex items-baseline justify-between">
-          <h1 className="wordmark text-3xl">pigsty</h1>
+          {/* Matched to the feed and discover — three tabs of equal standing
+              shouldn't have two title treatments between them. */}
+          <h1 className="text-3xl text-plum">pigsty</h1>
           <span className="micro">{users ? `${users.length} pigs` : ""}</span>
         </div>
         <label className="field mt-2 flex items-center gap-2 !py-1.5">
