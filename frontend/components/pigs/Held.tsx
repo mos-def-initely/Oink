@@ -33,6 +33,8 @@ const STEEL = "#B9AFA0";
 const BLADE = "#EDE7DA";
 const LILAC = "#D8B5F7";
 const BLACK = "#000000";
+/** Bottle glass — the green a Jameson bottle is. */
+const GLASS = "#3F5C36";
 
 export default function Held({ item, armX }: { item: string; armX: number }) {
   const s = { stroke: OUTLINE, strokeWidth: STROKE, strokeLinejoin: "round" as const };
@@ -69,16 +71,21 @@ export default function Held({ item, armX }: { item: string; armX: number }) {
     // the head — which is the way it sits on a strap, and the only tilt at
     // which the bell doesn't swing out past the pig.
     case "sax": {
-      const sx = gx - 9;
-      /** Mouthpiece down the body, round the bow and back up into the bell. */
-      const tube = `M ${sx + 4} ${gy - 28} Q ${sx} ${gy - 26} ${sx} ${gy - 20}
-                    L ${sx} ${gy + 8} Q ${sx} ${gy + 20} ${sx - 10} ${gy + 20}
-                    Q ${sx - 20} ${gy + 20} ${sx - 20} ${gy + 8} L ${sx - 20} ${gy - 4}`;
+      const sx = gx - 12;
+      /**
+       * The whole instrument as one run, in the order the air goes: crook down
+       * from the mouthpiece, short body, round the bow, back up into the bell.
+       * The crook is what makes it a sax rather than a pipe, and the body is
+       * kept short — an alto is mostly bow and bell, not tube.
+       */
+      const tube = `M ${sx - 9} ${gy - 28} Q ${sx - 1} ${gy - 25} ${sx} ${gy - 15}
+                    L ${sx} ${gy + 5} Q ${sx} ${gy + 17} ${sx + 9} ${gy + 17}
+                    Q ${sx + 18} ${gy + 17} ${sx + 18} ${gy + 6} L ${sx + 18} ${gy - 4}`;
       return (
         <g transform={`rotate(-20 ${sx} ${gy})`}>
-          {/* Outline first as a fatter stroke of the same path — the tube bends
-              twice, and two stroked passes hold the line at an even width where
-              an outlined outline would pinch on the curves. */}
+          {/* Outline first as a fatter stroke of the same path — the run bends
+              three times, and two stroked passes hold an even width where an
+              outlined shape would pinch on curves that tight. */}
           <path
             d={tube}
             fill="none"
@@ -96,32 +103,32 @@ export default function Held({ item, armX }: { item: string; armX: number }) {
             strokeLinejoin="round"
           />
 
-          {/* Bell, flaring up off the end of that last run. */}
+          {/* Bell, flaring up and away off the end of the bow. */}
           <path
-            d={`M ${sx - 29} ${gy - 16} L ${sx - 11} ${gy - 16} L ${sx - 15} ${gy - 2}
-                L ${sx - 25} ${gy - 2} Z`}
+            d={`M ${sx + 10} ${gy - 17} L ${sx + 27} ${gy - 17} L ${sx + 22} ${gy - 2}
+                L ${sx + 14} ${gy - 2} Z`}
             fill={GOLD}
             {...s}
           />
-          <ellipse cx={sx - 20} cy={gy - 16} rx="9" ry="3.4" fill={LEMON} {...s} />
+          <ellipse cx={sx + 18.5} cy={gy - 17} rx="8.5" ry="3.2" fill={LEMON} {...s} />
 
-          {/* Mouthpiece. */}
+          {/* Mouthpiece, on the end of the crook and pointed at the head. */}
           <rect
-            x={sx + 2}
-            y={gy - 38}
+            x={sx - 16}
+            y={gy - 37}
             width="8"
             height="11"
             rx="2.5"
             fill={INK}
             {...s}
-            transform={`rotate(18 ${sx + 6} ${gy - 33})`}
+            transform={`rotate(-22 ${sx - 12} ${gy - 32})`}
           />
 
-          {/* Keys down the body. */}
+          {/* Keys down the near side of the body. */}
           <g fill={INK} stroke="none">
-            <circle cx={sx + 5} cy={gy - 14} r="2" />
-            <circle cx={sx + 5} cy={gy - 6} r="2" />
-            <circle cx={sx + 5} cy={gy + 2} r="2" />
+            <circle cx={sx + 5} cy={gy - 9} r="2" />
+            <circle cx={sx + 5} cy={gy - 2} r="2" />
+            <circle cx={sx + 5} cy={gy + 5} r="2" />
           </g>
         </g>
       );
@@ -162,39 +169,90 @@ export default function Held({ item, armX }: { item: string; armX: number }) {
       return (
         // Pulled inboard of `ox`: bell-first it needs 20px clear to the right,
         // and the widest pig's arm leaves nothing like that before the frame.
-        <g {...s} transform={`rotate(-14 ${ox} ${gy})`}>
-          <rect x={ox - 25} y={gy - 5} width="26" height="10" rx="3" fill={GOLD} />
+        <g transform={`rotate(-12 ${ox} ${gy})`}>
+          {/* The tubing as one run — mouthpiece, along the leadpipe, round the
+              tuning slide at the far end and back. Without that return loop it
+              is a cone on a stick, which is a megaphone. */}
           <path
-            d={`M ${ox} ${gy - 11} L ${ox + 9} ${gy - 14} L ${ox + 9} ${gy + 14}
-                L ${ox} ${gy + 11} Z`}
-            fill={GOLD}
+            d={`M ${ox - 30} ${gy - 1} L ${ox + 2} ${gy - 1}
+                M ${ox - 24} ${gy + 8} L ${ox + 1} ${gy + 8}
+                M ${ox - 24} ${gy + 8} Q ${ox - 33} ${gy + 8} ${ox - 33} ${gy + 3.5}
+                Q ${ox - 33} ${gy - 1} ${ox - 30} ${gy - 1}`}
+            fill="none"
+            stroke={OUTLINE}
+            strokeWidth="9"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           />
-          <rect x={ox - 30} y={gy - 3} width="6" height="6" rx="2.5" fill={STEEL} />
-          {/* Valves. */}
-          <g stroke={OUTLINE} strokeWidth="1.8">
-            <rect x={ox - 18} y={gy - 12} width="4.5" height="8" rx="1.6" fill={STEEL} />
-            <rect x={ox - 11} y={gy - 12} width="4.5" height="8" rx="1.6" fill={STEEL} />
-            <rect x={ox - 4} y={gy - 12} width="4.5" height="8" rx="1.6" fill={STEEL} />
+          <path
+            d={`M ${ox - 30} ${gy - 1} L ${ox + 2} ${gy - 1}
+                M ${ox - 24} ${gy + 8} L ${ox + 1} ${gy + 8}
+                M ${ox - 24} ${gy + 8} Q ${ox - 33} ${gy + 8} ${ox - 33} ${gy + 3.5}
+                Q ${ox - 33} ${gy - 1} ${ox - 30} ${gy - 1}`}
+            fill="none"
+            stroke={GOLD}
+            strokeWidth="5.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+
+          {/* Bell. */}
+          <path
+            d={`M ${ox + 1} ${gy - 8} L ${ox + 17} ${gy - 15} L ${ox + 17} ${gy + 13}
+                L ${ox + 1} ${gy + 6} Z`}
+            fill={GOLD}
+            {...s}
+          />
+          <ellipse cx={ox + 17} cy={gy - 1} rx="3.2" ry="14" fill={LEMON} {...s} />
+
+          {/* Three valve casings with their buttons, which is the other half of
+              what says trumpet. */}
+          <g {...s} strokeWidth="1.8">
+            {[-16, -9, -2].map((dx) => (
+              <g key={dx}>
+                <rect x={ox + dx} y={gy - 13} width="5.5" height="13" rx="1.6" fill={GOLD} />
+                <circle cx={ox + dx + 2.75} cy={gy - 15} r="2.4" fill={STEEL} />
+              </g>
+            ))}
           </g>
+
+          {/* Mouthpiece. */}
+          <path
+            d={`M ${ox - 36} ${gy - 5} L ${ox - 30} ${gy - 3} L ${ox - 30} ${gy + 1}
+                L ${ox - 36} ${gy + 3} Z`}
+            fill={STEEL}
+            {...s}
+          />
         </g>
       );
 
+    // Modelled on a Jameson bottle: green glass, square shoulders into a short
+    // neck, black capsule, and a cream label banded in gold across most of the
+    // body. At this size the green and the label are what carry it.
     case "whisky":
       return (
         <g {...s}>
           <path
-            d={`M ${ox - 9} ${gy + 12} L ${ox - 9} ${gy - 9} Q ${ox - 9} ${gy - 14} ${ox - 3.5} ${gy - 17}
-                L ${ox - 3.5} ${gy - 26} L ${ox + 3.5} ${gy - 26} L ${ox + 3.5} ${gy - 17}
-                Q ${ox + 9} ${gy - 14} ${ox + 9} ${gy - 9} L ${ox + 9} ${gy + 12} Z`}
-            fill="#8A5A22"
+            d={`M ${ox - 9} ${gy + 13} L ${ox - 9} ${gy - 8} Q ${ox - 9} ${gy - 14} ${ox - 3.5} ${gy - 18}
+                L ${ox - 3.5} ${gy - 27} L ${ox + 3.5} ${gy - 27} L ${ox + 3.5} ${gy - 18}
+                Q ${ox + 9} ${gy - 14} ${ox + 9} ${gy - 8} L ${ox + 9} ${gy + 13} Z`}
+            fill={GLASS}
           />
-          {/* Cork, and a label with a couple of ruled lines on it. */}
-          <rect x={ox - 4.5} y={gy - 31} width="9" height="6" rx="1.5" fill={INK} />
-          <rect x={ox - 8} y={gy - 6} width="16" height="13" rx="1.5" fill={CREAM} />
+          {/* Capsule over the cork, with the gold ring under it. */}
+          <rect x={ox - 4.6} y={gy - 32} width="9.2" height="8" rx="1.5" fill={INK} />
+          <rect x={ox - 4.2} y={gy - 24} width="8.4" height="2.6" fill={GOLD} stroke="none" />
+
+          <rect x={ox - 8.4} y={gy - 5} width="16.8" height="15" rx="1.2" fill={CREAM} />
           <path
-            d={`M ${ox - 5} ${gy - 2} h 10 M ${ox - 5} ${gy + 2} h 10`}
+            d={`M ${ox - 8.4} ${gy - 2.4} h 16.8 M ${ox - 8.4} ${gy + 6.6} h 16.8`}
+            stroke={GOLD}
+            strokeWidth="2.2"
+            fill="none"
+          />
+          <path
+            d={`M ${ox - 5} ${gy + 2} h 10`}
             stroke={OUTLINE}
-            strokeWidth="1.3"
+            strokeWidth="1.4"
             fill="none"
           />
         </g>
