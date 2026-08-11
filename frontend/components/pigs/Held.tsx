@@ -71,18 +71,21 @@ export default function Held({ item, armX }: { item: string; armX: number }) {
     // the head — which is the way it sits on a strap, and the only tilt at
     // which the bell doesn't swing out past the pig.
     case "sax": {
-      const sx = gx - 12;
+      const sx = gx - 10;
       /**
-       * The whole instrument as one run, in the order the air goes: crook down
-       * from the mouthpiece, short body, round the bow, back up into the bell.
-       * The crook is what makes it a sax rather than a pipe, and the body is
-       * kept short — an alto is mostly bow and bell, not tube.
+       * The whole instrument as one run, in the order the air goes: an S-bent
+       * crook down from the mouthpiece, a long body, round the bow and back up
+       * into the bell. Tenor proportions — the body is most of the instrument
+       * and the bell is the small end of it, which is the difference between a
+       * tenor and the stubby alto this was.
        */
-      const tube = `M ${sx - 9} ${gy - 28} Q ${sx - 1} ${gy - 25} ${sx} ${gy - 15}
-                    L ${sx} ${gy + 5} Q ${sx} ${gy + 17} ${sx + 9} ${gy + 17}
-                    Q ${sx + 18} ${gy + 17} ${sx + 18} ${gy + 6} L ${sx + 18} ${gy - 4}`;
+      const tube = `M ${sx - 4} ${gy - 38} Q ${sx + 5} ${gy - 36} ${sx + 4} ${gy - 29}
+                    Q ${sx + 3} ${gy - 25} ${sx} ${gy - 22}
+                    L ${sx} ${gy + 6} Q ${sx} ${gy + 17} ${sx + 8} ${gy + 17}
+                    Q ${sx + 16} ${gy + 17} ${sx + 16} ${gy + 7} L ${sx + 16} ${gy + 1}`;
       return (
-        <g transform={`rotate(-20 ${sx} ${gy})`}>
+        // Sloping up to the top right, the way it hangs off a strap.
+        <g transform={`rotate(20 ${sx} ${gy})`}>
           {/* Outline first as a fatter stroke of the same path — the run bends
               three times, and two stroked passes hold an even width where an
               outlined shape would pinch on curves that tight. */}
@@ -103,32 +106,34 @@ export default function Held({ item, armX }: { item: string; armX: number }) {
             strokeLinejoin="round"
           />
 
-          {/* Bell, flaring up and away off the end of the bow. */}
+          {/* Bell. Kept small against the body — on a tenor it's the short end
+              of the instrument, not the headline. */}
           <path
-            d={`M ${sx + 10} ${gy - 17} L ${sx + 27} ${gy - 17} L ${sx + 22} ${gy - 2}
-                L ${sx + 14} ${gy - 2} Z`}
+            d={`M ${sx + 9.5} ${gy - 10} L ${sx + 23} ${gy - 10} L ${sx + 19.5} ${gy + 3}
+                L ${sx + 12.5} ${gy + 3} Z`}
             fill={GOLD}
             {...s}
           />
-          <ellipse cx={sx + 18.5} cy={gy - 17} rx="8.5" ry="3.2" fill={LEMON} {...s} />
+          <ellipse cx={sx + 16.2} cy={gy - 10} rx="6.8" ry="2.8" fill={LEMON} {...s} />
 
-          {/* Mouthpiece, on the end of the crook and pointed at the head. */}
+          {/* Mouthpiece, on the end of the crook. */}
           <rect
-            x={sx - 16}
-            y={gy - 37}
+            x={sx - 11}
+            y={gy - 46}
             width="8"
             height="11"
             rx="2.5"
             fill={INK}
             {...s}
-            transform={`rotate(-22 ${sx - 12} ${gy - 32})`}
+            transform={`rotate(-18 ${sx - 7} ${gy - 41})`}
           />
 
           {/* Keys down the near side of the body. */}
           <g fill={INK} stroke="none">
-            <circle cx={sx + 5} cy={gy - 9} r="2" />
-            <circle cx={sx + 5} cy={gy - 2} r="2" />
-            <circle cx={sx + 5} cy={gy + 5} r="2" />
+            <circle cx={sx + 5} cy={gy - 15} r="2" />
+            <circle cx={sx + 5} cy={gy - 8} r="2" />
+            <circle cx={sx + 5} cy={gy - 1} r="2" />
+            <circle cx={sx + 5} cy={gy + 6} r="2" />
           </g>
         </g>
       );
@@ -169,7 +174,11 @@ export default function Held({ item, armX }: { item: string; armX: number }) {
       return (
         // Pulled inboard of `ox`: bell-first it needs 20px clear to the right,
         // and the widest pig's arm leaves nothing like that before the frame.
-        <g transform={`rotate(-12 ${ox} ${gy})`}>
+        // Scaled down about the hand rather than re-drawn: the anatomy was
+        // right, there was just too much of it against the pig.
+        <g
+          transform={`rotate(-12 ${ox} ${gy}) translate(${ox} ${gy}) scale(0.74) translate(${-ox} ${-gy})`}
+        >
           {/* The tubing as one run — mouthpiece, along the leadpipe, round the
               tuning slide at the far end and back. Without that return loop it
               is a cone on a stick, which is a megaphone. */}
@@ -208,7 +217,7 @@ export default function Held({ item, armX }: { item: string; armX: number }) {
           {/* Three valve casings with their buttons, which is the other half of
               what says trumpet. */}
           <g {...s} strokeWidth="1.8">
-            {[-16, -9, -2].map((dx) => (
+            {[-21, -14, -7].map((dx) => (
               <g key={dx}>
                 <rect x={ox + dx} y={gy - 13} width="5.5" height="13" rx="1.6" fill={GOLD} />
                 <circle cx={ox + dx + 2.75} cy={gy - 15} r="2.4" fill={STEEL} />
