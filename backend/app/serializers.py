@@ -97,6 +97,38 @@ def og_oink_counts(db: Session, user_ids: Sequence[str]) -> Dict[str, int]:
     return counts
 
 
+def og_reaction_counts(db: Session, user_ids: Sequence[str]) -> Dict[str, tuple]:
+    """Oinks and shames *other people* have left on the places each user put on
+    the map first.
+
+    This is the verdict of the group on someone's taste, which is a different
+    thing from how much they've logged: finding one place everyone loves counts
+    for more here than adding thirty nobody goes back to. The creator's own
+    reaction is excluded — adding a place auto-oinks it, so counting it would
+    hand everyone a free vote for themselves.
+    """
+    if not user_ids:
+        return {}
+    ids = list(user_ids)
+    rows = db.execute(
+        select(Restaurant.created_by, Reaction.type, func.count())
+        .join(Reaction, Reaction.restaurant_id == Restaurant.id)
+        .where(
+            Restaurant.created_by.in_(ids),
+            Reaction.user_id != Restaurant.created_by,
+        )
+        .group_by(Restaurant.created_by, Reaction.type)
+    ).all()
+
+    counts: Dict[str, tuple] = {uid: (0, 0) for uid in ids}
+    for uid, kind, n in rows:
+        if not uid:
+            continue
+        oinks, shames = counts.get(uid, (0, 0))
+        counts[uid] = (oinks + n, shames) if kind == "oink" else (oinks, shames + n)
+    return counts
+
+
 def places_logged_counts(db: Session, user_ids: Sequence[str]) -> Dict[str, int]:
     """Distinct places each user has logged — drives the pig fatness tier (spec §9.1)."""
     return {uid: a.places_logged for uid, a in user_activity(db, user_ids).items()}
@@ -116,6 +148,7 @@ def user_public(
     places_logged: int = 0,
     last_logged_at: Optional[datetime] = None,
     og_oinks: int = 0,
+    og_reactions: tuple = (0, 0),
 ) -> UserPublic:
     return UserPublic(
         id=user.id,
@@ -124,6 +157,8 @@ def user_public(
         pig_avatar_config=user.pig_avatar_config or {},
         places_logged=places_logged,
         og_oinks=og_oinks,
+        og_oinks_received=og_reactions[0],
+        og_shames_received=og_reactions[1],
         last_logged_at=last_logged_at,
     )
 

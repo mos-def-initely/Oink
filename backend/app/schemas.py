@@ -22,6 +22,11 @@ class UserPublic(BaseModel):
     # an OG oink is the moment somewhere entered the group's world — worth
     # counting even when somebody else later writes the place up.
     og_oinks: int = 0
+    # What the group made of those places: oinks and shames left by everyone
+    # else on the places this person put on the map. The pigsty's throne and its
+    # shame enclosure are decided on these two numbers.
+    og_oinks_received: int = 0
+    og_shames_received: int = 0
     # Last time they logged a place. The pig loses a tier per idle week, so the
     # client needs the timestamp rather than just the count (spec §9.1).
     last_logged_at: Optional[datetime] = None

@@ -13,6 +13,7 @@ from ..schemas import RestaurantSummary, UpdateMeRequest, UserPublic
 from ..serializers import (
     last_logged_map,
     og_oink_counts,
+    og_reaction_counts,
     places_logged_counts,
     restaurant_summaries,
     user_public,
@@ -81,8 +82,9 @@ def list_users(db: Session = Depends(get_db), viewer: User = Depends(get_current
     counts = places_logged_counts(db, ids)
     last = last_logged_map(db, ids)
     og = og_oink_counts(db, ids)
+    verdict = og_reaction_counts(db, ids)
     return [
-        user_public(u, counts.get(u.id, 0), last.get(u.id), og.get(u.id, 0))
+        user_public(u, counts.get(u.id, 0), last.get(u.id), og.get(u.id, 0), verdict.get(u.id, (0, 0)))
         for u in users
     ]
 

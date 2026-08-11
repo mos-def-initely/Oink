@@ -29,12 +29,16 @@ import PigAvatar from "@/components/pigs/PigAvatar";
 import BottomTabBar, { TabBarSpacer } from "@/components/BottomTabBar";
 import { Spinner } from "@/components/ui";
 import { TIER_LABELS, fatnessTier } from "@/lib/pig";
+import { Grave, GraveyardGround, ShameEnclosure, Throne } from "@/components/pigs/PigstyLandmarks";
 
 /** How much room one pig gets. The field is sized from the crowd rather than
  *  fixed, so five pigs aren't marooned in a paddock built for thirty. */
 const CELL_W = 132;
 const CELL_H = 150;
-const MIN_SCALE = 0.4;
+// The field is a good deal taller than it was — throne, crowd, enclosure and
+// graveyard stacked — so it has to be possible to pull back far enough to see
+// the lot in one go.
+const MIN_SCALE = 0.22;
 const MAX_SCALE = 1.6;
 
 function hash(str: string): number {
@@ -54,15 +58,42 @@ function hash(str: string): number {
  */
 const PETALS: [number, number][] = [[15.0, 10.0], [11.55, 14.76], [5.95, 12.94], [5.95, 7.06], [11.55, 5.24]];
 
-type Spot = { user: User; x: number; y: number };
-type Field = { spots: Spot[]; width: number; height: number };
+type Spot = { user: User; x: number; y: number; landmark?: "throne" | "shame" | "grave" };
+type Plot = { x: number; y: number; width: number; height: number };
+type Field = { spots: Spot[]; width: number; height: number; graveyard: Plot | null };
+
+/** Room above the crowd for the throne, below it for the enclosure, and below
+ *  that for the graveyard. */
+const THRONE_BAND = 320;
+const SHAME_BAND = 350;
+const GRAVE_COLS = 4;
+const GRAVE_W = 150;
+const GRAVE_H = 196;
+const GRAVE_PAD = 46;
+
+/**
+ * Whoever the group's verdict picks out, by the widest margin, for each end of
+ * it. Ties settle on the user id rather than on list order, so nobody is
+ * crowned and dethroned again by the next refresh coming back in a different
+ * sequence. A zero doesn't win anything: an empty sty has no king.
+ */
+function champion(users: User[], key: "og_oinks_received" | "og_shames_received"): User | null {
+  let top: User | null = null;
+  for (const u of users) {
+    const n = u[key] ?? 0;
+    if (n <= 0) continue;
+    const best = top ? top[key] ?? 0 : 0;
+    if (n > best || (n === best && top && u.id < top.id)) top = u;
+  }
+  return top;
+}
 
 /**
  * Lay the crowd out on a relaxed grid. Jitter is capped at 30% of a cell so two
  * pigs can never overlap however they're seeded — an earlier version let jitter
  * exceed the gap, which is what made them collide.
  */
-function layout(users: User[]): Field {
+function layout(users: User[]): { spots: Spot[]; width: number; height: number } {
   const n = Math.max(users.length, 1);
   const cols = Math.max(3, Math.ceil(Math.sqrt(n * 1.5)));
   const rows = Math.max(2, Math.ceil(n / cols));
@@ -159,7 +190,85 @@ export default function PigstyScreen({ initialUsers }: { initialUsers: User[] | 
     api.users().then(setUsers).catch(() => {});
   }, []);
 
-  const { spots, width: fieldW, height: fieldH } = useMemo(() => layout(users ?? []), [users]);
+  /**
+   * The field, with the throne's band above the crowd and the enclosure's
+   * below it. Both occupants come out of the grid — they're standing somewhere
+   * specific now, not on their usual patch of grass — but they stay in `spots`
+   * so search, selection and dimming keep working on them like anyone else.
+   */
+  const {
+    spots,
+    width: fieldW,
+    height: fieldH,
+    graveyard,
+  } = useMemo<Field>(() => {
+    const all = users ?? [];
+    const throned = champion(all, "og_oinks_received");
+    let shamed = champion(all, "og_shames_received");
+    // Nobody is crowned and caged at the same time. The throne wins: being the
+    // most oinked is the louder verdict.
+    if (shamed && throned && shamed.id === throned.id) shamed = null;
+
+    // Anyone who has starved all the way down the ladder is buried rather than
+    // stood about on the grass. Not permanent — one logged place digs them
+    // straight back out — which is why the stones say "here lies".
+    const buried = all.filter(
+      (u) =>
+        u.id !== throned?.id &&
+        u.id !== shamed?.id &&
+        fatnessTier(u.places_logged, u.last_logged_at) === "dead"
+    );
+    const dead = new Set(buried.map((u) => u.id));
+
+    const crowd = all.filter(
+      (u) => u.id !== throned?.id && u.id !== shamed?.id && !dead.has(u.id)
+    );
+    const base = layout(crowd);
+    const top = throned ? THRONE_BAND : 0;
+    const bottom = shamed ? SHAME_BAND : 0;
+
+    const graveCols = Math.min(GRAVE_COLS, Math.max(buried.length, 1));
+    const graveRows = Math.ceil(buried.length / GRAVE_COLS);
+    const plotW = graveCols * GRAVE_W + GRAVE_PAD * 2;
+    const plotH = graveRows * GRAVE_H + GRAVE_PAD * 2;
+    const graveBand = buried.length ? plotH + 60 : 0;
+
+    // The bands are wider than a couple of pigs, so a small sty still gives all
+    // of them room to stand in.
+    const width = Math.max(base.width, 460, plotW + 40);
+    const dx = (width - base.width) / 2;
+
+    const spots: Spot[] = base.spots.map((s) => ({ ...s, x: s.x + dx, y: s.y + top }));
+    if (throned) spots.push({ user: throned, x: width / 2, y: top / 2, landmark: "throne" });
+    if (shamed) {
+      spots.push({
+        user: shamed,
+        x: width / 2,
+        y: top + base.height + bottom / 2,
+        landmark: "shame",
+      });
+    }
+
+    let graveyard: Plot | null = null;
+    if (buried.length) {
+      const plotTop = top + base.height + bottom + 30;
+      graveyard = { x: (width - plotW) / 2, y: plotTop, width: plotW, height: plotH };
+      buried.forEach((user, i) => {
+        const col = i % GRAVE_COLS;
+        const row = Math.floor(i / GRAVE_COLS);
+        const inRow = Math.min(GRAVE_COLS, buried.length - row * GRAVE_COLS);
+        const rowW = inRow * GRAVE_W;
+        spots.push({
+          user,
+          x: (width - rowW) / 2 + col * GRAVE_W + GRAVE_W / 2,
+          y: plotTop + GRAVE_PAD + row * GRAVE_H + GRAVE_H / 2 + 14,
+          landmark: "grave",
+        });
+      });
+    }
+
+    return { spots, width, height: base.height + top + bottom + graveBand, graveyard };
+  }, [users]);
 
   const q = query.trim().toLowerCase();
   const matches = (u: User) =>
@@ -361,7 +470,14 @@ export default function PigstyScreen({ initialUsers }: { initialUsers: User[] | 
                   }}
                 />
 
-                {spots.map(({ user, x, y }) => {
+                {/* The plot the graves stand in, behind them. */}
+                {graveyard && (
+                  <div style={{ position: "absolute", left: graveyard.x, top: graveyard.y }}>
+                    <GraveyardGround width={graveyard.width} height={graveyard.height} />
+                  </div>
+                )}
+
+                {spots.map(({ user, x, y, landmark }) => {
                   const dim = !!q && !matches(user);
                   const isChosen = user.id === selected;
                   return (
@@ -372,19 +488,27 @@ export default function PigstyScreen({ initialUsers }: { initialUsers: User[] | 
                       style={{ left: x, top: y, opacity: dim ? 0.22 : 1, zIndex: isChosen ? 20 : 1 }}
                       aria-label={user.display_name}
                     >
-                      <span
-                        className="pig-bob block"
-                        style={{ animationDelay: `${-(hash(user.id) % 3000) / 1000}s` }}
-                      >
-                        <PigAvatar
-                          config={user.pig_avatar_config}
-                          placesLogged={user.places_logged}
-                          lastLoggedAt={user.last_logged_at}
-                          size={86}
-                          variant="full"
-                        />
-                      </span>
-                      {isChosen && (
+                      {landmark === "throne" ? (
+                        <Throne user={user} />
+                      ) : landmark === "shame" ? (
+                        <ShameEnclosure user={user} />
+                      ) : landmark === "grave" ? (
+                        <Grave user={user} />
+                      ) : (
+                        <span
+                          className="pig-bob block"
+                          style={{ animationDelay: `${-(hash(user.id) % 3000) / 1000}s` }}
+                        >
+                          <PigAvatar
+                            config={user.pig_avatar_config}
+                            placesLogged={user.places_logged}
+                            lastLoggedAt={user.last_logged_at}
+                            size={86}
+                            variant="full"
+                          />
+                        </span>
+                      )}
+                      {isChosen && !landmark && (
                         <span className="pointer-events-none absolute bottom-0 left-1/2 h-4 w-16 -translate-x-1/2 rounded-[50%] border-[3px] border-plum" />
                       )}
                     </button>

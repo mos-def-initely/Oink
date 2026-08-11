@@ -229,8 +229,8 @@ export const PIG_ACCESSORIES = ["none", "blush", "sunglasses"] as const;
  * is what stops long hair looking like a wig laid on the face.
  */
 export const PIG_HAIR = [
-  "none", "long", "short", "mohican",
-  "afro", "curly", "braids", "locs", "cornrows", "bun", "ponytail", "buzz",
+  "none", "short", "long", "bob", "mohican",
+  "afro", "curly", "braids", "locs", "bun", "ponytail", "buzz",
 ] as const;
 export type Hair = (typeof PIG_HAIR)[number];
 
@@ -238,12 +238,12 @@ export const HAIR_LABELS: Record<string, string> = {
   none: "none",
   long: "long",
   short: "short",
+  bob: "bob",
   mohican: "mohican",
   afro: "afro",
   curly: "curly",
   braids: "braids",
   locs: "locs",
-  cornrows: "cornrows",
   bun: "bun",
   ponytail: "ponytail",
   buzz: "buzz cut",

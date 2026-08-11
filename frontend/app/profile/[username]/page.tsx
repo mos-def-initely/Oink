@@ -387,6 +387,20 @@ function PigCustomiser({
           swatch={(v) => SPECIES_COLORS[cfg.species as Species][v].mid}
         />
         <Picker
+          label="hair"
+          options={[...PIG_HAIR]}
+          value={cfg.hair}
+          onChange={(v) => setCfg({ ...cfg, hair: v })}
+          format={(v) => HAIR_LABELS[v] ?? v}
+        />
+        <Picker
+          label="hair colour"
+          options={Object.keys(HAIR_COLORS)}
+          value={cfg.hairColor}
+          onChange={(v) => setCfg({ ...cfg, hairColor: v })}
+          swatch={(v) => HAIR_COLORS[v].mid}
+        />
+        <Picker
           label="costume"
           // Off the saved name rather than the field above it, so the suit
           // can't be unlocked by typing someone else's name into the box.
@@ -453,20 +467,6 @@ function PigCustomiser({
           options={[...PIG_ACCESSORIES]}
           value={cfg.accessory}
           onChange={(v) => setCfg({ ...cfg, accessory: v })}
-        />
-        <Picker
-          label="hair"
-          options={[...PIG_HAIR]}
-          value={cfg.hair}
-          onChange={(v) => setCfg({ ...cfg, hair: v })}
-          format={(v) => HAIR_LABELS[v] ?? v}
-        />
-        <Picker
-          label="hair colour"
-          options={Object.keys(HAIR_COLORS)}
-          value={cfg.hairColor}
-          onChange={(v) => setCfg({ ...cfg, hairColor: v })}
-          swatch={(v) => HAIR_COLORS[v].mid}
         />
         </Pages>
 

@@ -98,7 +98,11 @@ export default function PigAvatar({
   // Drawn in the same normalised head space as the costume headwear: the head
   // is an ellipse centred (65, 48), rx 27.5.
   const hair = hairParts(cfg.hair, cfg.hairColor, OUTLINE);
-  const faceHairT = "translate(60 62) scale(1.2727) translate(-65 -48)";
+  // Drawn a size down from the head it sits on. At parity the styles with any
+  // volume to them — the afro, the curls, anything long — stopped reading as
+  // the pig's hair and started reading as a hat the pig was under.
+  const HAIR_SCALE = 0.84;
+  const faceHairT = `translate(60 62) scale(${1.2727 * HAIR_SCALE}) translate(-65 -48)`;
   const blushScale = rosy ? 1.35 : 1;
   const blushAlpha = rosy ? 0.82 : 0.5;
 

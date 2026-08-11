@@ -75,21 +75,22 @@ export default function Held({ item, armX }: { item: string; armX: number }) {
         </g>
       );
 
-    // Pointed down and out, at rest. Level it needs 30-odd pixels of clear
-    // space to the right, which the fattest pig simply hasn't got.
+    // Barely tilted off level, so the slide reads for its full length. A steep
+    // angle foreshortens the one part that says "pistol" and leaves you looking
+    // at a grip.
     case "pistol":
       return (
-        <g {...s} transform={`rotate(55 ${gx} ${gy})`}>
-          <rect x={gx - 3} y={gy - 14} width="24" height="9" rx="2" fill={INK} />
-          <rect x={gx + 15} y={gy - 17} width="3.5" height="3.5" fill={INK} />
-          <path d={`M ${gx - 3} ${gy - 14} l -5 -4 l 0 4 Z`} fill={INK} />
-          <rect x={gx - 3} y={gy - 6} width="15" height="5" rx="1.5" fill={INK} />
+        <g {...s} transform={`rotate(22 ${gx} ${gy})`}>
+          <rect x={gx - 4} y={gy - 17} width="30" height="13" rx="2.5" fill={INK} />
+          <rect x={gx + 20} y={gy - 21} width="4" height="4" fill={INK} />
+          <path d={`M ${gx - 4} ${gy - 17} l -5 -4 l 0 4 Z`} fill={INK} />
+          <rect x={gx - 4} y={gy - 5} width="15" height="5" rx="1.5" fill={INK} />
           <path
-            d={`M ${gx - 3} ${gy - 5} L ${gx + 6} ${gy - 5} L ${gx + 3} ${gy + 14} L ${gx - 8} ${gy + 14} Z`}
+            d={`M ${gx - 4} ${gy - 4} L ${gx + 5} ${gy - 4} L ${gx + 3} ${gy + 9} L ${gx - 8} ${gy + 9} Z`}
             fill={INK}
           />
-          <path d={`M ${gx + 6} ${gy - 1} q 6 5 0.5 9 h -4.5`} fill="none" />
-          <circle cx={gx + 19} cy={gy - 9.5} r="1.7" fill={STEEL} stroke="none" />
+          <path d={`M ${gx + 5} ${gy} q 5 4 0.5 8 h -4.5`} fill="none" />
+          <circle cx={gx + 23} cy={gy - 10.5} r="2.1" fill={STEEL} stroke="none" />
         </g>
       );
 
@@ -126,51 +127,54 @@ export default function Held({ item, armX }: { item: string; armX: number }) {
         </g>
       );
 
-    // Up on its shaft and wide enough to actually shelter the pig, which means
-    // the canopy sits above the head and the shaft leans in to meet it.
+    // Straight up out of the hand, with the canopy wide enough — and hung far
+    // enough over — to actually keep the rain off the pig.
     case "umbrella":
       return (
         <g {...s}>
           <path
-            d={`M ${gx} ${gy + 9} q 0 6 -6 6`}
+            d={`M ${gx} ${gy + 10} q 0 6 -6 6`}
             fill="none"
             stroke={OUTLINE}
-            strokeWidth="6"
+            strokeWidth="6.5"
             strokeLinecap="round"
           />
           <path
-            d={`M ${gx} ${gy + 9} L 66 26`}
+            d={`M ${gx} ${gy + 10} L ${gx} 24`}
             stroke={OUTLINE}
-            strokeWidth="7"
+            strokeWidth="7.5"
             strokeLinecap="round"
             fill="none"
           />
           <path
-            d={`M ${gx} ${gy + 9} q 0 6 -6 6`}
+            d={`M ${gx} ${gy + 10} q 0 6 -6 6`}
             fill="none"
             stroke={INK}
             strokeWidth="3.2"
             strokeLinecap="round"
           />
           <path
-            d={`M ${gx} ${gy + 9} L 66 26`}
+            d={`M ${gx} ${gy + 10} L ${gx} 24`}
             stroke={INK}
             strokeWidth="3.8"
             strokeLinecap="round"
             fill="none"
           />
+          {/* Centred on the pig rather than on the shaft, since it's the pig
+              that's meant to stay dry. */}
           <path
-            d={`M 18 26 a 48 24 0 0 1 96 0
-                q -12 5 -19.2 0 q -7.2 5 -19.2 0 q -12 5 -19.2 0 q -7.2 5 -19.2 0
-                q -12 5 -19.2 0 Z`}
+            d={`M 12 26 a 53 25 0 0 1 106 0
+                q -13.25 5 -21.2 0 q -7.95 5 -21.2 0 q -13.25 5 -21.2 0
+                q -7.95 5 -21.2 0 q -13.25 5 -21.2 0 Z`}
             fill={PLUM}
           />
           <path
-            d="M 37 26 q 6 -19 29 -23 q 23 4 29 23"
+            d="M 44 26 q 6 -20 21 -24 q 15 4 21 24"
             fill="none"
             stroke={CREAM}
             strokeWidth="1.8"
           />
+          <path d={`M 65 2 v -2`} stroke={INK} strokeWidth="4" strokeLinecap="round" />
         </g>
       );
 

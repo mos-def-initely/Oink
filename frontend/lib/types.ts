@@ -12,6 +12,9 @@ export type User = {
   /** Places they were first to put on the map. Adding a place auto-oinks it, so
    *  an OG oink is the moment somewhere entered the group's world. */
   og_oinks?: number;
+  /** What everyone else made of the places this person put on the map first. */
+  og_oinks_received?: number;
+  og_shames_received?: number;
   /** ISO timestamp of their last logged place; null if they never have. */
   last_logged_at: string | null;
 };
