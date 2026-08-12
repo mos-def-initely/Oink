@@ -174,6 +174,31 @@ def upsert_reaction(
         select(Reaction).where(Reaction.restaurant_id == place.id, Reaction.user_id == viewer.id)
     ).scalar_one_or_none()
 
+    # Putting a place on the map is an endorsement — creating one auto-oinks it
+    # — so the person who found it can't turn round and shame it. Shame is what
+    # everyone else gets to say. Someone who has gone off their own find can
+    # delete the log; that's a different thing from condemning it.
+    if payload.type == "shame" and place.created_by == viewer.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You put this place on the map — you can't shame your own find.",
+        )
+
+    # A shame has to come with its reason. Checked on the way *into* a shame
+    # only, so clearing one still works, and so the shames already on record
+    # from before this rule aren't stranded.
+    if payload.type == "shame" and not (existing and existing.type == "shame"):
+        reason = db.execute(
+            select(Recommendation).where(
+                Recommendation.restaurant_id == place.id, Recommendation.user_id == viewer.id
+            )
+        ).scalar_one_or_none()
+        if not reason or not (reason.review_text or "").strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Say why you're shaming it — a shame with no reason helps nobody.",
+            )
+
     if existing:
         if existing.type == payload.type:
             # Tapping the active reaction again clears it — the buttons toggle.

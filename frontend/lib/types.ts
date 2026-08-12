@@ -49,6 +49,8 @@ export type PlaceSummary = {
   shamed_only: boolean;
   /** Whether you have been here: oinked, written it up, shamed it, or added it. */
   logged_by_me: boolean;
+  /** Whether you put this place on the map. You can't shame your own find. */
+  added_by_me: boolean;
 };
 
 export type Reply = {

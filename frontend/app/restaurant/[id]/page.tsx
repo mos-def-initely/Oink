@@ -28,6 +28,9 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
+  // Shaming asks why, and won't take no for an answer.
+  const [shameOpen, setShameOpen] = useState(false);
+  const [shameWhy, setShameWhy] = useState("");
   const [landedOnExisting, setLandedOnExisting] = useState(false);
 
   useEffect(() => {
@@ -136,16 +139,33 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
             <span className="text-sm">{place.my_reaction === "oink" ? "Oinked!" : "Oink"}</span>
           </button>
           <button
-            onClick={() => act(() => api.react(place.id, "shame"))}
-            disabled={busy}
+            onClick={() => {
+              // Clearing a shame needs no explanation; leaving one does.
+              if (place.my_reaction === "shame") {
+                act(() => api.react(place.id, "shame"));
+                return;
+              }
+              setShameWhy(place.my_recommendation?.review_text ?? "");
+              setShameOpen(true);
+            }}
+            disabled={busy || place.added_by_me}
+            title={
+              place.added_by_me ? "You put this place on the map — you can't shame your own find." : undefined
+            }
             className={`btn flex flex-col items-center gap-1 py-3.5 ${
               place.my_reaction === "shame" ? "bg-rust text-oat" : "bg-cream"
-            }`}
+            } ${place.added_by_me ? "opacity-40" : ""}`}
           >
             <ShamePig size={40} active={place.my_reaction === "shame"} />
             <span className="text-sm">{place.my_reaction === "shame" ? "Shamed" : "Shame"}</span>
           </button>
         </section>
+
+        {place.added_by_me && (
+          <p className="-mt-2 text-center text-xs text-ink-soft">
+            you put this one on the map — shame is everyone else&apos;s to give
+          </p>
+        )}
 
         {/* Who oinked, who shamed — two labelled groups (spec §6.4) */}
         <section className="grid gap-2.5">
@@ -168,7 +188,11 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
         )}
 
         <button onClick={() => setReviewOpen(true)} className="btn-primary w-full text-lg">
-          {place.my_recommendation ? "Edit your recommendation" : "Write a recommendation"}
+          {place.my_reaction === "shame"
+            ? "Edit why you shamed it"
+            : place.my_recommendation
+              ? "Edit your recommendation"
+              : "Write a recommendation"}
         </button>
 
         {error && <ErrorNote message={error} />}
@@ -260,6 +284,45 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
           onClose={() => setLightbox(null)}
         />
       )}
+
+      {/* Why. Compulsory: the write-up is the whole value of a shame, and it's
+          what the feed shows. Pre-filled from an existing review so shaming a
+          place you've already written up edits that rather than blanking it. */}
+      <Sheet
+        open={shameOpen}
+        onClose={() => setShameOpen(false)}
+        title={`why are you shaming ${place.name}?`}
+      >
+        <div className="space-y-3 pb-4">
+          <p className="text-sm text-ink-soft">
+            This is what everyone sees on the feed. Be specific — &ldquo;bad&rdquo; helps nobody
+            decide anything.
+          </p>
+          <textarea
+            className="field min-h-[130px] w-full"
+            value={shameWhy}
+            onChange={(e) => setShameWhy(e.target.value)}
+            placeholder="cold, slow, and £14 for a flat white…"
+            autoFocus
+          />
+          <button
+            onClick={async () => {
+              const why = shameWhy.trim();
+              if (!why) return;
+              await act(async () => {
+                // Reason first: the API refuses a shame that hasn't got one.
+                await api.recommend(place.id, why, []);
+                return api.react(place.id, "shame");
+              });
+              setShameOpen(false);
+            }}
+            disabled={busy || !shameWhy.trim()}
+            className="btn-primary w-full text-lg disabled:opacity-50"
+          >
+            {busy ? "…" : "Shame it"}
+          </button>
+        </div>
+      </Sheet>
 
       <TabBarSpacer />
       <BottomTabBar />

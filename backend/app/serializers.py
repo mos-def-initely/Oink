@@ -319,6 +319,7 @@ def restaurant_summary(
         shame_count=shame_count,
         shamed_only=bool(shame_count) and not recommenders,
         logged_by_me=logged_by_me,
+        added_by_me=bool(viewer_id) and ctx.creators.get(restaurant.id) == viewer_id,
     )
 
 

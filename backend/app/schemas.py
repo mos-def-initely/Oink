@@ -146,6 +146,9 @@ class RestaurantSummary(BaseModel):
     # it on the map. Lets the map separate the places you know from the ones you
     # don't (spec §6.3).
     logged_by_me: bool = False
+    # Whether the viewer put this place on the map. Adding is an endorsement, so
+    # they can't then shame it — shame is what everyone else gets to say.
+    added_by_me: bool = False
 
 
 class RecommendationOut(BaseModel):
