@@ -160,6 +160,7 @@ def user_public(
         og_oinks_received=og_reactions[0],
         og_shames_received=og_reactions[1],
         last_logged_at=last_logged_at,
+        joined_at=user.created_at,
     )
 
 

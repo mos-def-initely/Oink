@@ -29,6 +29,7 @@ import PigAvatar from "@/components/pigs/PigAvatar";
 import BottomTabBar, { TabBarSpacer } from "@/components/BottomTabBar";
 import { Spinner } from "@/components/ui";
 import { TIER_LABELS, fatnessTier } from "@/lib/pig";
+import PigsOfTheSty from "@/components/PigsOfTheSty";
 import {
   Grave,
   GraveyardGround,
@@ -182,6 +183,7 @@ export default function PigstyScreen({ initialUsers }: { initialUsers: User[] | 
   const [users, setUsers] = useState<User[] | null>(initialUsers);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
+  const [rosterOpen, setRosterOpen] = useState(false);
   const [scale, setScale] = useState(0.7);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const framed = useRef(false);
@@ -484,6 +486,15 @@ export default function PigstyScreen({ initialUsers }: { initialUsers: User[] | 
             </button>
           )}
         </label>
+
+        {/* The field is for wandering; this is for reading the numbers off. */}
+        <button
+          onClick={() => setRosterOpen(true)}
+          className="btn-plain mt-2 w-full py-2 text-sm"
+          disabled={!users?.length}
+        >
+          The pigs of the sty
+        </button>
       </header>
 
       <main className="mx-auto max-w-[1400px] px-3">
@@ -627,6 +638,8 @@ export default function PigstyScreen({ initialUsers }: { initialUsers: User[] | 
           </>
         )}
       </main>
+
+      <PigsOfTheSty open={rosterOpen} onClose={() => setRosterOpen(false)} users={users ?? []} />
 
       <TabBarSpacer />
       <BottomTabBar />

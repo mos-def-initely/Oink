@@ -30,6 +30,8 @@ class UserPublic(BaseModel):
     # Last time they logged a place. The pig loses a tier per idle week, so the
     # client needs the timestamp rather than just the count (spec §9.1).
     last_logged_at: Optional[datetime] = None
+    # When they turned up. The pigsty's roster sorts on it.
+    joined_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
 

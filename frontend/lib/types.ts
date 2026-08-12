@@ -15,6 +15,8 @@ export type User = {
   /** What everyone else made of the places this person put on the map first. */
   og_oinks_received?: number;
   og_shames_received?: number;
+  /** When they joined — the pigsty roster sorts on it. */
+  joined_at?: string | null;
   /** ISO timestamp of their last logged place; null if they never have. */
   last_logged_at: string | null;
 };
