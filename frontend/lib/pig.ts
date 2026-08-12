@@ -343,7 +343,7 @@ export const PIG_COMPANIONS = ["none", "truffle"] as const;
 export const PIG_HELD = [
   "none", "knife", "guitar", "sax", "trumpet", "briefcase", "pistol", "wine", "pint", "whisky",
   "coffee", "rollingpin", "pan", "baguette", "umbrella", "balloon",
-  "bouquet", "camera", "trophy",
+  "bouquet", "camera", "trophy", "joint", "crackpipe", "bacon",
 ] as const;
 export type Held = (typeof PIG_HELD)[number];
 
@@ -367,6 +367,9 @@ export const HELD_LABELS: Record<string, string> = {
   bouquet: "bouquet",
   camera: "camera",
   trophy: "trophy",
+  joint: "joint",
+  crackpipe: "crack pipe",
+  bacon: "bacon",
 };
 export type Companion = (typeof PIG_COMPANIONS)[number];
 

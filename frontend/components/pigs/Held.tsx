@@ -39,6 +39,10 @@ const GLASS = "#3F5C36";
 const SILVER = "#C6C5BF";
 const SILVER_DARK = "#8D8C85";
 const CASH = "#8FAE79";
+const EMBER = "#D2542B";
+const GLASSY = "#E7ECE6";
+const BACON = "#C4614F";
+const FAT = "#F2DCCB";
 const WINE = "#7C3242";
 
 export default function Held({ item, armX }: { item: string; armX: number }) {
@@ -322,6 +326,68 @@ export default function Held({ item, armX }: { item: string; armX: number }) {
           />
         </g>
       );
+
+    // Cocked outboard rather than in. Everything long that leans toward the
+    // head runs into it on the narrower pigs, and a lit end is the last thing
+    // that wants to be up against a snout.
+    case "joint": {
+      const jx = ox - 3;
+      return (
+        <g {...s} transform={`rotate(20 ${jx} ${gy})`}>
+          <rect x={jx - 4.5} y={gy - 30} width="9" height="38" rx="4.5" fill={CREAM} />
+          {/* Ash, then the ember under it. */}
+          <path d={`M ${jx - 4.5} ${gy - 27} h 9 v -5 q -4.5 -3 -9 0 Z`} fill={STEEL} />
+          <ellipse cx={jx} cy={gy - 31} rx="4.5" ry="2.6" fill={EMBER} />
+          <path
+            d={`M ${jx + 1} ${gy - 37} q 7 -5 1 -10`}
+            fill="none"
+            stroke={OUTLINE}
+            strokeWidth="2"
+            strokeLinecap="round"
+            opacity="0.55"
+          />
+        </g>
+      );
+    }
+
+    case "crackpipe": {
+      const px = ox - 8;
+      return (
+        <g {...s} transform={`rotate(-8 ${px} ${gy})`}>
+          <rect x={px - 20} y={gy - 3.2} width="26" height="6.4" rx="3.2" fill={GLASSY} />
+          <circle cx={px + 12} cy={gy} r="8.5" fill={GLASSY} />
+          <ellipse cx={px + 12} cy={gy + 3.5} rx="4" ry="2.4" fill={STEEL} stroke="none" />
+          <path d={`M ${px + 9} ${gy - 5} q 3 -2 6 0`} stroke={CREAM} strokeWidth="1.6" fill="none" />
+        </g>
+      );
+    }
+
+    // Two rashers, streaked. The one object here the pig might have opinions
+    // about.
+    case "bacon": {
+      const bx = ox - 4;
+      const rasher = (dx: number, dy: number) =>
+        `M ${bx - 13 + dx} ${gy - 8 + dy} q 6.5 -6 13 0 q 6.5 6 13 0
+         l 0 8 q -6.5 6 -13 0 q -6.5 -6 -13 0 Z`;
+      return (
+        <g {...s}>
+          {[
+            [0, 0],
+            [2, 9],
+          ].map(([dx, dy], i) => (
+            <g key={i}>
+              <path d={rasher(dx, dy)} fill={BACON} />
+              <path
+                d={`M ${bx - 13 + dx} ${gy - 4 + dy} q 6.5 -6 13 0 q 6.5 6 13 0`}
+                fill="none"
+                stroke={FAT}
+                strokeWidth="2.6"
+              />
+            </g>
+          ))}
+        </g>
+      );
+    }
 
     // Held a little tighter in and a little higher than the rest of the
     // outboard set — a glass is carried up at the chest, not swung at arm's
