@@ -487,6 +487,13 @@ export type Budget = "$" | "$$" | "$$$" | "$$$$";
 
 export const BUDGETS: Budget[] = ["$", "$$", "$$$", "$$$$"];
 
+/**
+ * How a budget is written. The values themselves stay as dollars — they're the
+ * stored column and a literal in the API — so this is the one place that turns
+ * them into the currency people here actually spend.
+ */
+export const budgetSymbol = (budget: Budget): string => "\u00A3".repeat(budget.length);
+
 export const BUDGET_LABELS: Record<Budget, string> = {
   $: "Peasant",
   $$: "Casual",

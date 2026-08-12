@@ -54,6 +54,9 @@ type Props = {
   onSelect: (place: PlaceSummary) => void;
   /** Fires as the map settles, so search can be biased to the visible area. */
   onCenterChange?: (lat: number, lng: number) => void;
+  /** Also as it settles: what's actually on screen, so the list can show only
+   *  the places you're looking at rather than every pin in the country. */
+  onBoundsChange?: (b: { minLat: number; minLng: number; maxLat: number; maxLng: number }) => void;
   /** Set to move the map somewhere — a city picked from search. */
   focusPoint?: { lat: number; lng: number } | null;
   /** Enables tap-to-drop-a-pin while adding a new place. */
@@ -216,6 +219,7 @@ export default function MapView({
   places,
   onSelect,
   onCenterChange,
+  onBoundsChange,
   focusPoint,
   pickMode = false,
   onPick,
@@ -241,6 +245,8 @@ export default function MapView({
   // Kept in a ref so the click handler, bound once, always sees current values.
   const centerCb = useRef(onCenterChange);
   centerCb.current = onCenterChange;
+  const boundsCb = useRef(onBoundsChange);
+  boundsCb.current = onBoundsChange;
   const pickHandlers = useRef({ pickMode, onPick });
   pickHandlers.current = { pickMode, onPick };
 
@@ -271,6 +277,13 @@ export default function MapView({
       const report = () => {
         const c = map.getCenter();
         centerCb.current?.(c.lat, c.lng);
+        const b = map.getBounds();
+        boundsCb.current?.({
+          minLat: b.getSouth(),
+          minLng: b.getWest(),
+          maxLat: b.getNorth(),
+          maxLng: b.getEast(),
+        });
       };
       map.on("moveend", report);
       report();

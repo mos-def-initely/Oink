@@ -24,7 +24,7 @@
  * family reads as one hand.
  */
 import { useId } from "react";
-import { BUDGET_LABELS, Budget } from "@/lib/pig";
+import { budgetSymbol, BUDGET_LABELS, Budget } from "@/lib/pig";
 
 const OUTLINE = "#8A5460";
 const EYE = "#43262F";
@@ -222,7 +222,7 @@ export function BudgetTag({ budget, size = 28 }: { budget: Budget; size?: number
   return (
     <span className="inline-flex items-center gap-1 whitespace-nowrap">
       <PricePig budget={budget} size={size} />
-      <span className="font-display text-sm font-bold leading-none">{budget}</span>
+      <span className="font-display text-sm font-bold leading-none">{budgetSymbol(budget)}</span>
     </span>
   );
 }

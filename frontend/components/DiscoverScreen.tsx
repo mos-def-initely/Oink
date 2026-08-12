@@ -67,6 +67,15 @@ export default function DiscoverScreen({ initialPlaces }: { initialPlaces: Place
    * you're actually asking when you open the map in a part of town you know.
    */
   const [visited, setVisited] = useState<"all" | "mine" | "new">("all");
+  /** What the map is currently showing. The list is scoped to it — a list of
+   *  every pin in the country is a directory, not a view of where you are. */
+  const [bounds, setBounds] = useState<{
+    minLat: number;
+    minLng: number;
+    maxLat: number;
+    maxLng: number;
+  } | null>(null);
+  const [sort, setSort] = useState<"newest" | "oinks" | "cheap" | "pricey">("newest");
   const [kinds, setKinds] = useState<Kind[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
@@ -99,6 +108,36 @@ export default function DiscoverScreen({ initialPlaces }: { initialPlaces: Place
       return true;
     });
   }, [places, visited, kinds, budgets, categories]);
+
+  /**
+   * The list: the filtered set narrowed to what's on the map, then sorted.
+   *
+   * Kept separate from `filtered` because the map wants every match — a pin
+   * outside the viewport is simply off screen, and culling those would empty
+   * the map as you panned toward them.
+   */
+  const listed = useMemo(() => {
+    const inView = bounds
+      ? filtered.filter(
+          (p) =>
+            p.lat >= bounds.minLat &&
+            p.lat <= bounds.maxLat &&
+            p.lng >= bounds.minLng &&
+            p.lng <= bounds.maxLng
+        )
+      : filtered;
+    if (sort === "newest") return inView;
+
+    const price = (p: PlaceSummary) => BUDGETS.indexOf(p.budget);
+    // Sorted copies, and every comparator falls back to the name so a page of
+    // one-oink places doesn't reshuffle itself on every re-render.
+    const byName = (a: PlaceSummary, b: PlaceSummary) => a.name.localeCompare(b.name);
+    return [...inView].sort((a, b) => {
+      if (sort === "oinks") return b.recommender_count - a.recommender_count || byName(a, b);
+      if (sort === "cheap") return price(a) - price(b) || byName(a, b);
+      return price(b) - price(a) || byName(a, b);
+    });
+  }, [filtered, bounds, sort]);
 
   const ALL_KINDS: Kind[] = useMemo(() => ["restaurant", "bar", "cafe"], []);
 
@@ -277,6 +316,7 @@ export default function DiscoverScreen({ initialPlaces }: { initialPlaces: Place
               places={filtered}
               onSelect={setSelected}
               onCenterChange={(lat, lng) => setMapCenter({ lat, lng })}
+              onBoundsChange={setBounds}
               focusPoint={focusPoint}
               pickMode={pickMode}
               pickedPoint={pickedPoint}
@@ -297,10 +337,38 @@ export default function DiscoverScreen({ initialPlaces }: { initialPlaces: Place
                           view === "list" ? "" : "hidden"
                         }`}
           >
-            {filtered.length === 0 && (
-              <EmptyState title="nothing matches" body="loosen the filters a bit." />
+            {/* Sticky, so the sort stays reachable however far down you are. */}
+            <div className="sticky top-0 z-10 -mx-3 flex items-center gap-2 bg-oat px-3 pb-2 pt-1">
+              <p className="micro flex-1">
+                {listed.length} {listed.length === 1 ? "place" : "places"} in view
+              </p>
+              <label className="flex items-center gap-1.5">
+                <span className="micro">sort</span>
+                <select
+                  value={sort}
+                  onChange={(e) => setSort(e.target.value as typeof sort)}
+                  className="rounded-lg border-2 border-ink bg-cream px-2 py-1 font-display text-xs font-bold"
+                  aria-label="sort the list"
+                >
+                  <option value="newest">Newest</option>
+                  <option value="oinks">Most oinks</option>
+                  <option value="cheap">Cheapest</option>
+                  <option value="pricey">Priciest</option>
+                </select>
+              </label>
+            </div>
+
+            {listed.length === 0 && (
+              <EmptyState
+                title="nothing here"
+                body={
+                  filtered.length
+                    ? "no matches in this part of the map — pan out, or move the map."
+                    : "loosen the filters a bit."
+                }
+              />
             )}
-            {filtered.map((p) => (
+            {listed.map((p) => (
               <PlaceListCard key={p.id} place={p} />
             ))}
           </div>
