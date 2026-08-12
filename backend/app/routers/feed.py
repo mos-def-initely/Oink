@@ -50,27 +50,51 @@ def get_feed(
     entries += [(a.created_at, a.type, a) for a in reactions]
 
     # One card per person per place. Adding a place auto-oinks it, so writing a
-    # review would otherwise post twice about the same visit. The review wins —
-    # it says everything the oink does and more — but it carries the newer of
-    # the two timestamps so it sits where the person's latest activity belongs.
+    # review would otherwise post twice about the same visit. Each entry keeps
+    # the newer of the timestamps it absorbs, so the card sits where that
+    # person's latest activity belongs.
+    #
+    # Which activity survives:
+    #
+    #   shame beats everything. Writing a place up and then shaming it is one
+    #   verdict and the verdict is the shame — the review is the reason for it,
+    #   not an endorsement. Ranking the review first is what had the feed
+    #   announcing that somebody recommended a place they'd just condemned.
+    #
+    #   review beats an oink, which is the auto-oink from adding the place: it
+    #   says everything the oink does and more.
+    #
+    # `rec` travels alongside whatever wins, so a shame still carries the
+    # write-up, the dishes and the photos. Losing those would be the other half
+    # of the same bug — the app asks people to say why they shamed something,
+    # and then the feed would drop the answer.
     best: dict = {}
     for timestamp, activity, row in entries:
         key = (row.user_id, row.restaurant_id)
+        rec = row if activity == "recommendation" else None
         current = best.get(key)
         if current is None:
-            best[key] = (timestamp, activity, row)
+            best[key] = (timestamp, activity, row, rec)
             continue
-        current_ts, current_activity, _ = current
+
+        current_ts, current_activity, current_row, current_rec = current
         newest = max(naive_dt(timestamp), naive_dt(current_ts))
-        if current_activity == "recommendation":
-            best[key] = (newest, current_activity, current[2])
+        rec = rec or current_rec
+
+        if "shame" in (activity, current_activity):
+            winner = current_row if current_activity == "shame" else row
+            best[key] = (newest, "shame", winner, rec)
+        elif current_activity == "recommendation":
+            best[key] = (newest, current_activity, current_row, rec)
         elif activity == "recommendation":
-            best[key] = (newest, activity, row)
+            best[key] = (newest, activity, row, rec)
         else:
             # Two reactions on one place can't both exist — one per user per
             # place — but keep the newer if the data ever says otherwise.
             best[key] = (
-                current if naive_dt(current_ts) >= naive_dt(timestamp) else (timestamp, activity, row)
+                current
+                if naive_dt(current_ts) >= naive_dt(timestamp)
+                else (timestamp, activity, row, rec)
             )
 
     entries = sorted(best.values(), key=lambda e: naive_dt(e[0]), reverse=True)
@@ -78,8 +102,8 @@ def get_feed(
     if not page:
         return []
 
-    place_ids = {row.restaurant_id for _, _, row in page}
-    user_ids = {row.user_id for _, _, row in page}
+    place_ids = {row.restaurant_id for _, _, row, _ in page}
+    user_ids = {row.user_id for _, _, row, _ in page}
 
     places = {
         p.id: p for p in db.execute(select(Restaurant).where(Restaurant.id.in_(place_ids))).scalars().all()
@@ -101,7 +125,7 @@ def get_feed(
         )
 
     # One query for the replies on this page's reviews, then grouped by review.
-    rec_ids = [row.id for _, activity, row in page if activity == "recommendation"]
+    rec_ids = [rec.id for _, _, _, rec in page if rec is not None]
     replies_by_rec: Dict[str, List[str]] = {}
     reply_users: Dict[str, User] = {}
     if rec_ids:
@@ -127,7 +151,7 @@ def get_feed(
             last_logged.update(last_logged_map(db, missing))
 
     items: List[FeedItem] = []
-    for timestamp, activity, row in page:
+    for timestamp, activity, row, rec in page:
         place = places.get(row.restaurant_id)
         actor = users.get(row.user_id)
         if not place or not actor:
@@ -138,11 +162,11 @@ def get_feed(
         item_images: List[ImageOut] = []
         repliers: List[str] = []
         reply_count = 0
-        if activity == "recommendation":
-            review_text = row.review_text
-            dishes = row.recommended_dishes or []
+        if rec is not None:
+            review_text = rec.review_text
+            dishes = rec.recommended_dishes or []
             item_images = images_by_place_user.get((place.id, actor.id), [])
-            thread = replies_by_rec.get(row.id, [])
+            thread = replies_by_rec.get(rec.id, [])
             reply_count = len(thread)
             # Distinct people, first-reply order — three faces is all the strip
             # shows, and the same person twice tells you nothing.

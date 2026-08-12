@@ -5,8 +5,12 @@
  *
  * Two shapes, because a reaction isn't a small review:
  *
- *   recommendation  a card — thumbnail beside the review text and dish tags
- *   oink / shame    a row — who, the place, the meta, the time. No thumbnail.
+ *   anything written  a card — thumbnail beside the review text and dish tags
+ *   a bare reaction   a row — who, the place, the meta, the time. No thumbnail.
+ *
+ * The split is on whether there's something to read, not on the activity: a
+ * shame written up is a full card carrying its reasons, with a rust "shames"
+ * sticker where the review card says "recommends".
  *
  * The row carries **no thumbnail on purpose**. Most places reached only by a
  * reaction have no photo, so the tile was the generated letter placeholder far
@@ -40,7 +44,11 @@ export default function ActivityCard({
   item: FeedItem;
   agreed?: User[];
 }) {
-  return item.activity === "recommendation" ? (
+  // A shame with a write-up is a write-up: it has text, dishes and photos, and
+  // the row shape would throw all three away. What changes is the verdict on
+  // it, not the shape of the card.
+  const written = item.activity === "recommendation" || !!item.review_text;
+  return written ? (
     <ReviewCard item={item} agreed={agreed} />
   ) : (
     <ReactionRow item={item} agreed={agreed} />
@@ -76,6 +84,7 @@ function Agreement({ agreed }: { agreed: User[] }) {
 /** Someone wrote something — the full card. */
 function ReviewCard({ item, agreed }: { item: FeedItem; agreed: User[] }) {
   const place = item.restaurant;
+  const shamed = item.activity === "shame";
 
   return (
     <article className="card overflow-hidden">
@@ -98,7 +107,9 @@ function ReviewCard({ item, agreed }: { item: FeedItem; agreed: User[] }) {
           </Link>
           <p className="micro">{timeAgo(item.created_at)}</p>
         </div>
-        <span className="sticker bg-lemon text-ink-deep">recommends</span>
+        <span className={`sticker ${shamed ? "bg-rust text-oat" : "bg-lemon text-ink-deep"}`}>
+          {shamed ? "shamed" : "recommends"}
+        </span>
       </div>
 
       <div className="rule-dashed mx-3" />
@@ -127,7 +138,7 @@ function ReviewCard({ item, agreed }: { item: FeedItem; agreed: User[] }) {
           {item.review_text && (
             <p className="mt-1.5 line-clamp-3 text-sm leading-snug">{item.review_text}</p>
           )}
-          {item.recommended_dishes.length > 0 && (
+          {!shamed && item.recommended_dishes.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1.5">
               {item.recommended_dishes.slice(0, 3).map((dish) => (
                 <span key={dish} className="dish-tag">{dish}</span>
