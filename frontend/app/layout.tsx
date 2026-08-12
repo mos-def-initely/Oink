@@ -31,8 +31,14 @@ export const metadata: Metadata = {
   applicationName: "Oink",
   appleWebApp: { capable: true, title: "Oink", statusBarStyle: "default" },
   icons: {
-    icon: [{ url: "/icon-192.png", sizes: "192x192", type: "image/png" }],
-    apple: [{ url: "/icon-192.png", sizes: "192x192", type: "image/png" }],
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    // iOS ignores the manifest's icons entirely and uses this. 180 is the size
+    // it actually asks for, and it lives at the conventional path as well, so
+    // it's still found if the tag is ever missed.
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
 };
 

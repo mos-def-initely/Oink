@@ -38,5 +38,15 @@ export const config = {
   // Vercel services can't host Edge Functions, and middleware defaults to the
   // Edge runtime. This gate needs no Edge-specific behaviour, so run it on Node.
   runtime: "nodejs",
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  // Static files are exempt, not just the ones under _next.
+  //
+  // This gate used to catch /icon-192.png and /manifest.webmanifest and answer
+  // both with a 307 to /sign-in. Adding the app to a home screen is exactly the
+  // case that breaks on: the OS fetches the icon and the manifest itself, in a
+  // context that carries no session cookie, so it got HTML where it wanted a
+  // PNG and fell back to a screenshot of the page. Nothing in public/ is
+  // private, and none of it is worth gating.
+  matcher: [
+    "/((?!_next/static|_next/image|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|webmanifest|txt|xml)$).*)",
+  ],
 };
