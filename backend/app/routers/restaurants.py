@@ -71,7 +71,7 @@ def list_restaurants(
         wanted = {c.lower() for c in category}
         rows = [r for r in rows if wanted & {c.lower() for c in (r.category or [])}]
 
-    return restaurant_summaries(db, rows)
+    return restaurant_summaries(db, rows, viewer.id)
 
 
 def _attach_photo(restaurant_id: str, name: str, city: Optional[str], lat: float, lng: float) -> None:

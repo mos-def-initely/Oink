@@ -157,7 +157,7 @@ def get_feed(
                 id=row.id,
                 activity=activity,
                 user=user_public(actor, logged_counts.get(actor.id, 0), last_logged.get(actor.id)),
-                restaurant=restaurant_summary(place, ctx),
+                restaurant=restaurant_summary(place, ctx, viewer.id),
                 review_text=review_text,
                 recommended_dishes=dishes,
                 images=item_images,

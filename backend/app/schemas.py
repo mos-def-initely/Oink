@@ -140,6 +140,10 @@ class RestaurantSummary(BaseModel):
     shame_count: int
     # True when the only signal on this place is shame — pin renders greyed out
     shamed_only: bool
+    # Whether the viewer has been here: oinked, written it up, shamed it, or put
+    # it on the map. Lets the map separate the places you know from the ones you
+    # don't (spec §6.3).
+    logged_by_me: bool = False
 
 
 class RecommendationOut(BaseModel):

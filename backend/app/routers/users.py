@@ -66,7 +66,7 @@ def my_wishlist(db: Session = Depends(get_db), viewer: User = Depends(get_curren
         .scalars()
         .all()
     )
-    return restaurant_summaries(db, rows)
+    return restaurant_summaries(db, rows, viewer.id)
 
 
 @router.get("", response_model=List[UserPublic])
@@ -137,4 +137,4 @@ def user_recommendations(
         .scalars()
         .all()
     )
-    return restaurant_summaries(db, rows)
+    return restaurant_summaries(db, rows, viewer.id)

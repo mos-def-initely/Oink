@@ -45,6 +45,8 @@ export type PlaceSummary = {
   shamers: User[];
   shame_count: number;
   shamed_only: boolean;
+  /** Whether you have been here: oinked, written it up, shamed it, or added it. */
+  logged_by_me: boolean;
 };
 
 export type Reply = {

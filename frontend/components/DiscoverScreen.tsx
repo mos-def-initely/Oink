@@ -61,6 +61,12 @@ export default function DiscoverScreen({ initialPlaces }: { initialPlaces: Place
   const [cityError, setCityError] = useState<string | null>(null);
   const [focusPoint, setFocusPoint] = useState<{ lat: number; lng: number } | null>(null);
 
+  /**
+   * Been / not been. The map's other filters narrow what kind of place you're
+   * looking at; this one narrows it by your own history, which is the question
+   * you're actually asking when you open the map in a part of town you know.
+   */
+  const [visited, setVisited] = useState<"all" | "mine" | "new">("all");
   const [kinds, setKinds] = useState<Kind[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
@@ -82,6 +88,8 @@ export default function DiscoverScreen({ initialPlaces }: { initialPlaces: Place
   const filtered = useMemo(() => {
     if (!places) return [];
     return places.filter((p) => {
+      if (visited === "mine" && !p.logged_by_me) return false;
+      if (visited === "new" && p.logged_by_me) return false;
       if (kinds.length && !kinds.includes(p.kind)) return false;
       if (budgets.length && !budgets.includes(p.budget)) return false;
       if (categories.length) {
@@ -90,7 +98,7 @@ export default function DiscoverScreen({ initialPlaces }: { initialPlaces: Place
       }
       return true;
     });
-  }, [places, kinds, budgets, categories]);
+  }, [places, visited, kinds, budgets, categories]);
 
   const ALL_KINDS: Kind[] = useMemo(() => ["restaurant", "bar", "cafe"], []);
 
@@ -126,7 +134,8 @@ export default function DiscoverScreen({ initialPlaces }: { initialPlaces: Place
     return [...merged.values()].sort((a, b) => a.localeCompare(b));
   }, [categoriesByKind, kinds, ALL_KINDS]);
 
-  const activeFilters = kinds.length + budgets.length + categories.length;
+  const activeFilters =
+    kinds.length + budgets.length + categories.length + (visited === "all" ? 0 : 1);
 
   function toggle<T>(list: T[], setList: (v: T[]) => void, value: T) {
     setList(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
@@ -367,6 +376,30 @@ export default function DiscoverScreen({ initialPlaces }: { initialPlaces: Place
       <Sheet open={filtersOpen} onClose={() => setFiltersOpen(false)} title="filters">
         <div className="space-y-4 pb-4">
           <section>
+            <p className="mb-1.5 font-display text-sm font-bold">been here?</p>
+            <div className="flex gap-2">
+              {(
+                [
+                  ["all", "Everywhere"],
+                  ["mine", "Places I've been"],
+                  ["new", "New to me"],
+                ] as const
+              ).map(([value, label]) => (
+                <button
+                  key={value}
+                  onClick={() => setVisited(value)}
+                  className={`btn flex-1 text-xs ${
+                    visited === value ? "bg-plum text-oat" : "bg-cream"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <p className="micro mt-1.5">oinked, written up, shamed or added all count</p>
+          </section>
+
+          <section>
             <p className="mb-1.5 font-display text-sm font-bold">type</p>
             <div className="flex gap-2">
               {(["restaurant", "bar", "cafe"] as Kind[]).map((k) => (
@@ -445,6 +478,7 @@ export default function DiscoverScreen({ initialPlaces }: { initialPlaces: Place
           <div className="flex gap-2">
             <button
               onClick={() => {
+                setVisited("all");
                 setKinds([]);
                 setBudgets([]);
                 setCategories([]);

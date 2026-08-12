@@ -178,6 +178,7 @@ class RestaurantContext:
         self.users: Dict[str, User] = {}
         self.logged_counts: Dict[str, int] = {}
         self.last_logged: Dict[str, datetime] = {}
+        self.creators: Dict[str, Optional[str]] = {}
 
         if not self.ids:
             return
@@ -197,6 +198,7 @@ class RestaurantContext:
                 select(Restaurant.id, Restaurant.created_by).where(Restaurant.id.in_(self.ids))
             ).all()
         )
+        self.creators = creators
 
         # When each person first endorsed each place, so the order below is
         # "who backed this first" rather than whatever order the rows came back in.
@@ -280,10 +282,21 @@ def maps_url(restaurant: Restaurant) -> Optional[str]:
     return None
 
 
-def restaurant_summary(restaurant: Restaurant, ctx: RestaurantContext) -> RestaurantSummary:
+def restaurant_summary(
+    restaurant: Restaurant, ctx: RestaurantContext, viewer_id: Optional[str] = None
+) -> RestaurantSummary:
     recommenders = ctx.recommenders(restaurant.id)
     shamers = ctx.shamers(restaurant.id)
     shame_count = len(ctx.shame_ids.get(restaurant.id, []))
+    # Everything that counts as having been here: an oink, a write-up, a shame,
+    # or having put the place on the map in the first place. `recommender_ids`
+    # already folds oinks in with write-ups, so the three sets below are the
+    # whole of it. Drives the map's "been / not been" filter.
+    logged_by_me = bool(viewer_id) and (
+        viewer_id in ctx.recommender_ids.get(restaurant.id, [])
+        or viewer_id in ctx.shame_ids.get(restaurant.id, [])
+        or ctx.creators.get(restaurant.id) == viewer_id
+    )
     return RestaurantSummary(
         id=restaurant.id,
         name=restaurant.name,
@@ -304,17 +317,20 @@ def restaurant_summary(restaurant: Restaurant, ctx: RestaurantContext) -> Restau
         shamers=shamers,
         shame_count=shame_count,
         shamed_only=bool(shame_count) and not recommenders,
+        logged_by_me=logged_by_me,
     )
 
 
-def restaurant_summaries(db: Session, restaurants: Sequence[Restaurant]) -> List[RestaurantSummary]:
+def restaurant_summaries(
+    db: Session, restaurants: Sequence[Restaurant], viewer_id: Optional[str] = None
+) -> List[RestaurantSummary]:
     ctx = RestaurantContext(db, [r.id for r in restaurants])
-    return [restaurant_summary(r, ctx) for r in restaurants]
+    return [restaurant_summary(r, ctx, viewer_id) for r in restaurants]
 
 
 def restaurant_detail(db: Session, restaurant: Restaurant, viewer: Optional[User]) -> RestaurantDetail:
     ctx = RestaurantContext(db, [restaurant.id])
-    summary = restaurant_summary(restaurant, ctx)
+    summary = restaurant_summary(restaurant, ctx, viewer.id if viewer else None)
 
     images = (
         db.execute(
