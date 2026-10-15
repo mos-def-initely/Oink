@@ -1,5 +1,5 @@
 # Oink
-
+oinkr.vercel.app
 Restaurant / bar / cafe recommendations between friends. Built to [SPEC.md](SPEC.md).
 
 Mobile-first — design and test it at phone width; desktop just centres the same
